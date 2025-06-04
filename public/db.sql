@@ -65,7 +65,7 @@ INSERT INTO ubicacion (cedula_persona, estado, municipio, direccion_actual) VALU
 ('1122334455', 'Zulia', 'Maracaibo', 'Calle 23, Casa 45');
 
 -- Inserciones en la tabla emprendimientos
-INSERT INTO emprendimientos (cedula_emprendedor, sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento) VALUES
+INSERT INTO emprendimientos (cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento) VALUES
 ('1234567890', 'Tecnología', 'Software', 'PuntoTech', 'Av. Universidad, Edificio A'),
 ('1122334455', 'Alimentos', 'Restaurante', 'Sabores Locales', 'Calle 23, Casa 45');
 
