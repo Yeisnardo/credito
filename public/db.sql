@@ -31,7 +31,7 @@ CREATE TABLE ubicacion (
 -- Tabla de emprendimientos
 CREATE TABLE emprendimientos (
   cedula_emprendedor VARCHAR(20) NOT NULL PRIMARY KEY,
-  sector VARCHAR(50) NOT NULL,
+  tipo_sector VARCHAR(50) NOT NULL,
   tipo_negocio VARCHAR(50) NOT NULL,
   nombre_emprendimiento VARCHAR(100) NOT NULL,
   direccion_emprendimiento VARCHAR(255) NOT NULL,
@@ -41,6 +41,7 @@ CREATE TABLE emprendimientos (
 -- Tabla del consejo comunal, cuya PRIMARY KEY es la cédula de la persona
 CREATE TABLE consejo_comunal (
   cedula_persona VARCHAR(20) PRIMARY KEY,
+  sector VARCHAR(100),
   consejo_nombre VARCHAR(100),
   comuna VARCHAR(50),
   CONSTRAINT fk_consejo_persona FOREIGN KEY (cedula_persona) REFERENCES persona(cedula) ON DELETE CASCADE
@@ -69,6 +70,6 @@ INSERT INTO emprendimientos (cedula_emprendedor, sector, tipo_negocio, nombre_em
 ('1122334455', 'Alimentos', 'Restaurante', 'Sabores Locales', 'Calle 23, Casa 45');
 
 -- Inserciones en la tabla consejo_comunal
-INSERT INTO consejo_comunal (cedula_persona, consejo_nombre, comuna) VALUES
-('1234567890', 'Consejo de Innovación Tecnológica', 'Candelaria'),
-('1122334455', 'Consejo de Desarrollo Comunitario', 'Santa Lucía');
+INSERT INTO consejo_comunal (cedula_persona, sector, consejo_nombre, comuna) VALUES
+('1234567890', 'Tecnología', 'Consejo de Innovación Tecnológica', 'Candelaria'),
+('1122334455', 'Desarrollo Comunitario', 'Consejo de Desarrollo Comunitario', 'Santa Lucía');

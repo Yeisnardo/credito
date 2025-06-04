@@ -33,7 +33,7 @@ const RegistroEmprendedor = () => {
 
     // Datos del emprendimiento
     nombre_emprendimiento: "",
-    tipo_sector: "",
+    sector: "",
     tipo_negocio: "",
     direccion_emprendimiento: "",
 
@@ -114,7 +114,7 @@ const RegistroEmprendedor = () => {
       }
     } else if (paso === 4) {
       if (
-        !datos.tipo_sector.trim() ||
+        !datos.sector.trim() ||
         !datos.tipo_negocio.trim() ||
         !datos.nombre_emprendimiento.trim() ||
         !datos.direccion_emprendimiento.trim()
@@ -184,7 +184,7 @@ const RegistroEmprendedor = () => {
       // 4. Crear Emprendimiento
       const emprendimientoData = {
         cedula_emprendedor: datos.cedula,
-        sector: datos.tipo_sector,
+        sector: datos.sector,
         tipo_negocio: datos.tipo_negocio,
         nombre_emprendimiento: datos.nombre_emprendimiento,
         direccion_emprendimiento: datos.direccion_emprendimiento,
@@ -553,15 +553,15 @@ const RegistroEmprendedor = () => {
               <div className="mb-4">
                 <label
                   className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="tipo_sector"
+                  htmlFor="sector"
                 >
                   Sector
                 </label>
                 <input
                   type="text"
-                  id="tipo_sector"
-                  value={datos.tipo_sector}
-                  onChange={(e) => handleChange("tipo_sector", e.target.value)}
+                  id="sector"
+                  value={datos.sector}
+                  onChange={(e) => handleChange("sector", e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="Ej: Agroindustrial, Comercial..."
                 />
