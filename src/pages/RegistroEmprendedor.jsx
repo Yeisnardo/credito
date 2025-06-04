@@ -6,8 +6,8 @@ import { locationData } from "../components/Venezuela";
 
 // Servicios API
 import personaService from "../services/api_persona";
-import usuarioService from "../services/api_usuario";
 import ubicacionService from "../services/api_ubicaciones";
+import usuarioService from "../services/api_usuario";
 import emprendimientoService from "../services/api_emprendimiento";
 import consejoService from "../services/api_consejoComunal";
 
@@ -26,7 +26,7 @@ const RegistroEmprendedor = () => {
     correo: "",
     tipo_persona: "Emprendedor",
 
-    // Dirección Personal (sin parroquia)
+    // Dirección Personal
     estado: "",
     municipio: "",
     direccion: "",
@@ -50,7 +50,6 @@ const RegistroEmprendedor = () => {
   });
 
   const [municipios, setMunicipios] = useState([]);
-  const [parroquias, setParroquias] = useState([]); // Aunque no usamos parroquias aquí, lo mantenemos si quieres en el futuro
 
   // Actualiza municipios según el estado
   useEffect(() => {
@@ -60,17 +59,6 @@ const RegistroEmprendedor = () => {
       setDatos((prev) => ({ ...prev, municipio: "" }));
     }
   }, [datos.estado]);
-
-  // Cuando cambian el municipio, si quieres agregar parroquias en el futuro
-  useEffect(() => {
-    if (datos.municipio && municipios.length > 0) {
-      const municipioActual = municipios.find(
-        (m) => m.municipio === datos.municipio
-      );
-      // setParroquias(municipioActual ? municipioActual.parroquias : []);
-      // setDatos((prev) => ({ ...prev, parroquia: "" }));
-    }
-  }, [datos.municipio, municipios]);
 
   const handleChange = (campo, valor) => {
     setDatos({ ...datos, [campo]: valor });
@@ -107,11 +95,7 @@ const RegistroEmprendedor = () => {
         return;
       }
     } else if (paso === 2) {
-      if (
-        !datos.estado ||
-        !datos.municipio ||
-        !datos.direccion.trim()
-      ) {
+      if (!datos.estado || !datos.municipio || !datos.direccion.trim()) {
         Swal.fire({
           icon: "error",
           title: "Campos incompletos",
@@ -120,10 +104,7 @@ const RegistroEmprendedor = () => {
         return;
       }
     } else if (paso === 3) {
-      if (
-        !datos.consejo_nombre.trim() ||
-        !datos.comuna.trim()
-      ) {
+      if (!datos.consejo_nombre.trim() || !datos.comuna.trim()) {
         Swal.fire({
           icon: "error",
           title: "Campos incompletos",
@@ -169,8 +150,8 @@ const RegistroEmprendedor = () => {
 
   const handleFinalizar = async () => {
     try {
-      // Crear persona
-      const nuevaPersona = {
+      // 1. Crear Persona
+      const personaData = {
         cedula: datos.cedula,
         nombre_completo: datos.nombre_completo,
         edad: parseInt(datos.edad) || 0,
@@ -178,49 +159,50 @@ const RegistroEmprendedor = () => {
         email: datos.correo,
         tipo_persona: datos.tipo_persona,
       };
-      await personaService.createPersona(nuevaPersona);
+      await personaService.createPersona(personaData);
 
-      // Crear ubicación
-      const nuevaUbicacion = {
+      // 2. Crear Ubicación
+      const ubicacionData = {
         cedula_persona: datos.cedula,
         estado: datos.estado,
         municipio: datos.municipio,
         direccion_actual: datos.direccion,
       };
-      await ubicacionService.createUbicacion(nuevaUbicacion);
+      await ubicacionService.createUbicacion(ubicacionData);
 
-      // Crear usuario
-      const nuevoUsuario = {
+      // 3. Crear Usuario
+      const usuarioData = {
         cedula_usuario: datos.cedula,
         usuario: datos.usuario,
-        contrasena: datos.contrasena,
+        contrasena: datos.contrasena, // cifrado en backend
         estatus: datos.estatus,
-        rol: "Emprendedor",
+        rol: datos.rol,
         foto_rostro: datos.foto_rostro,
       };
-      await usuarioService.createUsuario(nuevoUsuario);
+      await usuarioService.createUsuario(usuarioData);
 
-      // Crear emprendimiento
-      const nuevoEmprendimiento = {
+      // 4. Crear Emprendimiento
+      const emprendimientoData = {
         cedula_emprendedor: datos.cedula,
-        nombre_emprendimiento: datos.nombre_emprendimiento,
         sector: datos.tipo_sector,
         tipo_negocio: datos.tipo_negocio,
+        nombre_emprendimiento: datos.nombre_emprendimiento,
         direccion_emprendimiento: datos.direccion_emprendimiento,
       };
-      await emprendimientoService.createEmprendimiento(nuevoEmprendimiento);
+      await emprendimientoService.createEmprendimiento(emprendimientoData);
 
-      // Crear consejo comunal
-      const nuevoConsejo = {
+      // 5. Crear Consejo Comunale
+      const consejoData = {
+        cedula_persona: datos.cedula,
         consejo_nombre: datos.consejo_nombre,
         comuna: datos.comuna,
       };
-      await consejoService.createConsejo(nuevoConsejo);
+      await consejoService.createConsejo(consejoData);
 
       Swal.fire({
         icon: "success",
         title: "Registro completo",
-        text: "Tus datos han sido registrados correctamente.",
+        text: "Todos los datos han sido registrados correctamente.",
       });
       navigate("/");
     } catch (error) {
@@ -292,7 +274,10 @@ const RegistroEmprendedor = () => {
               <h3 className="text-xl mb-4">Datos Personales</h3>
               {/* Cedula */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="cedula">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="cedula"
+                >
                   Cédula
                 </label>
                 <input
@@ -306,21 +291,29 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Nombre */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="nombre_completo">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="nombre_completo"
+                >
                   Nombre Completo
                 </label>
                 <input
                   type="text"
                   id="nombre_completo"
                   value={datos.nombre_completo}
-                  onChange={(e) => handleChange("nombre_completo", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("nombre_completo", e.target.value)
+                  }
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="Ingresa tu nombre completo"
                 />
               </div>
               {/* Edad */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="edad">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="edad"
+                >
                   Edad
                 </label>
                 <input
@@ -335,7 +328,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Teléfono */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="telefono">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="telefono"
+                >
                   Teléfono
                 </label>
                 <input
@@ -349,7 +345,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Correo */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="correo">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="correo"
+                >
                   Correo Electrónico
                 </label>
                 <input
@@ -363,7 +362,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Tipo de Persona */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="tipo_persona">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="tipo_persona"
+                >
                   Tipo de Persona
                 </label>
                 <select
@@ -390,7 +392,10 @@ const RegistroEmprendedor = () => {
               <h3 className="text-xl mb-4">Dirección Personal</h3>
               {/* Estado */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="estado">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="estado"
+                >
                   Estado
                 </label>
                 <select
@@ -409,7 +414,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Municipio */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="municipio">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="municipio"
+                >
                   Municipio
                 </label>
                 <select
@@ -429,7 +437,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Dirección */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="direccion">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="direccion"
+                >
                   Dirección
                 </label>
                 <input
@@ -464,36 +475,49 @@ const RegistroEmprendedor = () => {
               <h3 className="text-xl mb-4">Datos del Consejo Comunal</h3>
               {/* Sector */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="consejo_nombre">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="consejo_nombre"
+                >
                   Sector
                 </label>
                 <input
                   type="text"
                   id="consejo_nombre"
                   value={datos.consejo_nombre}
-                  onChange={(e) => handleChange("consejo_nombre", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("consejo_nombre", e.target.value)
+                  }
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="Sector"
                 />
               </div>
               {/* Consejo */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="consejo_direccion">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="consejo_direccion"
+                >
                   Consejo Comunal
                 </label>
                 <input
                   type="text"
                   id="consejo_direccion"
                   value={datos.consejo_direccion}
-                  onChange={(e) => handleChange("consejo_direccion", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("consejo_direccion", e.target.value)
+                  }
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="Dirección del Consejo"
                 />
               </div>
               {/* Comunidad */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="comuna">
-                  Comuna
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="comuna"
+                >
+                  Comunidad
                 </label>
                 <input
                   type="text"
@@ -527,7 +551,10 @@ const RegistroEmprendedor = () => {
               <h3 className="text-xl mb-4">Registro de Emprendimiento</h3>
               {/* Sector */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="tipo_sector">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="tipo_sector"
+                >
                   Sector
                 </label>
                 <input
@@ -541,7 +568,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Tipo de Negocio */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="tipo_negocio">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="tipo_negocio"
+                >
                   Tipo de Negocio
                 </label>
                 <input
@@ -555,28 +585,38 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Nombre del Emprendimiento */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="nombre_emprendimiento">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="nombre_emprendimiento"
+                >
                   Nombre del Emprendimiento
                 </label>
                 <input
                   type="text"
                   id="nombre_emprendimiento"
                   value={datos.nombre_emprendimiento}
-                  onChange={(e) => handleChange("nombre_emprendimiento", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("nombre_emprendimiento", e.target.value)
+                  }
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="Nombre del emprendimiento"
                 />
               </div>
               {/* Dirección del emprendimiento */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="direccion_emprendimiento">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="direccion_emprendimiento"
+                >
                   Dirección del Emprendimiento
                 </label>
                 <input
                   type="text"
                   id="direccion_emprendimiento"
                   value={datos.direccion_emprendimiento}
-                  onChange={(e) => handleChange("direccion_emprendimiento", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("direccion_emprendimiento", e.target.value)
+                  }
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="Dirección del emprendimiento"
                 />
@@ -604,7 +644,10 @@ const RegistroEmprendedor = () => {
               <h3 className="text-xl mb-4">Registro de Usuario</h3>
               {/* Usuario */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="usuario">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="usuario"
+                >
                   Nombre de Usuario
                 </label>
                 <input
@@ -618,7 +661,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Contraseña */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="contrasena">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="contrasena"
+                >
                   Contraseña
                 </label>
                 <input
@@ -632,7 +678,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Foto del rostro */}
               <div className="mb-4">
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="foto_rostro">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="foto_rostro"
+                >
                   Foto del Rostro
                 </label>
                 <input

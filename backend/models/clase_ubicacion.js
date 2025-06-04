@@ -3,8 +3,8 @@ const { query } = require('../config/db');
 
 class Ubicacion {
   static validarUbicacion(ubicacion) {
-    const { cedula_persona, estado, municipio, direccion_actual, emprendedor_id } = ubicacion;
-    if (!cedula_persona || !estado || !municipio || !direccion_actual || !emprendedor_id) {
+    const { cedula_persona, estado, municipio, direccion_actual } = ubicacion;
+    if (!cedula_persona || !estado || !municipio || !direccion_actual) {
       throw new Error("Campos obligatorios incompletos");
     }
     // Validaciones adicionales si lo deseas
@@ -22,12 +22,12 @@ class Ubicacion {
 
   static async createUbicacion(ubicacionData) {
     this.validarUbicacion(ubicacionData);
-    const { cedula_persona, estado, municipio, direccion_actual, emprendedor_id } = ubicacionData;
+    const { cedula_persona, estado, municipio, direccion_actual } = ubicacionData;
     const resultado = await query(
-      `INSERT INTO ubicacion (cedula_persona, estado, municipio, direccion_actual, emprendedor_id)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO ubicacion (cedula_persona, estado, municipio, direccion_actual)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [cedula_persona, estado, municipio, direccion_actual, emprendedor_id]
+      [cedula_persona, estado, municipio, direccion_actual]
     );
     return resultado.rows[0];
   }
