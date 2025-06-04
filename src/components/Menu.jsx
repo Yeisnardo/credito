@@ -23,7 +23,7 @@ const Menu = ({ onClose }) => {
 
         {/* Gestión de Amortización */}
         <NavLink
-          to="/amortizacion"
+          to="/solicitud"
           className={({ isActive }) =>
             `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
               isActive ? activeClassName : ""
@@ -37,7 +37,7 @@ const Menu = ({ onClose }) => {
 
         {/* Gestión de Amortización */}
         <NavLink
-          to="/amortizacion"
+          to="/depositos"
           className={({ isActive }) =>
             `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
               isActive ? activeClassName : ""
@@ -51,7 +51,7 @@ const Menu = ({ onClose }) => {
 
         {/* Gestión de Amortización */}
         <NavLink
-          to="/amortizacion"
+          to="/cuotas"
           className={({ isActive }) =>
             `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
               isActive ? activeClassName : ""

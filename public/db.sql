@@ -1,11 +1,11 @@
 -- Tabla de persona (datos personales vinculados a usuario)
 CREATE TABLE persona (
-  cedula VARCHAR(20) NOT NULL PRIMARY KEY,  -- Cédula única
+  cedula VARCHAR(20) NOT NULL PRIMARY KEY,  
   nombre_completo VARCHAR(100) NOT NULL,
   edad INTEGER NOT NULL,
-  telefono VARCHAR(20),
-  email VARCHAR(100),
-  tipo_persona VARCHAR(20)  -- Tipo de persona
+  telefono VARCHAR(20) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  tipo_persona VARCHAR(20) NOT NULL
 );
 
 -- Tabla de usuario (cuentas y autenticación), que depende de persona
@@ -13,29 +13,28 @@ CREATE TABLE usuario (
   cedula_usuario VARCHAR(20) NOT NULL,
   usuario VARCHAR(50) NOT NULL,
   contrasena VARCHAR(255) NOT NULL,
-  estatus VARCHAR(20),
-  rol VARCHAR(20),
-  foto_rostro BYTEA,
+  estatus VARCHAR(20) NOT NULL,
+  rol VARCHAR(20) NOT NULL,
+  foto_rostro BYTEA NOT NULL,
   CONSTRAINT fk_usuario_persona FOREIGN KEY (cedula_usuario) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
 -- Tabla de ubicaciones (estado, municipio, dirección), sin parroquia
 CREATE TABLE ubicacion (
-  cedula_persona VARCHAR(20) PRIMARY KEY,
-  estado VARCHAR(50),
-  municipio VARCHAR(50),
-  direccion_actual VARCHAR(255),
-  emprendedor_id VARCHAR(20) NOT NULL,
-  CONSTRAINT fk_ubicacion_emprendedor FOREIGN KEY (emprendedor_id) REFERENCES persona(cedula) ON DELETE CASCADE
+  cedula_persona VARCHAR(20) PRIMARY KEY NOT NULL,
+  estado VARCHAR(50) NOT NULL,
+  municipio VARCHAR(50) NOT NULL,
+  direccion_actual VARCHAR(255) NOT NULL,
+  CONSTRAINT fk_ubicacion_emprendedor FOREIGN KEY (cedula_persona) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
 -- Tabla de emprendimientos
 CREATE TABLE emprendimientos (
   cedula_emprendedor VARCHAR(20) NOT NULL PRIMARY KEY,
-  sector VARCHAR(50),
-  tipo_negocio VARCHAR(50),
-  nombre_emprendimiento VARCHAR(100),
-  direccion_emprendimiento VARCHAR(255),
+  sector VARCHAR(50) NOT NULL,
+  tipo_negocio VARCHAR(50) NOT NULL,
+  nombre_emprendimiento VARCHAR(100) NOT NULL,
+  direccion_emprendimiento VARCHAR(255) NOT NULL,
   CONSTRAINT fk_emprendimiento_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 

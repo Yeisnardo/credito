@@ -6,17 +6,12 @@ import "../assets/css/style.css";
 
 const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
   const navigate = useNavigate();
-
-  // Estados para gestionar menús y perfil
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [profileOnline, setProfileOnline] = useState(true);
 
-  // Funciones para togglear menús
   const handleToggleProfileMenu = () => setProfileMenuOpen(!profileMenuOpen);
   const handleToggleNotifications = () => setNotificationsOpen(!notificationsOpen);
 
-  // Cerrar sesión con confirmación
   const handleCerrarSesion = () => {
     Swal.fire({
       title: "¿Estás seguro que quieres cerrar sesión?",
@@ -33,7 +28,6 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
     });
   };
 
-  // Función para abrir configuración (cambiar contraseña o usuario)
   const handleAbrirConfiguracion = async () => {
     const { value } = await Swal.fire({
       title: '¿Qué deseas cambiar?',
@@ -55,7 +49,6 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
     }
   };
 
-  // Función para cambiar contraseña
   const handleCambiarContraseña = async () => {
     const { value } = await Swal.fire({
       title: 'Cambiar Contraseña',
@@ -89,7 +82,6 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
     }
   };
 
-  // Función para cambiar usuario
   const handleCambiarUsuario = async () => {
     const { value } = await Swal.fire({
       title: 'Cambiar Usuario',
@@ -123,14 +115,13 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
     }
   };
 
-  // Ver perfil completo
   const handleVerPerfil = () => {
     Swal.fire({
       title: 'Perfil de Usuario',
       html: `
         <div class="flex flex-col items-center mb-3">
           <img src="../public/OIP.jpeg" alt="Perfil" class="w-24 h-24 rounded-full border-4 border-green-500 mb-3"/>
-          <h3 class="text-lg font-semibold text-gray-700">${user?.nombre}</h3>
+          <h3 class="text-lg font-semibold text-gray-700">${user?.nombre || 'Nombre'}</h3>
           <p class="text-sm text-gray-500">Rol: ${user?.rol || 'Rol'}</p>
         </div>
         <div class="border-t border-gray-300 pt-2 mb-2">
@@ -154,7 +145,6 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
     });
   };
 
-  // Funciones para editar secciones específicas
   const handleEditarDatosPersonales = async () => {
     const { value } = await Swal.fire({
       title: 'Editar Datos Personales',
@@ -180,7 +170,7 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
       },
     });
     if (value) {
-      setUser({ ...user, ...value });
+      setUser(prev => ({ ...prev, ...value }));
       Swal.fire('Actualizado', 'Datos personales actualizados', 'success');
     }
   };
@@ -201,7 +191,7 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
       },
     });
     if (value) {
-      setUser({ ...user, ...value });
+      setUser(prev => ({ ...prev, ...value }));
       Swal.fire('Actualizado', 'Emprendimiento actualizado', 'success');
     }
   };
@@ -222,7 +212,7 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
       },
     });
     if (value) {
-      setUser({ ...user, ...value });
+      setUser(prev => ({ ...prev, ...value }));
       Swal.fire('Actualizado', 'Consejo Comunale actualizado', 'success');
     }
   };
@@ -264,13 +254,13 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
           <span className="hidden sm:inline">Emprendimiento</span>
         </button>
         <button
-  className="flex items-center text-white px-3 py-1 rounded hover:bg-gray-700 transition"
-  onClick={() => navigate('/Credito')} // aquí haces la navegación
-  title="Crédito"
->
-  <i className="bx bx-credit-card mr-2"></i>
-  <span className="hidden sm:inline">Crédito</span>
-</button>
+          className="flex items-center text-white px-3 py-1 rounded hover:bg-gray-700 transition"
+          onClick={() => navigate('/Credito')}
+          title="Crédito"
+        >
+          <i className="bx bx-credit-card mr-2"></i>
+          <span className="hidden sm:inline">Crédito</span>
+        </button>
       </div>
 
       {/* Perfil y notificaciones */}
@@ -300,7 +290,8 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
             aria-label="Perfil"
           >
             <i className="bx bxs-user" style={{ fontSize: "24px" }}></i>
-            <span className="hidden sm:inline ml-2">{user?.usuario || "Usuario"}</span>
+            {/* Mostrar el nombre completo del usuario */}
+            <span className="hidden sm:inline ml-2">{user?.nombre || "Usuario"}</span>
           </button>
 
           {profileMenuOpen && (
@@ -363,20 +354,6 @@ const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
           )}
         </div>
       </div>
-
-      {/* Perfil en línea estilo WhatsApp (opcional) */}
-      {profileOnline && (
-        <div className="fixed bottom-4 right-4 w-80 bg-white rounded-lg shadow-lg z-50 p-4 animate-fadeInUp">
-          <button
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-            onClick={() => {
-              // Función para editar perfil en línea (a definir)
-            }}
-          >
-            Editar Perfil
-          </button>
-        </div>
-      )}
     </header>
   );
 };
