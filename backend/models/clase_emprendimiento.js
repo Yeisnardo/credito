@@ -2,8 +2,8 @@ const { query } = require('../config/db');
 
 class Emprendimiento {
   static validarEmprendimiento(emprendimiento) {
-    const { cedula_emprendedor, sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento } = emprendimiento;
-    if (!cedula_emprendedor || !sector || !tipo_negocio || !nombre_emprendimiento || !direccion_emprendimiento) {
+    const { cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento } = emprendimiento;
+    if (!cedula_emprendedor || !tipo_sector || !tipo_negocio || !nombre_emprendimiento || !direccion_emprendimiento) {
       throw new Error("Campos obligatorios incompletos");
     }
     // Validaciones adicionales si es necesario
@@ -16,7 +16,7 @@ class Emprendimiento {
 
   static async getUnaEmprendimiento(cedula_emprendedor) {
     const resultado = await query(
-      'SELECT * FROM emprendamientos WHERE cedula_emprendedor = $1',
+      'SELECT * FROM emprendimientos WHERE cedula_emprendedor = $1',
       [cedula_emprendedor]
     );
     return resultado.rows[0];
@@ -24,30 +24,30 @@ class Emprendimiento {
 
   static async createEmprendimiento(emprendimientoData) {
     this.validarEmprendimiento(emprendimientoData);
-    const { cedula_emprendedor, sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento } = emprendimientoData;
+    const { cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento } = emprendimientoData;
     const resultado = await query(
-      `INSERT INTO emprendimientos (cedula_emprendedor, sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento)
+      `INSERT INTO emprendimientos (cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [cedula_emprendedor, sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento]
+      [cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento]
     );
     return resultado.rows[0];
   }
 
   static async updateEmprendimiento(cedula_emprendedor, emprendimientoData) {
-    const { sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento } = emprendimientoData;
-    if (!sector || !tipo_negocio || !nombre_emprendimiento || !direccion_emprendimiento) {
+    const { tipo_sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento } = emprendimientoData;
+    if (!tipo_sector || !tipo_negocio || !nombre_emprendimiento || !direccion_emprendimiento) {
       throw new Error("Campos obligatorios incompletos");
     }
     const resultado = await query(
       `UPDATE emprendimientos SET
-        sector = $1,
+        tipo_sector = $1,
         tipo_negocio = $2,
         nombre_emprendimiento = $3,
         direccion_emprendimiento = $4
        WHERE cedula_emprendedor = $5
        RETURNING *`,
-      [sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento, cedula_emprendedor]
+      [tipo_sector, tipo_negocio, nombre_emprendimiento, direccion_emprendimiento, cedula_emprendedor]
     );
     return resultado.rows[0];
   }

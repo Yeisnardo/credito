@@ -18,7 +18,7 @@ const Usuario = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const usuarios = await api.getUsers();
+        const usuarios = await api.getUsuario();
         if (Array.isArray(usuarios)) setData(usuarios);
         else setData([]);
       } catch (error) {

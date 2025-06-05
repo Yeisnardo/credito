@@ -1,4 +1,3 @@
-// controllers/consejoController.js
 const ConsejoComunal = require('../models/clase_consejo_comunal');
 
 const consejoController = {
@@ -12,7 +11,7 @@ const consejoController = {
   },
 
   obtenerUnConsejo: async (req, res) => {
-    const { cedula_persona } = req.params; // Nota: usar cedula_persona
+    const { cedula_persona } = req.params;
     try {
       const consejo = await ConsejoComunal.getUnaConsejo(cedula_persona);
       if (consejo) {
@@ -36,7 +35,7 @@ const consejoController = {
   },
 
   actualizarConsejo: async (req, res) => {
-    const { cedula_persona } = req.params; // usar cedula_persona
+    const { cedula_persona } = req.params;
     const data = req.body;
     try {
       const consejoActualizado = await ConsejoComunal.updateConsejo(cedula_persona, data);
@@ -51,7 +50,7 @@ const consejoController = {
   },
 
   eliminarConsejo: async (req, res) => {
-    const { cedula_persona } = req.params; // usar cedula_persona
+    const { cedula_persona } = req.params;
     try {
       const eliminado = await ConsejoComunal.deleteConsejo(cedula_persona);
       if (eliminado) {

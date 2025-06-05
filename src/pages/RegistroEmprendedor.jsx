@@ -17,6 +17,7 @@ const RegistroEmprendedor = () => {
   const [paso, setPaso] = useState(1);
   const navigate = useNavigate();
 
+  // Estado de los datos del formulario
   const [datos, setDatos] = useState({
     // Datos Personales
     cedula: "",
@@ -33,25 +34,26 @@ const RegistroEmprendedor = () => {
 
     // Datos del emprendimiento
     nombre_emprendimiento: "",
-    sector: "",
+    tipo_sector: "",
     tipo_negocio: "",
     direccion_emprendimiento: "",
 
     // Consejo comunal
+    sector: "", // Nuevo campo
     consejo_nombre: "",
     comuna: "",
 
     // Datos de usuario
     usuario: "",
     contrasena: "",
-    estatus: "Activo",
+    estatus: "Activo(a)",
     rol: "Emprendedor",
     foto_rostro: null,
   });
 
   const [municipios, setMunicipios] = useState([]);
 
-  // Actualiza municipios según el estado
+  // Actualiza municipios según el estado seleccionado
   useEffect(() => {
     if (datos.estado) {
       const estadoActual = locationData.find((e) => e.estado === datos.estado);
@@ -60,10 +62,12 @@ const RegistroEmprendedor = () => {
     }
   }, [datos.estado]);
 
+  // Función para manejar cambios en los inputs
   const handleChange = (campo, valor) => {
     setDatos({ ...datos, [campo]: valor });
   };
 
+  // Función para manejar cambio de imagen y convertirla a base64
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -78,65 +82,78 @@ const RegistroEmprendedor = () => {
     }
   };
 
+  // Función para avanzar en los pasos del formulario con validaciones
   const handleNext = () => {
-    // Validaciones por paso
-    if (paso === 1) {
-      if (
-        !datos.cedula.trim() ||
-        !datos.nombre_completo.trim() ||
-        !datos.telefono.trim() ||
-        !datos.correo.trim()
-      ) {
-        Swal.fire({
-          icon: "error",
-          title: "Campos incompletos",
-          text: "Por favor, completa todos los datos personales.",
-        });
-        return;
-      }
-    } else if (paso === 2) {
-      if (!datos.estado || !datos.municipio || !datos.direccion.trim()) {
-        Swal.fire({
-          icon: "error",
-          title: "Campos incompletos",
-          text: "Por favor, ingresa toda la dirección.",
-        });
-        return;
-      }
-    } else if (paso === 3) {
-      if (!datos.consejo_nombre.trim() || !datos.comuna.trim()) {
-        Swal.fire({
-          icon: "error",
-          title: "Campos incompletos",
-          text: "Por favor, ingresa toda la info del Consejo Comunal.",
-        });
-        return;
-      }
-    } else if (paso === 4) {
-      if (
-        !datos.sector.trim() ||
-        !datos.tipo_negocio.trim() ||
-        !datos.nombre_emprendimiento.trim() ||
-        !datos.direccion_emprendimiento.trim()
-      ) {
-        Swal.fire({
-          icon: "error",
-          title: "Campos incompletos",
-          text: "Por favor, ingresa toda la info del Emprendimiento.",
-        });
-        return;
-      }
-    } else if (paso === 5) {
-      if (!datos.usuario.trim() || !datos.contrasena.trim()) {
-        Swal.fire({
-          icon: "error",
-          title: "Campos incompletos",
-          text: "Por favor, ingresa el nombre de usuario y la contraseña.",
-        });
-        return;
-      }
+    switch (paso) {
+      case 1:
+        if (
+          !datos.cedula.trim() ||
+          !datos.nombre_completo.trim() ||
+          !datos.telefono.trim() ||
+          !datos.correo.trim()
+        ) {
+          Swal.fire({
+            icon: "error",
+            title: "Campos incompletos",
+            text: "Por favor, completa todos los datos personales.",
+          });
+          return;
+        }
+        break;
+      case 2:
+        if (!datos.estado || !datos.municipio || !datos.direccion.trim()) {
+          Swal.fire({
+            icon: "error",
+            title: "Campos incompletos",
+            text: "Por favor, ingresa toda la dirección.",
+          });
+          return;
+        }
+        break;
+      case 3:
+        if (
+          !datos.consejo_nombre.trim() ||
+          !datos.comuna.trim() ||
+          !datos.sector.trim()
+        ) {
+          Swal.fire({
+            icon: "error",
+            title: "Campos incompletos",
+            text: "Por favor, ingresa toda la info del Consejo Comunal y Sector.",
+          });
+          return;
+        }
+        break;
+      case 4:
+        if (
+          !datos.tipo_sector.trim() ||
+          !datos.tipo_negocio.trim() ||
+          !datos.nombre_emprendimiento.trim() ||
+          !datos.direccion_emprendimiento.trim()
+        ) {
+          Swal.fire({
+            icon: "error",
+            title: "Campos incompletos",
+            text: "Por favor, ingresa toda la info del Emprendimiento.",
+          });
+          return;
+        }
+        break;
+      case 5:
+        if (!datos.usuario.trim() || !datos.contrasena.trim()) {
+          Swal.fire({
+            icon: "error",
+            title: "Campos incompletos",
+            text: "Por favor, ingresa el nombre de usuario y la contraseña.",
+          });
+          return;
+        }
+        break;
+      default:
+        break;
     }
 
+    // Avanza o finaliza
     if (paso < 5) {
       setPaso(paso + 1);
     } else {
@@ -144,13 +161,16 @@ const RegistroEmprendedor = () => {
     }
   };
 
+  // Función para volver en los pasos
   const handleBack = () => {
     if (paso > 1) setPaso(paso - 1);
   };
 
+  // Función para finalizar y guardar los datos en backend
   const handleFinalizar = async () => {
     try {
-      // 1. Crear Persona
+      console.log("Iniciando registro...");
+      // Crear Persona
       const personaData = {
         cedula: datos.cedula,
         nombre_completo: datos.nombre_completo,
@@ -159,45 +179,53 @@ const RegistroEmprendedor = () => {
         email: datos.correo,
         tipo_persona: datos.tipo_persona,
       };
-      await personaService.createPersona(personaData);
+      const personaResponse = await personaService.createPersona(personaData);
+      console.log("Persona creada:", personaResponse);
 
-      // 2. Crear Ubicación
+      // Crear Ubicación
       const ubicacionData = {
         cedula_persona: datos.cedula,
         estado: datos.estado,
         municipio: datos.municipio,
         direccion_actual: datos.direccion,
       };
-      await ubicacionService.createUbicacion(ubicacionData);
+      const ubicacionResponse = await ubicacionService.createUbicacion(
+        ubicacionData
+      );
+      console.log("Ubicación creada:", ubicacionResponse);
 
-      // 3. Crear Usuario
+      // Crear Usuario
       const usuarioData = {
         cedula_usuario: datos.cedula,
         usuario: datos.usuario,
-        contrasena: datos.contrasena, // cifrado en backend
+        contrasena: datos.contrasena,
         estatus: datos.estatus,
         rol: datos.rol,
         foto_rostro: datos.foto_rostro,
       };
-      await usuarioService.createUsuario(usuarioData);
+      const usuarioResponse = await usuarioService.createUsuario(usuarioData);
+      console.log("Usuario creado:", usuarioResponse);
 
-      // 4. Crear Emprendimiento
       const emprendimientoData = {
         cedula_emprendedor: datos.cedula,
-        sector: datos.sector,
+        tipo_sector: datos.tipo_sector,
         tipo_negocio: datos.tipo_negocio,
         nombre_emprendimiento: datos.nombre_emprendimiento,
         direccion_emprendimiento: datos.direccion_emprendimiento,
       };
-      await emprendimientoService.createEmprendimiento(emprendimientoData);
+      const emprendimientoResponse =
+        await emprendimientoService.createEmprendimiento(emprendimientoData);
+      console.log("Emprendimiento creado:", emprendimientoResponse);
 
-      // 5. Crear Consejo Comunale
+      // Crear Consejo
       const consejoData = {
         cedula_persona: datos.cedula,
         consejo_nombre: datos.consejo_nombre,
         comuna: datos.comuna,
+        sector: datos.sector,
       };
-      await consejoService.createConsejo(consejoData);
+      const consejoResponse = await consejoService.createConsejo(consejoData);
+      console.log("Consejo creado:", consejoResponse);
 
       Swal.fire({
         icon: "success",
@@ -217,7 +245,7 @@ const RegistroEmprendedor = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Lado izquierda con imagen */}
+      {/* Lado izquierdo con imagen */}
       <div className="w-1/2 hidden md:flex items-center justify-center p-4 bg-logoLoginEfimi">
         <img src={miImagen} alt="Logo" className="max-w-full h-auto" />
       </div>
@@ -271,6 +299,7 @@ const RegistroEmprendedor = () => {
           {/* Secciones por paso */}
           {paso === 1 && (
             <div>
+              {/* Datos Personales */}
               <h3 className="text-xl mb-4">Datos Personales</h3>
               {/* Cedula */}
               <div className="mb-4">
@@ -389,6 +418,7 @@ const RegistroEmprendedor = () => {
 
           {paso === 2 && (
             <div>
+              {/* Dirección Personal */}
               <h3 className="text-xl mb-4">Dirección Personal</h3>
               {/* Estado */}
               <div className="mb-4">
@@ -472,14 +502,32 @@ const RegistroEmprendedor = () => {
 
           {paso === 3 && (
             <div>
+              {/* Datos del Consejo Comunal */}
               <h3 className="text-xl mb-4">Datos del Consejo Comunal</h3>
               {/* Sector */}
               <div className="mb-4">
                 <label
                   className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="consejo_nombre"
+                  htmlFor="sector"
                 >
                   Sector
+                </label>
+                <input
+                  type="text"
+                  id="sector"
+                  value={datos.sector}
+                  onChange={(e) => handleChange("sector", e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  placeholder="Sector del Consejo"
+                />
+              </div>
+              {/* Nombre del Consejo */}
+              <div className="mb-4">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="consejo_nombre"
+                >
+                  Consejo Nombre
                 </label>
                 <input
                   type="text"
@@ -489,26 +537,7 @@ const RegistroEmprendedor = () => {
                     handleChange("consejo_nombre", e.target.value)
                   }
                   className="w-full border border-gray-300 rounded px-3 py-2"
-                  placeholder="Sector"
-                />
-              </div>
-              {/* Consejo */}
-              <div className="mb-4">
-                <label
-                  className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="consejo_direccion"
-                >
-                  Consejo Comunal
-                </label>
-                <input
-                  type="text"
-                  id="consejo_direccion"
-                  value={datos.consejo_direccion}
-                  onChange={(e) =>
-                    handleChange("consejo_direccion", e.target.value)
-                  }
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                  placeholder="Dirección del Consejo"
+                  placeholder="Nombre del Consejo"
                 />
               </div>
               {/* Comunidad */}
@@ -548,20 +577,21 @@ const RegistroEmprendedor = () => {
 
           {paso === 4 && (
             <div>
+              {/* Registro de Emprendimiento */}
               <h3 className="text-xl mb-4">Registro de Emprendimiento</h3>
-              {/* Sector */}
+              {/* Tipo de Sector */}
               <div className="mb-4">
                 <label
                   className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="sector"
+                  htmlFor="tipo_sector"
                 >
-                  Sector
+                  Tipo de Sector
                 </label>
                 <input
                   type="text"
-                  id="sector"
-                  value={datos.sector}
-                  onChange={(e) => handleChange("sector", e.target.value)}
+                  id="tipo_sector"
+                  value={datos.tipo_sector}
+                  onChange={(e) => handleChange("tipo_sector", e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   placeholder="Ej: Agroindustrial, Comercial..."
                 />
@@ -641,8 +671,9 @@ const RegistroEmprendedor = () => {
 
           {paso === 5 && (
             <div>
+              {/* Registro de Usuario */}
               <h3 className="text-xl mb-4">Registro de Usuario</h3>
-              {/* Usuario */}
+              {/* Nombre de Usuario */}
               <div className="mb-4">
                 <label
                   className="block mb-1 text-sm font-medium text-gray-600"
@@ -689,17 +720,32 @@ const RegistroEmprendedor = () => {
                   id="foto_rostro"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className="mb-2"
+                  className="mb-2 w-full border border-gray-300 rounded px-3 py-2"
                 />
                 {datos.foto_rostro && (
                   <div className="mt-2">
                     <img
                       src={datos.foto_rostro}
                       alt="Foto del Rostro"
-                      className="w-32 h-32 object-cover rounded-full border-2 border-gray-300"
+                      className="w-32 h-32 rounded-full border-2 border-gray-300"
                     />
                   </div>
                 )}
+              </div>
+              {/* Campos ocultos */}
+              <div className="mb-4 hidden">
+                <input
+                  type="hidden"
+                  id="estatus"
+                  value={datos.estatus}
+                  onChange={(e) => handleChange("estatus", e.target.value)}
+                />
+                <input
+                  type="hidden"
+                  id="rol"
+                  value={datos.rol}
+                  onChange={(e) => handleChange("rol", e.target.value)}
+                />
               </div>
               {/* Botones */}
               <div className="flex justify-between mt-4">

@@ -1,10 +1,9 @@
-// models/clase_consejo_comunal.js
 const { query } = require('../config/db');
 
 class ConsejoComunal {
   static validarConsejo(consejo) {
-    const { cedula_persona, consejo_nombre, comuna } = consejo;
-    if (!cedula_persona || !consejo_nombre || !comuna) {
+    const { cedula_persona, consejo_nombre, comuna, sector } = consejo;
+    if (!cedula_persona || !consejo_nombre || !comuna || !sector) {
       throw new Error("Campos obligatorios incompletos");
     }
     // Validaciones adicionales si es necesario
@@ -25,28 +24,29 @@ class ConsejoComunal {
 
   static async createConsejo(consejoData) {
     this.validarConsejo(consejoData);
-    const { cedula_persona, consejo_nombre, comuna } = consejoData;
+    const { cedula_persona, consejo_nombre, comuna, sector } = consejoData;
     const resultado = await query(
-      `INSERT INTO consejo_comunal (cedula_persona, consejo_nombre, comuna)
-       VALUES ($1, $2, $3)
+      `INSERT INTO consejo_comunal (cedula_persona, consejo_nombre, comuna, sector)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [cedula_persona, consejo_nombre, comuna]
+      [cedula_persona, consejo_nombre, comuna, sector]
     );
     return resultado.rows[0];
   }
 
   static async updateConsejo(cedula_persona, consejoData) {
-    const { consejo_nombre, comuna } = consejoData;
-    if (!cedula_persona || !consejo_nombre || !comuna) {
+    const { consejo_nombre, comuna, sector } = consejoData;
+    if (!cedula_persona || !consejo_nombre || !comuna || !sector) {
       throw new Error("Campos obligatorios incompletos");
     }
     const resultado = await query(
       `UPDATE consejo_comunal SET
         consejo_nombre = $1,
-        comuna = $2
-       WHERE cedula_persona = $3
+        comuna = $2,
+        sector = $3
+       WHERE cedula_persona = $4
        RETURNING *`,
-      [consejo_nombre, comuna, cedula_persona]
+      [consejo_nombre, comuna, sector, cedula_persona]
     );
     return resultado.rows[0];
   }

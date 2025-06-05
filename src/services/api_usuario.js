@@ -5,7 +5,7 @@ const api = axios.create({
 });
 
 // Funciones API
-const getUsers = async () => {
+const getUsuario = async () => {
   const response = await api.get('/api/usuarios');
   return response.data;
 };
@@ -31,7 +31,7 @@ const updateUsuarioEstatus = async (cedula_usuario, estatus) => {
 };
 
 export default {
-  getUsers,
+  getUsuario,
   createUsuario,
   updateUsuario,
   deleteUsuario,

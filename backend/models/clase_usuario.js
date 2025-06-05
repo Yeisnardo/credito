@@ -2,31 +2,34 @@ const { query } = require('../config/db');
 
 class Usuario {
   static validarUsuario(usuario) {
-    const {
-      cedula_usuario,
-      usuario: nombreUsuario,
-      contrasena,
-      rol,
-      tipo_usuario,
-      estatus,
-      foto_rostro
-    } = usuario;
+    console.log('Datos del usuario:', usuario); // Agregar esta línea
+  const {
+    cedula_usuario,
+    usuario: nombreUsuario,
+    contrasena,
+    rol,
+    tipo_usuario,
+    estatus,
+    foto_rostro
+  } = usuario;
 
-    if (
-      !cedula_usuario ||
-      !nombreUsuario ||
-      !contrasena ||
-      !rol ||
-      !tipo_usuario ||
-      !estatus
-    ) {
-      throw new Error("Campos obligatorios incompletos");
-    }
-
-    if (foto_rostro && typeof foto_rostro !== 'string') {
-      throw new Error("La foto debe ser una cadena en base64");
-    }
+  // Validación de campos obligatorios
+  if (
+    !cedula_usuario ||
+    !nombreUsuario ||
+    !contrasena ||
+    !rol ||
+    !tipo_usuario ||
+    !estatus
+  ) {
+    throw new Error("Campos obligatorios incompletos");
   }
+
+  // Validar tipo de foto si está presente
+  if (foto_rostro && typeof foto_rostro !== 'string') {
+    throw new Error("La foto debe ser una cadena en base64");
+  }
+}
 
   static async getUsuarios() {
     const resultado = await query('SELECT * FROM usuario');
