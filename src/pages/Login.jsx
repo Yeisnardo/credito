@@ -42,7 +42,7 @@ const Login = () => {
     try {
       const response = await axios.post('http://localhost:5000/api/usuarios/login', {
         usuario: username,
-        contrasena: password,
+        clave: password,
       });
 
       const user = response.data.user;

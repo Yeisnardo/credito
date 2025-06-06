@@ -2,34 +2,26 @@ const { query } = require('../config/db');
 
 class Usuario {
   static validarUsuario(usuario) {
-    console.log('Datos del usuario:', usuario); // Agregar esta línea
-  const {
-    cedula_usuario,
-    usuario: nombreUsuario,
-    contrasena,
-    rol,
-    tipo_usuario,
-    estatus,
-    foto_rostro
-  } = usuario;
+    console.log('Datos del usuario:', usuario);
+    const {
+      cedula_usuario,
+      usuario: nombreUsuario,
+      clave,
+      rol,
+      estatus
+    } = usuario;
 
-  // Validación de campos obligatorios
-  if (
-    !cedula_usuario ||
-    !nombreUsuario ||
-    !contrasena ||
-    !rol ||
-    !tipo_usuario ||
-    !estatus
-  ) {
-    throw new Error("Campos obligatorios incompletos");
+    // Validación de campos obligatorios
+    if (
+      !cedula_usuario ||
+      !nombreUsuario ||
+      !clave ||
+      !rol ||
+      !estatus
+    ) {
+      throw new Error("Campos obligatorios incompletos");
+    }
   }
-
-  // Validar tipo de foto si está presente
-  if (foto_rostro && typeof foto_rostro !== 'string') {
-    throw new Error("La foto debe ser una cadena en base64");
-  }
-}
 
   static async getUsuarios() {
     const resultado = await query('SELECT * FROM usuario');
@@ -41,21 +33,23 @@ class Usuario {
     const {
       cedula_usuario,
       usuario: nombreUsuario,
-      contrasena,
+      clave,
       rol,
-      estatus,
-      tipo_usuario,
-      foto_rostro
+      estatus
     } = usuarioData;
-
-    const bufferFoto = foto_rostro ? Buffer.from(foto_rostro, 'base64') : null;
 
     const resultado = await query(
       `INSERT INTO usuario (
-        cedula_usuario, usuario, contrasena, rol, estatus, tipo_usuario, foto_rostro
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        cedula_usuario, usuario, clave, rol, estatus
+      ) VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [cedula_usuario, nombreUsuario, contrasena, rol, estatus, tipo_usuario, bufferFoto]
+      [
+        cedula_usuario,
+        nombreUsuario,
+        clave,
+        rol,
+        estatus
+      ]
     );
     return resultado.rows[0];
   }
@@ -63,35 +57,27 @@ class Usuario {
   static async updateUsuario(cedula_usuario, usuarioData) {
     const {
       usuario: nombreUsuario,
-      contrasena,
+      clave,
       rol,
-      estatus,
-      tipo_usuario,
-      foto_rostro
+      estatus
     } = usuarioData;
 
-    if (!nombreUsuario || !rol) {
+    if (!nombreUsuario || !rol || !clave || !estatus) {
       throw new Error('Campos obligatorios incompletos');
     }
-
-    const bufferFoto = foto_rostro ? Buffer.from(foto_rostro, 'base64') : null;
 
     const resultado = await query(
       `UPDATE usuario SET 
         usuario = $1, 
-        contrasena = $2, 
+        clave = $2, 
         rol = $3, 
-        estatus = $4, 
-        tipo_usuario = $5, 
-        foto_rostro = COALESCE($6, foto_rostro)
-       WHERE cedula_usuario = $7 RETURNING *`,
+        estatus = $4
+       WHERE cedula_usuario = $5 RETURNING *`,
       [
         nombreUsuario,
-        contrasena,
+        clave,
         rol,
         estatus,
-        tipo_usuario,
-        bufferFoto,
         cedula_usuario
       ]
     );

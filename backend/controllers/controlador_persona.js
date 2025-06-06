@@ -1,8 +1,8 @@
-const personaModel = require('../models/clase_persona');
+const Persona = require('../models/clase_persona');
 
 const getPersonas = async (req, res) => {
   try {
-    const personas = await personaModel.getPersona();
+    const personas = await Persona.getPersona();
     res.json(personas);
   } catch (err) {
     console.error('Error en getPersonas:', err);
@@ -13,7 +13,7 @@ const getPersonas = async (req, res) => {
 const getUnaPersona = async (req, res) => {
   try {
     const { cedula } = req.params;
-    const persona = await personaModel.getUnaPersona(cedula);
+    const persona = await Persona.getUnaPersona(cedula);
     if (!persona) {
       return res.status(404).json({ message: 'Persona no encontrada' });
     }
@@ -27,11 +27,11 @@ const getUnaPersona = async (req, res) => {
 const createPersona = async (req, res) => {
   try {
     const personaData = req.body;
-    const nuevaPersona = await personaModel.createPersona(personaData);
+    const nuevaPersona = await Persona.createPersona(personaData);
     res.status(201).json(nuevaPersona);
-  } catch (err) {
-    console.error('Error en createPersona:', err);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Error en createPersona:', error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -39,7 +39,7 @@ const updatePersona = async (req, res) => {
   try {
     const { cedula } = req.params;
     const personaData = req.body;
-    const personaActualizada = await personaModel.updatePersona(cedula, personaData);
+    const personaActualizada = await Persona.updatePersona(cedula, personaData);
     if (!personaActualizada) {
       return res.status(404).json({ message: 'Persona no encontrada' });
     }
@@ -53,7 +53,7 @@ const updatePersona = async (req, res) => {
 const deletePersona = async (req, res) => {
   try {
     const { cedula } = req.params;
-    const personaEliminada = await personaModel.deletePersona(cedula);
+    const personaEliminada = await Persona.deletePersona(cedula);
     if (!personaEliminada) {
       return res.status(404).json({ message: 'Persona no encontrada' });
     }
