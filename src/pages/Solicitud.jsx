@@ -10,26 +10,26 @@ const Solicitud = () => {
   const [menuOpen, setMenuOpen] = useState(true);
 
   // Usuario en sesión (ajustado para ejemplo)
-  const [user, setUser] = useState({ id: 101, nombre: "Juan Pérez" });
+  const [user, setUser ] = useState({ id: 101, nombre: "Juan Pérez" });
 
   // Datos ficticios de solicitudes de crédito
   const [solicitudesCredito, setSolicitudesCredito] = useState([
-    { id: 1, userId: 101, nombre: "Juan Pérez", monto: 5000, estado: "Pendiente", motivo: "" },
-    { id: 2, userId: 102, nombre: "Maria Lopez", monto: 10000, estado: "Pendiente", motivo: "" },
-    { id: 3, userId: 101, nombre: "Juan Pérez", monto: 7500, estado: "Pendiente", motivo: "" },
-    { id: 4, userId: 103, nombre: "Luis Gómez", monto: 3000, estado: "Pendiente", motivo: "" },
+    { id: 1, userId: 101, nombre: "Juan Pérez", estado: "Pendiente", motivo: "", estatus: "En revisión" },
+    { id: 2, userId: 102, nombre: "Maria Lopez", estado: "Pendiente", motivo: "", estatus: "En revisión" },
+    { id: 3, userId: 101, nombre: "Juan Pérez", estado: "Aprobado", motivo: "Cumple requisitos", estatus: "Aprobado" },
+    { id: 4, userId: 103, nombre: "Luis Gómez", estado: "Rechazado", motivo: "Falta documentación", estatus: "Rechazado" },
   ]);
 
   // Funciones para aprobar/rechazar solicitudes
   const aprobarSolicitud = (id) => {
     setSolicitudesCredito((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, estado: "Aprobado" } : s))
+      prev.map((s) => (s.id === id ? { ...s, estado: "Aprobado", estatus: "Aprobado" } : s))
     );
   };
 
   const rechazarSolicitud = (id) => {
     setSolicitudesCredito((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, estado: "Rechazado" } : s))
+      prev.map((s) => (s.id === id ? { ...s, estado: "Rechazado", estatus: "Rechazado" } : s))
     );
   };
 
@@ -65,56 +65,6 @@ const Solicitud = () => {
             </div>
           </header>
 
-          {/* Tarjetas */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Tarjeta 1 */}
-            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl">
-              <div className="p-6 flex items-center space-x-4">
-                <i className="bx bx-user-circle text-4xl text-[#07142A]"></i>
-                <div>
-                  <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">Resumen de usuario Torta</h2>
-                  <p className="text-gray-700 mb-2">Nombre: {user?.nombre || "Cargando..."}</p>
-                  <p className="text-gray-700">
-                    Status: <span className="font-semibold text-green-500">Activo</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tarjeta 2 */}
-            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl">
-              <div className="p-6 flex items-center space-x-4">
-                <i className="bx bx-chart bar-chart text-4xl text-[#07142A]"></i>
-                <div>
-                  <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">Estadísticas</h2>
-                  <div className="space-y-2">
-                    <p className="text-gray-700">
-                      Mensajes enviados: <span className="font-semibold">120</span>
-                    </p>
-                    <p className="text-gray-700">
-                      Sesiones hoy: <span className="font-semibold">5</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Tarjeta 3 */}
-            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl">
-              <div className="p-6 flex items-center space-x-4">
-                <i className="bx bx-cog text-4xl text-[#07142A]"></i>
-                <div>
-                  <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">Configuraciones</h2>
-                  <ul className="list-disc list-inside text-gray-700 space-y-1">
-                    <li>Perfil</li>
-                    <li>Seguridad</li>
-                    <li>Notificaciones</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
           {/* Listado de solicitudes del usuario */}
           <section className="mt-8">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">Mis Solicitudes de Crédito</h2>
@@ -123,11 +73,9 @@ const Solicitud = () => {
                 <thead>
                   <tr>
                     <th className="px-4 py-2 border-b">ID</th>
-                    <th className="px-4 py-2 border-b">Nombre</th>
-                    <th className="px-4 py-2 border-b">Monto</th>
                     <th className="px-4 py-2 border-b">Estado</th>
                     <th className="px-4 py-2 border-b">Motivo</th>
-                    <th className="px-4 py-2 border-b">Acciones</th>
+                    <th className="px-4 py-2 border-b">Estatus</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -136,8 +84,6 @@ const Solicitud = () => {
                     .map((sol) => (
                       <tr key={sol.id} className="hover:bg-gray-100">
                         <td className="px-4 py-2 border-b">{sol.id}</td>
-                        <td className="px-4 py-2 border-b">{sol.nombre}</td>
-                        <td className="px-4 py-2 border-b">${sol.monto}</td>
                         <td className="px-4 py-2 border-b">{sol.estado}</td>
                         <td className="px-4 py-2 border-b flex items-center space-x-2">
                           {sol.estado !== "Pendiente" ? (
@@ -163,24 +109,7 @@ const Solicitud = () => {
                             </button>
                           )}
                         </td>
-                        <td className="px-4 py-2 border-b space-x-2">
-                          {sol.estado === "Pendiente" && (
-                            <>
-                              <button
-                                className="bg-green-500 text-white px-3 py-1 rounded"
-                                onClick={() => aprobarSolicitud(sol.id)}
-                              >
-                                Aprobar
-                              </button>
-                              <button
-                                className="bg-red-500 text-white px-3 py-1 rounded"
-                                onClick={() => rechazarSolicitud(sol.id)}
-                              >
-                                Rechazar
-                              </button>
-                            </>
-                          )}
-                        </td>
+                        <td className="px-4 py-2 border-b">{sol.estatus}</td>
                       </tr>
                     ))}
                 </tbody>

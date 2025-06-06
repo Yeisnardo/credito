@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import RegistroEmprendedor from "./pages/RegistroEmprendedor";
 import Dashboard from "./pages/Dashboard";
+import Requerimiento from "./pages/Requerimiento";
 import Solicitud from "./pages/Solicitud";
 import Depositos from "./pages/Depositos";
 import Cuotas from "./pages/Cuotas";
@@ -24,6 +25,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/RegistroEmprendedor" element={<RegistroEmprendedor />} />
         <Route path="/Dashboard" element={<Dashboard />} />
+        <Route path="/Requerimiento" element={<Requerimiento />} />
         <Route path="/Solicitud" element={<Solicitud />} />
         <Route path="/Depositos" element={<Depositos />} />
         <Route path="/Cuotas" element={<Cuotas />} />

@@ -40,7 +40,7 @@ const Dashboard = () => {
       {/* Contenido principal, con margen para header y menu */}
       <div className="flex-1 flex flex-col ml-0 md:ml-64">
         {/* Header con botón para abrir/cerrar menu */}
-        <Header user={user} toggleMenu={toggleMenu} menuOpen={menuOpen} />
+        <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
 
         {/* Contenido debajo del header */}
         <div className="pt-20 px-8">

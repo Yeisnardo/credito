@@ -1,166 +1,179 @@
-// src/components/Menu.jsx
 import { NavLink } from "react-router-dom";
 
 const Menu = ({ onClose }) => {
-  const activeClassName = "bg-gray-300"; // Clase para el estado activo
+  const activeClassName = "bg-gray-300";
 
   return (
-    <aside className="w-64 bg-white shadow-lg min-h-screen p-4 fixed top-0 left-0 z-50">
-      <nav className="flex flex-col space-y-4 mt-16">
-        {/* Inicio */}
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-home mr-3 text-xl"></i>
-          <span>Inicio</span>
-        </NavLink>
+    <aside className="w-64 bg-white shadow-lg fixed top-0 left-0 z-50">
+      {/* Contenedor con barra de desplazamiento para todo el menú */}
+      <div className="h-screen overflow-y-auto p-4">
+        {/* Lista de enlaces */}
+        <nav className="flex flex-col space-y-2 mt-16">
+          {/* Enlace Inicio */}
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-home mr-3 text-xl"></i>
+            <span>Inicio</span>
+          </NavLink>
 
-        {/* Gestión de Amortización */}
-        <NavLink
-          to="/solicitud"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-money-withdraw mr-3 text-xl"></i>
-          <span>Solicitud de Credito</span>
-        </NavLink>
+          {/* Enlace Mis Requerimientos */}
+          <NavLink
+            to="/Requerimiento"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <span>Mis Requerimientos</span>
+          </NavLink>
 
-        {/* Gestión de Amortización */}
-        <NavLink
-          to="/depositos"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-money-withdraw mr-3 text-xl"></i>
-          <span>Historial de Depositos</span>
-        </NavLink>
+          {/* Enlace Gestión de Amortización */}
+          <NavLink
+            to="/solicitud"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <span>Solicitud de Crédito</span>
+          </NavLink>
 
-        {/* Gestión de Amortización */}
-        <NavLink
-          to="/cuotas"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-money-withdraw mr-3 text-xl"></i>
-          <span>Reporte de Cuotas</span>
-        </NavLink>
+          {/* Enlace Historial de Depositos */}
+          <NavLink
+            to="/depositos"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <span>Historial de Depositos</span>
+          </NavLink>
 
-        {/* Usuarios */}
-        <NavLink
-          to="/Usuario"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-user mr-3 text-xl"></i>
-          <span>Gestión de Usuarios</span>
-        </NavLink>
+          {/* Enlace Reporte de Cuotas */}
+          <NavLink
+            to="/cuotas"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <span>Reporte de Cuotas</span>
+          </NavLink>
 
-        {/* Perfil Financiero */}
-        <NavLink
-          to="/Perfil_emprendedores"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-group mr-3 text-xl"></i>
-          <span>Perfiles de Emprendedores</span>
-        </NavLink>
+          {/* Sección Gestión de Usuarios */}
+          <NavLink
+            to="/Usuario"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-user mr-3 text-xl"></i>
+            <span>Gestión de Usuarios</span>
+          </NavLink>
+          
+          {/* Otros enlaces */}
+          <NavLink
+            to="/Perfil_emprendedores"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-group mr-3 text-xl"></i>
+            <span>Perfiles de Emprendedores</span>
+          </NavLink>
 
-        {/* Registro de Emprendimiento */}
-        <NavLink
-          to="/Emprendimiento" // Ensure this route is correct
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-store mr-3 text-xl"></i> {/* New icon for Emprendimiento */}
-          <span>Registro de Emprendimiento</span>
-        </NavLink>
+          <NavLink
+            to="/Emprendimiento"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-store mr-3 text-xl"></i>
+            <span>Registro de Emprendimiento</span>
+          </NavLink>
 
-        {/* Aprobación de Solicitud */}
-        <NavLink
-          to="/Aprobacion"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-check-circle mr-3 text-xl"></i>
-          <span>Aprobación de Solicitud de Credito</span>
-        </NavLink>
+          {/* Enlaces Otros Menús */}
+          <NavLink
+            to="/Aprobacion"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-check-circle mr-3 text-xl"></i>
+            <span>Aprobación de Solicitud de Crédito</span>
+          </NavLink>
+          
+          <NavLink
+            to="/Fondo"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <span>Fondo Financiero de Crédito</span>
+          </NavLink>
 
-        {/* Fondos */}
-        <NavLink
-          to="/Fondo"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-money-withdraw mr-3 text-xl"></i>
-          <span>Fondo Financiero de Credito</span>
-        </NavLink>
+          <NavLink
+            to="/Gestion"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-credit-card mr-3 text-xl"></i>
+            <span>Gestor de Crédito</span>
+          </NavLink>
 
-        {/* Gestión de Crédito */}
-        <NavLink
-          to="/Gestion"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-credit-card mr-3 text-xl"></i>
-          <span>Gestor de Crédito</span>
-        </NavLink>
-
-        {/* Gestión de Amortización */}
-        <NavLink
-          to="/amortizacion"
-          className={({ isActive }) =>
-            `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-              isActive ? activeClassName : ""
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bx bx-money-withdraw mr-3 text-xl"></i>
-          <span>Gestión de Amortización</span>
-        </NavLink>
-      </nav>
+          <NavLink
+            to="/amortizacion"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <span>Gestión de Amortización</span>
+          </NavLink>
+        </nav>
+      </div>
     </aside>
   );
 };
