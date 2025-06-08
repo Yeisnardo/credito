@@ -1,19 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import logo from "../assets/imagenes/logo_header.jpg";
 import "../assets/css/style.css";
+import api from "../services/api_usuario";
 
-const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
+const Header = ({ toggleMenu, menuOpen, user, setUser }) => {
   const navigate = useNavigate();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // Cargar usuario al inicio
+  useEffect(() => {
+    fetchUser();
+  }, []);
+
+  const fetchUser = async () => {
+    try {
+      const response = await api.get('/api/usuarios');
+      if (response.data && response.data.length > 0) {
+        setUser(response.data[0]);
+      }
+    } catch (error) {
+      console.error("Error cargando usuario:", error);
+    }
+  };
 
   // Funciones para manejar estados
   const handleToggleProfileMenu = () => setProfileMenuOpen(!profileMenuOpen);
   const handleToggleNotifications = () => setNotificationsOpen(!notificationsOpen);
 
-  // Función para cerrar sesión
   const handleCerrarSesion = () => {
     Swal.fire({
       title: "¿Estás seguro que quieres cerrar sesión?",
@@ -30,7 +46,6 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
     });
   };
 
-  // Función para abrir configuración
   const handleAbrirConfiguracion = async () => {
     const { value } = await Swal.fire({
       title: "¿Qué deseas cambiar?",
@@ -66,7 +81,6 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
       preConfirm: () => {
         const pass = document.getElementById("password").value.trim();
         const repeatPass = document.getElementById("repeatPassword").value.trim();
-
         if (!pass || !repeatPass) {
           Swal.showValidationMessage("Por favor, completa todos los campos");
           return false;
@@ -100,9 +114,9 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
       showCancelButton: true,
       preConfirm: () => {
         const userVal = document.getElementById("usuario").value.trim();
-        const repeatUser  = document.getElementById("repeatUsuario").value.trim();
+        const repeatUser = document.getElementById("repeatUsuario").value.trim();
 
-        if (!userVal || !repeatUser ) {
+        if (!userVal || !repeatUser) {
           Swal.showValidationMessage("Por favor, completa todos los campos");
           return false;
         }
@@ -110,7 +124,7 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
           Swal.showValidationMessage("El usuario debe tener al menos 6 caracteres");
           return false;
         }
-        if (userVal !== repeatUser ) {
+        if (userVal !== repeatUser) {
           Swal.showValidationMessage("Los usuarios no coinciden");
           return false;
         }
@@ -122,13 +136,14 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
     }
   };
 
+  // Ver perfil completo
   const handleVerPerfil = () => {
     Swal.fire({
       title: "Perfil de Usuario",
       html: `
       <div class="flex flex-col items-center mb-4">
         <img src="../public/OIP.jpeg" alt="Perfil" class="w-24 h-24 rounded-full border-4 border-green-500 mb-3"/>
-        <h3 class="text-lg font-semibold text-gray-700">${user?.nombre || "Nombre"}</h3>
+        <h3 class="text-lg font-semibold text-gray-700">${user?.nombre_completo || "Nombre"}</h3>
         <p class="text-sm text-gray-500">Rol: ${user?.rol || "Rol"}</p>
       </div>
       <div class="border-t border-gray-300 pt-2 mb-2 px-4">
@@ -153,31 +168,39 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
     });
   };
 
+  // Edición datos personales
   const handleEditarDatosPersonales = async () => {
     const { value } = await Swal.fire({
       title: "Editar Datos Personales",
       html: `
       <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-      <input id="nombre" class="swal2-input" placeholder="Nombre Completo" value="${user?.nombre || ""}"/>
+      <input id="nombre" class="swal2-input" placeholder="Nombre Completo" value="${user?.nombre_completo || ""}"/>
+      
       <label for="edad" class="block text-sm font-medium text-gray-700 mb-1">Edad</label>
       <input id="edad" type="number" class="swal2-input" placeholder="Edad" value="${user?.edad || ""}"/>
+      
       <label for="telefono" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
       <input id="telefono" class="swal2-input" placeholder="Teléfono" value="${user?.telefono || ""}"/>
+      
       <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo</label>
       <input id="email" type="email" class="swal2-input" placeholder="Correo" value="${user?.email || ""}"/>
-      <label for="direccion" class="block text-sm font-medium text-gray-700 mb-1">Dirección Actual</label>
-      <input id="direccion" class="swal2-input" placeholder="Dirección" value="${user?.direccion_actual || ""}"/>
+      
+      <label for="direccion" class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+      <input id="direccion" class="swal2-input" placeholder="Dirección" value="${user?.direccion || ""}"/>
+      
       <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
       <input id="estado" class="swal2-input" placeholder="Estado" value="${user?.estado || ""}"/>
+      
       <label for="municipio" class="block text-sm font-medium text-gray-700 mb-1">Municipio</label>
       <input id="municipio" class="swal2-input" placeholder="Municipio" value="${user?.municipio || ""}"/>
+      
       <label for="tipo_persona" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Persona</label>
       <input id="tipo_persona" class="swal2-input" placeholder="Tipo de Persona" value="${user?.tipo_persona || ""}"/>
     `,
       focusConfirm: false,
       showCancelButton: true,
       preConfirm: () => {
-        const nombre = document.getElementById("nombre").value.trim();
+        const nombre_completo = document.getElementById("nombre").value.trim();
         const edad = document.getElementById("edad").value.trim();
         const telefono = document.getElementById("telefono").value.trim();
         const email = document.getElementById("email").value.trim();
@@ -186,19 +209,33 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
         const municipio = document.getElementById("municipio").value.trim();
         const tipo_persona = document.getElementById("tipo_persona").value.trim();
 
-        if (!nombre || !email || !edad) {
-          Swal.showValidationMessage("Nombre, edad y correo son obligatorios");
+        if (!nombre_completo || !email || !edad) {
+          Swal.showValidationMessage("Nombre completo, edad y correo son obligatorios");
           return false;
         }
-        return { nombre, edad, telefono, email, direccion, estado, municipio, tipo_persona };
+        return { nombre_completo, edad, telefono, email, direccion, estado, municipio, tipo_persona };
       },
     });
+
     if (value) {
-      setUser ((prev) => ({ ...prev, ...value }));
+      // Aquí puedes hacer API para actualizar en la tabla persona
+      await updatePersona(value);
+      setUser((prev) => ({ ...prev, ...value }));
       Swal.fire("Actualizado", "Datos personales actualizados", "success");
     }
   };
 
+  // Función para actualizar en la base de datos
+  const updatePersona = async (data) => {
+    try {
+      // Asumiendo que tienes un endpoint API para actualizar persona
+      await api.put(`/api/persona/${user?.cedula_usuario}`, data);
+    } catch (error) {
+      console.error("Error actualizando persona:", error);
+    }
+  };
+
+  // Similar para editar emprendimiento
   const handleEditarEmprendimiento = async () => {
     const { value } = await Swal.fire({
       title: "Editar Emprendimiento",
@@ -228,11 +265,22 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
       },
     });
     if (value) {
-      setUser ((prev) => ({ ...prev, ...value }));
+      // API para actualizar emprendimiento
+      await updateEmprendimiento(value);
+      setUser((prev) => ({ ...prev, ...value }));
       Swal.fire("Actualizado", "Emprendimiento actualizado", "success");
     }
   };
 
+  const updateEmprendimiento = async (data) => {
+    try {
+      await api.put(`/api/emprendimientos/${user?.cedula_usuario}`, data);
+    } catch (error) {
+      console.error("Error actualizando emprendimiento:", error);
+    }
+  };
+
+  // Para editar consejo
   const handleEditarConsejo = async () => {
     const { value } = await Swal.fire({
       title: "Editar Consejo Comunale",
@@ -252,8 +300,17 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
       },
     });
     if (value) {
-      setUser ((prev) => ({ ...prev, ...value }));
+      await updateConsejo(value);
+      setUser((prev) => ({ ...prev, ...value }));
       Swal.fire("Actualizado", "Consejo Comunale actualizado", "success");
+    }
+  };
+
+  const updateConsejo = async (data) => {
+    try {
+      await api.put(`/api/consejo/${user?.cedula_usuario}`, data);
+    } catch (error) {
+      console.error("Error actualizando consejo:", error);
     }
   };
 
@@ -261,12 +318,10 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
     <header className="w-full fixed top-0 left-0 bg-gray-900 shadow-lg z-50 px-4 py-3 flex items-center justify-between">
       {/* Logo y título */}
       <div className="flex items-center space-x-3">
-        <img
-          src={logo}
-          alt="Logo"
-          className="w-12 h-12 rounded-full object-cover"
-        />
-        <h1 className="text-xl font-bold text-white hidden sm:inline">IFEMI</h1>
+        <img src={logo} alt="Logo" className="w-12 h-12 rounded-full object-cover" />
+        <h1 className="text-xl font-bold text-white hidden sm:inline">
+          IFEMI
+        </h1>
       </div>
 
       {/* Botón de menú en móviles */}
@@ -321,7 +376,7 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
           >
             <i className="bx bxs-user" style={{ fontSize: "24px" }}></i>
             <span className="ml-2 hidden sm:inline">
-              {user?.nombre || "Usuario"}
+              {user?.nombre}
             </span>
           </button>
 
@@ -340,7 +395,7 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
                 </button>
               </div>
 
-              {/* Opciones del perfil en pantallas grandes y pequeñas */}
+              {/* Opciones del perfil */}
               <button
                 className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
                 onClick={() => {
@@ -379,7 +434,7 @@ const Header = ({ toggleMenu, menuOpen, user, setUser  }) => {
                 <i className="bx bx-rocket mr-2"></i> Emprendimiento
               </button>
               <button
-                className=" w-full px-4 py-2 flex items-center hover:bg-gray-100"
+                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
                 onClick={() => {
                   handleEditarConsejo();
                   setProfileMenuOpen(false);

@@ -8,38 +8,21 @@ import Menu from "../components/Menu";
 const Solicitud = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
+  const [user, setUser] = useState({ id: 101, nombre: "Juan Pérez" });
 
-  // Usuario en sesión (ajustado para ejemplo)
-  const [user, setUser ] = useState({ id: 101, nombre: "Juan Pérez" });
-
-  // Datos ficticios de solicitudes de crédito
   const [solicitudesCredito, setSolicitudesCredito] = useState([
-    { id: 1, userId: 101, nombre: "Juan Pérez", estado: "Pendiente", motivo: "", estatus: "En revisión" },
-    { id: 2, userId: 102, nombre: "Maria Lopez", estado: "Pendiente", motivo: "", estatus: "En revisión" },
-    { id: 3, userId: 101, nombre: "Juan Pérez", estado: "Aprobado", motivo: "Cumple requisitos", estatus: "Aprobado" },
-    { id: 4, userId: 103, nombre: "Luis Gómez", estado: "Rechazado", motivo: "Falta documentación", estatus: "Rechazado" },
+    { id: 1, userId: 101, nombre: "Juan Pérez", motivo: "", estatus: "En revisión" },
+    { id: 2, userId: 102, nombre: "Maria Lopez", motivo: "", estatus: "En revisión" },
+    { id: 3, userId: 101, nombre: "Juan Pérez", motivo: "Cumple requisitos", estatus: "Aprobado" },
+    { id: 4, userId: 103, nombre: "Luis Gómez", motivo: "Falta documentación", estatus: "Rechazado" },
   ]);
-
-  // Funciones para aprobar/rechazar solicitudes
-  const aprobarSolicitud = (id) => {
-    setSolicitudesCredito((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, estado: "Aprobado", estatus: "Aprobado" } : s))
-    );
-  };
-
-  const rechazarSolicitud = (id) => {
-    setSolicitudesCredito((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, estado: "Rechazado", estatus: "Rechazado" } : s))
-    );
-  };
-
-  // Función para mostrar motivo en Swal
+  
   const mostrarMotivo = (motivo) => {
     Swal.fire({
       icon: 'info',
       title: 'Motivo',
       text: motivo || 'No hay motivo registrado.',
-      confirmButtonText: 'Cerrar'
+      confirmButtonText: 'Cerrar',
     });
   };
 
@@ -48,50 +31,54 @@ const Solicitud = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
       {menuOpen && <Menu />}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64">
+      <div className={`flex-1 flex flex-col w-full transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
         <Header user={user} toggleMenu={toggleMenu} menuOpen={menuOpen} />
 
         {/* Contenido principal */}
-        <div className="pt-20 px-8">
+        <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
           {/* Encabezado */}
-          <header className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
-                <i className="bx bx-home text-2xl"></i>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-800">Inicio</h1>
+          <div className="flex items-center mb-8">
+            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 rounded-full shadow-lg text-white flex items-center justify-center">
+              <i className="bx bx-user-circle text-3xl"></i>
             </div>
-          </header>
+            <h1 className="ml-4 text-3xl font-semibold text-gray-700">Mis Solicitudes</h1>
+          </div>
 
-          {/* Listado de solicitudes del usuario */}
-          <section className="mt-8">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Mis Solicitudes de Crédito</h2>
+          {/* Tarjeta de la tabla */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-200 text-gray-700">
+              Solicitudes de Crédito
+            </h2>
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                <thead>
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 border-b">ID</th>
-                    <th className="px-4 py-2 border-b">Estado</th>
-                    <th className="px-4 py-2 border-b">Motivo</th>
-                    <th className="px-4 py-2 border-b">Estatus</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
+                      ID
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
+                      Motivo
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
+                      Estado
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {solicitudesCredito
-                    .filter((s) => s.userId === user?.id) // Solo las del usuario en sesión
+                    .filter((s) => s.userId === user?.id)
                     .map((sol) => (
-                      <tr key={sol.id} className="hover:bg-gray-100">
-                        <td className="px-4 py-2 border-b">{sol.id}</td>
-                        <td className="px-4 py-2 border-b">{sol.estado}</td>
-                        <td className="px-4 py-2 border-b flex items-center space-x-2">
-                          {sol.estado !== "Pendiente" ? (
+                      <tr key={sol.id} className="hover:bg-gray-50 transition">
+                        <td className="px-4 py-3 text-gray-700">{sol.id}</td>
+                        <td className="px-4 py-3 flex items-center space-x-2">
+                          {sol.estatus !== "Pendiente" ? (
                             <>
-                              <span className="text-gray-600">{sol.motivo || 'Sin motivo'}</span>
+                              <span className="text-gray-600">{sol.motivo || "Sin motivo"}</span>
                               <button
                                 onClick={() => mostrarMotivo(sol.motivo)}
-                                className="text-blue-500 hover:text-blue-700"
+                                className="text-blue-500 hover:text-blue-700 transition"
                                 title="Ver motivo"
                               >
                                 <i className="bx bx-info-circle text-xl"></i>
@@ -99,27 +86,37 @@ const Solicitud = () => {
                             </>
                           ) : (
                             <button
-                              onClick={() =>
-                                Swal.fire({ icon: 'warning', title: 'Pendiente', text: 'Aún no hay motivo registrado.' })
-                              }
-                              className="text-gray-400 hover:text-gray-600"
+                              onClick={() => Swal.fire({ icon: 'warning', title: 'Pendiente', text: 'Aún no hay motivo registrado.' })}
+                              className="text-gray-400 hover:text-gray-600 transition"
                               title="Motivo pendiente"
                             >
                               <i className="bx bx-info-circle text-xl"></i>
                             </button>
                           )}
                         </td>
-                        <td className="px-4 py-2 border-b">{sol.estatus}</td>
+                        <td className="px-4 py-3 capitalize text-center">
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              sol.estatus === 'Aprobado'
+                                ? 'bg-green-100 text-green-700'
+                                : sol.estatus === 'Rechazado'
+                                ? 'bg-red-100 text-red-600'
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}
+                          >
+                            {sol.estatus}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                 </tbody>
               </table>
             </div>
-          </section>
+          </div>
         </div>
 
         {/* Pie de página */}
-        <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
+        <footer className="mt-auto p-4 bg-gray-200 border-t border-gray-300 text-center text-gray-600 text-sm">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>

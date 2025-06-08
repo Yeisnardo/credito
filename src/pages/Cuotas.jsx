@@ -3,20 +3,18 @@ import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import api from "../services/api_usuario"; // Tu API
 
 const Cuotas = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUser] = useState(null);
 
-  // Datos de cuotas
+  // Estado de cuotas con campo 'cayo'
   const [cuotas, setCuotas] = useState([
-    { id: 1, monto: 100, descripcion: "Cuota 1", pagada: false },
-    { id: 2, monto: 200, descripcion: "Cuota 2", pagada: false },
+    { id: 1, monto: 100, descripcion: "Cuota 1", pagada: false, cayo: false },
+    { id: 2, monto: 200, descripcion: "Cuota 2", pagada: false, cayo: false },
   ]);
 
-  // Datos de semanas y oportunidades
   const [semanas, setSemanas] = useState([
     { semana: 1, oportunidad: 1, pagada: false, cuotaId: 1 },
     { semana: 2, oportunidad: 1, pagada: false, cuotaId: 2 },
@@ -24,15 +22,13 @@ const Cuotas = () => {
     { semana: 4, oportunidad: 2, pagada: false, cuotaId: null },
   ]);
 
-  // Estado para formulario
-  const [nuevoMonto, setNuevoMonto] = useState('');
-  const [nuevaDescripcion, setNuevaDescripcion] = useState('');
-
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [cuotaSeleccionada, setCuotaSeleccionada] = useState(null);
+  const [referencia, setReferencia] = useState("");
+  const [fechaPago, setFechaPago] = useState("");
 
   useEffect(() => {
+    // Simulación de carga
     const fetchUserData = async () => {
       try {
         const response = await api.getUsers();
@@ -46,50 +42,14 @@ const Cuotas = () => {
     fetchUserData();
   }, []);
 
-  const agregarCuota = () => {
-    if (nuevoMonto && nuevaDescripcion) {
-      const nuevaCuota = {
-        id: cuotas.length + 1,
-        monto: parseFloat(nuevoMonto),
-        descripcion: nuevaDescripcion,
-        pagada: false,
-      };
-      setCuotas([...cuotas, nuevaCuota]);
-      setNuevoMonto('');
-      setNuevaDescripcion('');
-    } else {
-      alert("Por favor ingresa monto y descripción");
-    }
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
   };
-
-  // Función para amortizar semana
-  const amortizarSemana = (semana, oportunidad) => {
-    setSemanas(prev =>
-      prev.map(s =>
-        s.semana === semana && s.oportunidad === oportunidad
-          ? { ...s, pagada: true }
-          : s
-      )
-    );
-  };
-
-  // Función para pagar cuota
-  const pagarCuota = (cuotaId) => {
-    setCuotas(prev =>
-      prev.map(c => (c.id === cuotaId ? { ...c, pagada: true } : c))
-    );
-  };
-
-  // Estado para modal
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [cuotaSeleccionada, setCuotaSeleccionada] = useState(null);
-  const [referencia, setReferencia] = useState('');
-  const [fechaPago, setFechaPago] = useState('');
 
   const abrirModalPagarCuota = (cuota) => {
     setCuotaSeleccionada(cuota);
-    setReferencia('');
-    setFechaPago('');
+    setReferencia("");
+    setFechaPago("");
     setMostrarModal(true);
   };
 
@@ -99,194 +59,230 @@ const Cuotas = () => {
 
   const enviarPago = () => {
     if (referencia && fechaPago && cuotaSeleccionada) {
-      // Aquí puedes hacer la lógica para enviar la referencia y fecha al backend
-      console.log("Pago enviado:", {
-        cuotaId: cuotaSeleccionada.id,
-        referencia,
-        fechaPago,
-      });
-      // Marca la cuota como pagada
-      setCuotas(prev =>
-        prev.map(c =>
-          c.id === cuotaSeleccionada.id ? { ...c, pagada: true } : c
-        )
+      const confirmacion = window.confirm(
+        `¿Confirma que desea marcar la cuota "${cuotaSeleccionada.descripcion}" como pagada?`
       );
-      // Cerrar modal
-      cerrarModal();
+      if (confirmacion) {
+        setCuotas((prev) =>
+          prev.map((c) =>
+            c.id === cuotaSeleccionada.id ? { ...c, pagada: true } : c
+          )
+        );
+        setSemanas((prev) =>
+          prev.map((s) =>
+            s.cuotaId === cuotaSeleccionada.id ? { ...s, pagada: true } : s
+          )
+        );
+        cerrarModal();
+      }
     } else {
       alert("Por favor ingresa referencia y fecha de pago");
     }
   };
 
-  // Unir en una sola estructura para mostrar en una tabla
-  const filas = semanas.map((s) => {
-    const cuota = cuotas.find(c => c.id === s.cuotaId);
-    return {
-      semana: s.semana,
-      oportunidad: s.oportunidad,
-      semanaPagada: s.pagada,
-      cuota: cuota,
-      cuotaPagada: cuota ? cuota.pagada : null,
-      semanaPagada: s.pagada,
-    };
-  });
+  const confirmarCayo = (id) => {
+    setCuotas((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, cayo: true } : c))
+    );
+  };
 
-  const semanasNoPagadas = semanas.filter(s => !s.pagada);
-
-  // Calcular saldo restante: suma de montos de cuotas no pagadas
+  const semanasNoPagadas = semanas.filter((s) => !s.pagada);
   const saldoRestante = cuotas
-    .filter(c => !c.pagada)
+    .filter((c) => !c.pagada)
     .reduce((acc, c) => acc + c.monto, 0);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
       {menuOpen && <Menu />}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64">
-        <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          menuOpen ? "ml-64" : "ml-0"
+        }`}
+      >
+        <Header toggleMenu={toggleMenu} />
 
         {/* Contenido principal */}
-        <div className="pt-20 px-8">
+        <div className="p-8 pt-24 w-full mx-auto">
           {/* Encabezado */}
-          <header className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
-                <i className="bx bx-home text-2xl"></i>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-800">Gestion de Cuotas</h1>
+          <div className="flex items-center mb-8">
+            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 rounded-full shadow-lg text-white flex items-center justify-center">
+              <i className="bx bx-wallet text-3xl"></i>
             </div>
-          </header>
+            <h1 className="ml-4 text-4xl font-bold text-gray-700">
+              Mis Cuotas
+            </h1>
+          </div>
 
-          {/* Tabla combinada */}
-          <div className="overflow-x-auto mb-8">
-            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 border-b">Semana</th>
-                  <th className="px-4 py-2 border-b">Oportunidad</th>
-                  <th className="px-4 py-2 border-b">Semana Pagada</th>
-                  <th className="px-4 py-2 border-b">Cuota</th>
-                  <th className="px-4 py-2 border-b">Cuota Pagada</th>
-                  <th className="px-4 py-2 border-b">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {semanas.map((s, index) => {
-                  const cuota = cuotas.find(c => c.id === s.cuotaId);
-                  return (
-                    <tr key={index} className="hover:bg-gray-100">
-                      <td className="px-4 py-2 border-b">{s.semana}</td>
-                      <td className="px-4 py-2 border-b">{s.oportunidad}</td>
-                      <td className="px-4 py-2 border-b">
-                        {s.pagada ? (
-                          <div>
-                            <div className="text-green-600 font-semibold">Sí</div>
-                            <div className="text-blue-600 text-sm">Cuota recibida en IFEMI</div>
-                          </div>
-                        ) : (
-                          <span className="text-red-600 font-semibold">No</span>
-                        )}
+          {/* Tarjeta de cuotas */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-300 text-gray-700">
+              Listado de Cuotas
+            </h2>
+            {/* Tabla */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 rounded-lg shadow-md">
+                <thead className="bg-gray-50 rounded-t-lg">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 rounded-tl-lg">
+                      ID
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                      Monto
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                      Descripción
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                      Pagada
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                      Confirmacion
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {cuotas.map((c) => (
+                    <tr
+                      key={c.id}
+                      className="hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <td className="px-4 py-3 border-b border-gray-200">{c.id}</td>
+                      <td className="px-4 py-3 border-b border-gray-200">
+                        ${c.monto}
                       </td>
-                      <td className="px-4 py-2 border-b">
-                        {cuota ? cuota.descripcion : "N/A"}
+                      <td className="px-4 py-3 border-b border-gray-200">
+                        {c.descripcion}
                       </td>
-                      <td className="px-4 py-2 border-b">
-                        {cuota ? (
-                          cuota.pagada ? (
-                            <span className="text-green-600 font-semibold">Sí</span>
-                          ) : (
-                            <span className="text-red-600 font-semibold">No</span>
-                          )
-                        ) : (
-                          "N/A"
-                        )}
-                      </td>
-                      <td className="px-4 py-2 border-b">
-                        {!s.pagada ? (
+                      {/* Estado Pagada */}
+                      <td className="px-4 py-3 border-b border-gray-200">
+                        {!c.pagada ? (
                           <button
-                            className="bg-indigo-500 text-white px-3 py-1 rounded mb-1"
-                            onClick={() => {
-                              const cuota = cuotas.find(c => c.id === s.cuotaId);
-                              if (cuota) {
-                                abrirModalPagarCuota(cuota);
-                              }
-                            }}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-full shadow-md text-sm transition-transform hover:scale-105"
+                            onClick={() => abrirModalPagarCuota(c)}
                           >
-                            Pagar Cuota
+                            Pagar
                           </button>
                         ) : (
-                          <div className="text-green-600 font-semibold">Semana pagada</div>
+                          <span className="px-3 py-1 text-sm font-semibold text-green-800 bg-green-100 border border-green-200 rounded-full shadow-sm transition hover:bg-green-200 cursor-default">
+                            Pagada
+                          </span>
+                        )}
+                      </td>
+                      {/* Estado "Cayó" */}
+                      <td className="px-4 py-3 border-b border-gray-200 text-center cursor-pointer">
+                        {c.cayo ? (
+                          <span className="px-3 py-1 text-sm font-semibold text-green-800 bg-green-100 border border-green-200 rounded-full shadow-sm transition cursor-default">
+                            Confirmado
+                          </span>
+                        ) : (
+                          <span
+                            className="px-3 py-1 text-sm font-semibold text-yellow-800 bg-yellow-100 border border-yellow-200 rounded-full shadow-sm transition cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmarCayo(c.id);
+                            }}
+                          >
+                            En espera
+                          </span>
                         )}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Resumen de semanas no pagadas */}
-          <div className="p-4 bg-gray-50 rounded-lg border mb-8">
-            <h3 className="text-xl font-semibold mb-2">Semanas no pagadas</h3>
-            {semanasNoPagadas.length === 0 ? (
-              <p>¡Todas las semanas están amortizadas!</p>
-            ) : (
-              <ul className="list-disc list-inside">
-                {semanasNoPagadas.map((s, index) => (
-                  <li key={index}>Semana {s.semana} - Oportunidad {s.oportunidad}</li>
+          {/* Secciones adicionales */}
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {/* Semanas no pagadas */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                Semanas no pagadas
+              </h3>
+              {semanasNoPagadas.length === 0 ? (
+                <p className="text-green-600 font-semibold">
+                  ¡Todas las semanas están pagadas!
+                </p>
+              ) : (
+                <ul className="list-disc list-inside text-gray-700">
+                  {semanasNoPagadas.map((s, index) => (
+                    <li key={index}>
+                      Semana {s.semana} - Oportunidad {s.oportunidad}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Resumen y saldo */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                Resumen de Cuotas
+              </h3>
+              <ul className="mb-4">
+                {cuotas.map((c) => (
+                  <li key={c.id} className="mb-2">
+                    <span className="font-semibold">{c.descripcion}:</span>{" "}
+                    Monto ${c.monto} - Estado:{" "}
+                    {c.pagada ? "Pagada" : "Pendiente"}
+                  </li>
                 ))}
               </ul>
-            )}
-          </div>
-
-          {/* Mostrar cuotas y saldo restante */}
-          <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-            <h3 className="text-xl font-semibold mb-2">Resumen de Cuotas</h3>
-            <ul>
-              {cuotas.map((c) => (
-                <li key={c.id} className="mb-1">
-                  {c.descripcion} - Monto: ${c.monto} - Estado: {c.pagada ? 'Pagada' : 'Pendiente'}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 font-semibold">
-              Saldo restante: <span className="text-red-600">${saldoRestante}</span>
-            </p>
+              <p className="text-lg font-semibold text-gray-800">
+                Saldo restante:{" "}
+                <span className="text-red-600">${saldoRestante}</span>
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Modal para pagar cuota */}
+        {/* Modal pagar cuota */}
         {mostrarModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-              <h3 className="text-xl font-semibold mb-4">Pagar Cuota</h3>
-              <p className="mb-2">Cuota: {cuotaSeleccionada?.descripcion} - Monto: ${cuotaSeleccionada?.monto}</p>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 md:p-8 animate__animated animate__fadeIn">
+              <h3 className="text-2xl font-semibold mb-4 text-gray-700">
+                Pagar Cuota
+              </h3>
+              <p className="mb-4 text-gray-600">
+                Cuota:{" "}
+                <span className="font-semibold">
+                  {cuotaSeleccionada?.descripcion}
+                </span>{" "}
+                - Monto:{" "}
+                <span className="font-semibold">
+                  ${cuotaSeleccionada?.monto}
+                </span>
+              </p>
               <div className="mb-4">
-                <label className="block mb-1">Referencia</label>
+                <label className="block mb-1 text-gray-600">Referencia</label>
                 <input
                   type="text"
-                  className="w-full border border-gray-300 p-2 rounded"
+                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   value={referencia}
                   onChange={(e) => setReferencia(e.target.value)}
                 />
               </div>
               <div className="mb-4">
-                <label className="block mb-1">Fecha de Pago</label>
+                <label className="block mb-1 text-gray-600">
+                  Fecha de Pago
+                </label>
                 <input
                   type="date"
-                  className="w-full border border-gray-300 p-2 rounded"
+                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
                   value={fechaPago}
                   onChange={(e) => setFechaPago(e.target.value)}
                 />
               </div>
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-4">
                 <button
-                  className="bg-gray-400 text-white px-4 py-2 rounded"
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg transition"
                   onClick={cerrarModal}
                 >
                   Cancelar
                 </button>
                 <button
-                  className="bg-green-500 text-white px-4 py-2 rounded"
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
                   onClick={enviarPago}
                 >
                   Pagar
@@ -296,8 +292,8 @@ const Cuotas = () => {
           </div>
         )}
 
-        {/* Pie */}
-        <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
+        {/* Pie de página */}
+        <footer className="mt-auto p-4 bg-gray-100 border-t border-gray-300 text-center text-gray-600 text-sm">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>
