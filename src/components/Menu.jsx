@@ -117,7 +117,7 @@ const Menu = ({ onClose }) => {
             onClick={onClose}
           >
             <i className="bx bx-store mr-3 text-xl"></i>
-            <span>Registro de Emprendimiento</span>
+            <span>Registro de Clasificacion Emprendimiento</span>
           </NavLink>
 
           {/* Enlaces Otros Menús */}

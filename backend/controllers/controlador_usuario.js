@@ -1,5 +1,5 @@
 // controllers/usuarioController.js
-const Usuario = require('../models/clase_usuario');
+const Usuario = require("../models/clase_usuario");
 
 const getUsuario = async (req, res) => {
   try {
@@ -7,8 +7,8 @@ const getUsuario = async (req, res) => {
     // No convertir imagen a base64; simplemente devolver los datos como están
     res.json(usuarios);
   } catch (err) {
-    console.error('Error en getUsuario:', err);
-    res.status(500).json({ error: 'Error al obtener usuarios' });
+    console.error("Error en getUsuario:", err);
+    res.status(500).json({ error: "Error al obtener usuarios" });
   }
 };
 
@@ -19,7 +19,7 @@ const createUsuario = async (req, res) => {
     // No convertir la foto a base64 aquí
     res.status(201).json(nuevoUsuario);
   } catch (err) {
-    console.error('Error en createUsuario:', err);
+    console.error("Error en createUsuario:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -32,7 +32,7 @@ const updateUsuario = async (req, res) => {
     // No convertir la foto a base64 aquí
     res.json(usuarioActualizado);
   } catch (err) {
-    console.error('Error en updateUsuario:', err);
+    console.error("Error en updateUsuario:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -42,30 +42,30 @@ const deleteUsuario = async (req, res) => {
     const { cedula } = req.params;
     const usuarioEliminado = await Usuario.deleteUsuario(cedula);
     if (!usuarioEliminado) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: "Usuario no encontrado" });
     }
-    res.json({ message: 'Usuario eliminado', usuario: usuarioEliminado });
+    res.json({ message: "Usuario eliminado", usuario: usuarioEliminado });
   } catch (err) {
-    console.error('Error en deleteUsuario:', err);
+    console.error("Error en deleteUsuario:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
 const loginUsuario = async (req, res) => {
   try {
-    const { usuario, contrasena } = req.body;
+    const { usuario, clave } = req.body;
     const user = await Usuario.getUsuarioPorUsuario(usuario);
     if (!user) {
-      return res.status(401).json({ error: 'Usuario no encontrado' });
+      return res.status(401).json({ error: "Usuario no encontrado" });
     }
-    // Validación de contraseña (considera usar bcrypt en producción)
-    if (user.contrasena !== contrasena) {
-      return res.status(401).json({ error: 'Contraseña incorrecta' });
+    // Comparar la contraseña ingresada con la almacenada
+    if (user.clave !== clave) {
+      return res.status(401).json({ error: "Contraseña incorrecta" });
     }
-    // No convertir a base64
-    res.json({ message: 'Inicio de sesión exitoso', user });
+    // Opcional: generar token JWT aquí si quieres
+    res.json({ message: "Inicio de sesión exitoso", user });
   } catch (err) {
-    console.error('Error en loginUsuario:', err);
+    console.error("Error en loginUsuario:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -74,16 +74,19 @@ const updateEstatusUsuario = async (req, res) => {
   try {
     const { cedula } = req.params;
     const { estatus } = req.body;
-    const usuarioActualizado = await Usuario.updateEstatusUsuario(cedula, estatus);
+    const usuarioActualizado = await Usuario.updateEstatusUsuario(
+      cedula,
+      estatus
+    );
     res.json(usuarioActualizado);
   } catch (err) {
-    console.error('Error en updateEstatusUsuario:', err);
+    console.error("Error en updateEstatusUsuario:", err);
     res.status(500).json({ error: err.message });
   }
 };
 
 module.exports = {
-  getUsuario, 
+  getUsuario,
   createUsuario,
   updateUsuario,
   deleteUsuario,
