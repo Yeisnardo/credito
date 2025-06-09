@@ -1,21 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 
 const Perfil = () => {
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(true); // controla si el menu está abierto
-
-  // Estados para las solicitudes y modal
+  const [menuOpen, setMenuOpen] = useState(true);
   const [solicitudes, setSolicitudes] = useState([
+    // Datos de ejemplo...
     {
       id: 1,
       solicitante: "Juan Pérez",
       contrato: null,
       estado: "Pendiente",
-      foto: "https://via.placeholder.com/150", // foto ejemplo
+      foto: "https://via.placeholder.com/150",
       detalles: {
         emprendimiento: "Tienda en línea",
         requerimientos: "Inversión en publicidad y desarrollo web",
@@ -32,7 +32,7 @@ const Perfil = () => {
       solicitante: "María Gómez",
       contrato: "CONTR-1234",
       estado: "Aprobado",
-      foto: "https://via.placeholder.com/150", // foto ejemplo
+      foto: "https://via.placeholder.com/150",
       detalles: {
         emprendimiento: "App móvil",
         requerimientos: "Desarrollo de backend y diseño UI/UX",
@@ -45,181 +45,126 @@ const Perfil = () => {
       },
     },
   ]);
-
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
-
-  // Estado para el buscador
   const [busqueda, setBusqueda] = useState("");
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
-  const handleVerDetalles = (solicitud) => {
-    setSolicitudSeleccionada(solicitud);
-    setMostrarModal(true);
+  const handleVerDetalles = (s) => {
+    const detallesHtml = `
+      <h3 style="margin-top:10px; font-weight:700;">Datos Personales</h3>
+      <p><strong>Nombre:</strong> ${s.detalles.datosPersonales.nombre}</p>
+      <p><strong>Email:</strong> ${s.detalles.datosPersonales.email}</p>
+      <p><strong>Teléfono:</strong> ${s.detalles.datosPersonales.telefono}</p>
+      <p><strong>Dirección:</strong> ${s.detalles.datosPersonales.direccion}</p>
+      <h3 style="margin-top:10px; font-weight:700;">Emprendimiento</h3>
+      <p><strong>Nombre:</strong> ${s.detalles.emprendimiento}</p>
+      <p><strong>Requerimientos:</strong> ${s.detalles.requerimientos}</p>
+    `;
+
+    Swal.fire({
+      title: `Detalles de ${s.solicitante}`,
+      html: detallesHtml,
+      showCancelButton: true,
+      cancelButtonText: "Cerrar",
+      icon: "info",
+      confirmButtonColor: "#3b82f6",
+    });
   };
 
-  const handleCerrarModal = () => {
-    setMostrarModal(false);
-    setSolicitudSeleccionada(null);
-  };
-
-  // Filtrar solicitudes según la búsqueda
   const solicitudesFiltradas = solicitudes.filter((s) =>
     s.solicitante.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Menú */}
+    <div className="flex min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 font-sans">
+      {/* Menú lateral */}
       {menuOpen && <Menu />}
 
-      {/* Contenido */}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64">
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col ml-0 md:ml-64 transition-all duration-300">
         <Header toggleMenu={toggleMenu} />
 
         {/* Contenido */}
-        <div className="pt-20 px-8">
-          {/* Título y buscador */}
-          <header className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
-                <i className="bx bx-group text-2xl"></i>
+        <div className="pt-12 px-6 md:px-12 pb-8 flex-1 overflow-y-auto">
+          {/* Encabezado y buscador */}
+          <div className="flex flex-col md:flex-row items-center justify-between mb-8">
+            <div className="flex items-center space-x-4 mb-4 md:mb-0">
+              <div className="bg-gradient-to-r from-indigo-400 to-purple-500 p-4 rounded-full shadow-lg text-white hover:scale-105 transform transition-transform cursor-pointer">
+                <i className="bx bx-group text-3xl"></i>
               </div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Perfiles de emprendedores
-              </h1>
+              <h1 className="text-4xl font-extrabold text-gray-800">Perfiles de emprendedores</h1>
             </div>
-          </header>
-
-          {/* Input de búsqueda con label */}
-          <div className="mb-6 max-w-4xl mx-auto flex flex-col items-start space-y-2">
-            <label
-              htmlFor="buscarSolicitante"
-              className="text-gray-700 font-semibold"
-            >
-              Buscar Emprendedor
-            </label>
-            <div className="w-full flex items-center space-x-4">
-              <input
-                id="buscarSolicitante"
-                type="text"
-                placeholder="Buscar..."
-                className="w-full p-3 pl-10 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
+            {/* Buscador */}
+            <div className="w-full md:w-1/3">
+              <label htmlFor="buscarSolicitante" className="block mb-2 text-gray-700 font-semibold">
+                Buscar Emprendedor
+              </label>
+              <div className="relative">
+                <input
+                  id="buscarSolicitante"
+                  type="text"
+                  placeholder="Buscar..."
+                  className="w-full p-3 pl-10 pr-4 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <i className="bx bx-search text-gray-400 text-xl"></i>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Lista filtrada */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {solicitudesFiltradas.map((s) => (
-              <div
-                key={s.id}
-                className="bg-white p-4 rounded-xl shadow-lg transform transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-xl"
-              >
-                {/* Imagen de la solicitud */}
-                <div className="flex justify-center mb-4">
-                  <img
-                    src={s.foto}
-                    alt={`Foto de ${s.solicitante}`}
-                    className="w-24 h-24 object-cover rounded-full border-2 border-gray-300"
-                  />
-                </div>
-                {/* Nombre del solicitante */}
-                <h2 className="text-xl font-semibold mb-2 text-center">
-                  {s.solicitante}
-                </h2>
-                <p className="mb-2">
-                  <strong>Contrato:</strong>{" "}
-                  {s.contrato ? s.contrato : "Pendiente"}
-                </p>
-                <p className="mb-2">
-                  <strong>Estado:</strong> {s.estado}
-                </p>
-                <div className="flex justify-end space-x-2 mt-4">
-                  <button
-                    className="bg-blue-500 text-white px-3 py-1 rounded"
-                    onClick={() => handleVerDetalles(s)}
-                  >
-                    Ver detalles
-                  </button>
-                </div>
-              </div>
-            ))}
-          </section>
-
-          {/* Modal detalles */}
-          {mostrarModal && solicitudSeleccionada && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-              style={{
-                background: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.3))",
-              }}
-            >
-              <div className="bg-white p-6 rounded shadow-lg max-w-lg w-full relative">
-                <button
-                  className="absolute top-2 right-2 text-gray-600"
-                  onClick={handleCerrarModal}
+          {/* Lista de solicitudes */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            {solicitudesFiltradas.length > 0 ? (
+              solicitudesFiltradas.map((s) => (
+                <div
+                  key={s.id}
+                  className="bg-white rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 p-6 flex flex-col"
                 >
-                  ✖
-                </button>
-                <h2 className="text-xl font-bold mb-4">
-                  Datos del Emprendedor y Emprendimiento
-                </h2>
-                {/* Datos del emprendedor */}
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Datos Personales
-                  </h3>
-                  <p>
-                    <strong>Nombre:</strong>{" "}
-                    {solicitudSeleccionada.detalles.datosPersonales.nombre}
-                  </p>
-                  <p>
-                    <strong>Email:</strong>{" "}
-                    {solicitudSeleccionada.detalles.datosPersonales.email}
-                  </p>
-                  <p>
-                    <strong>Teléfono:</strong>{" "}
-                    {solicitudSeleccionada.detalles.datosPersonales.telefono}
-                  </p>
-                  <p>
-                    <strong>Dirección:</strong>{" "}
-                    {solicitudSeleccionada.detalles.datosPersonales.direccion}
-                  </p>
+                  {/* Imagen */}
+                  <div className="flex justify-center mb-4">
+                    <img
+                      src={s.foto}
+                      alt={`Foto de ${s.solicitante}`}
+                      className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-lg"
+                    />
+                  </div>
+                  {/* Nombre */}
+                  <h2 className="text-xl font-semibold mb-2 text-center text-gray-800">{s.solicitante}</h2>
+                  {/* Contrato y Estado */}
+                  <div className="mb-4 text-center">
+                    <p className="text-sm text-gray-600">
+                      <strong>Contrato:</strong> {s.contrato ? s.contrato : "Pendiente"}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <strong>Estado:</strong> {s.estado}
+                    </p>
+                  </div>
+                  {/* Botón ver detalles */}
+                  <div className="mt-auto flex justify-center">
+                    <button
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full shadow hover:scale-105 transform transition"
+                      onClick={() => handleVerDetalles(s)}
+                    >
+                      Ver detalles
+                    </button>
+                  </div>
                 </div>
-                {/* Datos del emprendimiento */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Emprendimiento</h3>
-                  <p>
-                    <strong>Nombre:</strong>{" "}
-                    {solicitudSeleccionada.detalles.emprendimiento}
-                  </p>
-                  <p>
-                    <strong>Requerimientos:</strong>{" "}
-                    {solicitudSeleccionada.detalles.requerimientos}
-                  </p>
-                </div>
-                {/* Cerrar botón */}
-                <div className="mt-4 flex justify-end">
-                  <button
-                    className="bg-gray-300 px-4 py-2 rounded"
-                    onClick={handleCerrarModal}
-                  >
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+              ))
+            ) : (
+              <p className="col-span-3 text-center text-gray-500 text-lg mt-12">
+                No hay solicitudes que coincidan
+              </p>
+            )}
+          </section>
         </div>
 
-        {/* Pie */}
-        <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
+        {/* Pie de página */}
+        <footer className="mt-auto p-4 bg-gray-100 border-t border-gray-300 text-center text-gray-600 text-sm">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>

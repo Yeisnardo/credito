@@ -20,7 +20,16 @@ const Usuario = () => {
         const usuarios = await api.getUsuario();
         setData(Array.isArray(usuarios) ? usuarios : []);
       } catch (error) {
-        Swal.fire("Error", "No se pudo cargar la lista de usuarios.", "error");
+        Swal.fire({
+          title: "Error",
+          text: "No se pudo cargar la lista de usuarios.",
+          icon: "error",
+          toast: true,
+          position: "top-end",
+          timer: 3000,
+          showConfirmButton: false,
+          backdrop: false,
+        });
       }
     };
     fetchData();
@@ -60,7 +69,8 @@ const Usuario = () => {
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
-  // Crear usuario
+  // Funciones CRUD con Swal
+
   const handleCreateUser = async () => {
     const result = await Swal.fire({
       title: 'Agregar Nuevo Usuario',
@@ -98,23 +108,30 @@ const Usuario = () => {
     if (result.isConfirmed) {
       const nuevoUsuario = {
         cedula_usuario: result.value.cedula_usuario,
-        nombre_completo: result.value.nombre_completo,
+        nombre: result.value.nombre_completo,
         usuario: result.value.usuario,
-        clave: result.value.clave,
+        password: result.value.clave,
         rol: result.value.rol,
         estatus: "Activo",
       };
       try {
         const resultado = await api.createUsuario(nuevoUsuario);
         setData((prev) => [...prev, resultado]);
-        Swal.fire("Éxito", "Usuario agregado correctamente.", "success");
+        Swal.fire({
+          title: "¡Éxito!",
+          text: "Usuario agregado correctamente.",
+          icon: "success",
+          toast: true,
+          position: "top-end",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       } catch (error) {
         Swal.fire("Error", "No se pudo agregar el usuario.", "error");
       }
     }
   };
 
-  // Editar usuario
   const handleEditUser = async (user) => {
     const result = await Swal.fire({
       title: 'Editar Usuario',
@@ -126,7 +143,6 @@ const Usuario = () => {
         <select id="rol" class="swal2-input">
           <option value="">Selecciona un tipo de usuario</option>
           <option value="Administrador" ${user.tipo_usuario === "Administrador" ? "selected" : ""}>Administrador</option>
-          <option value="Emprededor" ${user.tipo_usuario === "Emprendedor" ? "selected" : ""}>Emprendedor</option>
           <option value="Credito y Cobranza 1" ${user.tipo_usuario === "Credito y Cobranza 1" ? "selected" : ""}>Admin. Credito y Cobranza</option>
           <option value="Credito y Cobranza 2" ${user.tipo_usuario === "Credito y Cobranza 2" ? "selected" : ""}>Asist. Credito y Cobranza</option>
         </select>
@@ -148,9 +164,9 @@ const Usuario = () => {
     if (result.isConfirmed) {
       const usuarioActualizado = {
         usuario: result.value.usuario,
-        password: result.value.clave, // puede dejarse vacío
+        password: result.value.clave,
         rol: result.value.rol,
-        nombre_completo: result.value.nombre_completo,
+        nombre: result.value.nombre_completo,
       };
       try {
         await api.updateUsuario(user.cedula_usuario, usuarioActualizado);
@@ -159,14 +175,13 @@ const Usuario = () => {
             u.cedula_usuario === user.cedula_usuario ? { ...u, ...usuarioActualizado } : u
           )
         );
-        Swal.fire("Éxito", "Usuario actualizado.", "success");
+        Swal.fire("¡Éxito!", "Usuario actualizado.", "success");
       } catch (error) {
         Swal.fire("Error", "No se pudo actualizar.", "error");
       }
     }
   };
 
-  // Eliminar usuario
   const handleDeleteUser = (cedula_usuario) => {
     Swal.fire({
       title: "¿Estás seguro?",
@@ -189,7 +204,6 @@ const Usuario = () => {
     });
   };
 
-  // Cambiar estatus
   const handleToggleEstatus = async (user) => {
     const nuevoEstatus = user.estatus === 'Activo' ? 'Inactivo' : 'Activo';
 
@@ -221,6 +235,7 @@ const Usuario = () => {
       {menuOpen && <Menu />}
       <div className="flex-1 flex flex-col ml-0 md:ml-64 transition-all duration-300 ease-in-out">
         <Header toggleMenu={toggleMenu} />
+
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
           {/* Encabezado y botón */}
           <div className="flex items-center justify-between mb-8 mt-10">
@@ -231,7 +246,7 @@ const Usuario = () => {
               <h1 className="text-3xl font-semibold text-gray-700">Gestión de Usuarios</h1>
             </div>
             <button
-              className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-full shadow-lg text-white font-semibold flex items-center space-x-2 transition-transform hover:scale-105"
+              className="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 px-6 py-3 rounded-full shadow-lg text-white font-semibold flex items-center space-x-2 transition-transform hover:scale-105"
               onClick={handleCreateUser}
             >
               <i className="bx bx-plus text-xl"></i>
@@ -267,14 +282,14 @@ const Usuario = () => {
             </div>
           </div>
 
-          {/* Tabla de datos */}
+          {/* Tabla moderna */}
           <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 bg-white max-w-7xl mx-auto mb-12 transition-shadow duration-300 hover:shadow-xl">
             <table className="min-w-full divide-y divide-gray-200 rounded-xl">
               <thead className="bg-gray-100 rounded-t-xl">
                 <tr>
                   {[
                     { label: "C.I", key: "cedula_usuario" },
-                    { label: "Nombres y Apellidos", key: "nombre_completo" },
+                    { label: "Nombres y Apellidos", key: "nombre" },
                     { label: "Nombre de Usuario", key: "usuario" },
                     { label: "Tipo de Usuario", key: "rol" },
                     { label: "Estatus", key: "estatus" },

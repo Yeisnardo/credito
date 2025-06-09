@@ -34,8 +34,6 @@ const Aprobacion = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
   const [solicitudes, setSolicitudes] = useState(solicitudesEjemplo);
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
   const [mensajeExito, setMensajeExito] = useState("");
   const [contadorSecuencial, setContadorSecuencial] = useState(1);
   const [busqueda, setBusqueda] = useState("");
@@ -57,45 +55,75 @@ const Aprobacion = () => {
   };
 
   const handleVerDetalles = (solicitud) => {
-    setSolicitudSeleccionada(solicitud);
-    setMostrarModal(true);
-  };
-
-  const handleCerrarModal = () => {
-    setMostrarModal(false);
+    // Mostrar detalles en Swal
+    Swal.fire({
+      title: `Detalles de ${solicitud.solicitante}`,
+      html: `
+        <p><strong>Emprendimiento:</strong> ${solicitud.detalles.emprendimiento}</p>
+        <p><strong>Requerimientos:</strong> ${solicitud.detalles.requerimientos}</p>
+        <p><strong>Número de contrato:</strong> ${
+          solicitud.contrato ? solicitud.contrato : "Pendiente"
+        }</p>
+        <p><strong>Estado:</strong> ${
+          solicitud.estado === "Pendiente"
+            ? '<span style="color: #dc2626;">Pendiente</span>'
+            : '<span style="color: #16a34a;">Aprobado</span>'
+        }</p>
+      `,
+      showCloseButton: true,
+      focusConfirm: false,
+      confirmButtonText: "Cerrar",
+    });
   };
 
   const handleAprobarDesdeLista = (s) => {
-    setSolicitudSeleccionada(s);
-    setMostrarModal(true);
+    // Mostrar confirmación para aprobar
+    Swal.fire({
+      title: `¿Aprobar solicitud de ${s.solicitante}?`,
+      text: "¿Deseas aprobar esta solicitud y asignar un contrato?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sí, aprobar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Proceder con la aprobación
+        aprobarSolicitud(s);
+      }
+    });
   };
 
   const handleAprobar = () => {
     if (solicitudSeleccionada) {
-      const numeroSecuencial = String(contadorSecuencial).padStart(3, "0");
-      const contratoNumero = `IFEMI/CRED-${numeroSecuencial}/${añoActual}`;
-
-      setSolicitudes((prev) =>
-        prev.map((s) =>
-          s.id === solicitudSeleccionada.id
-            ? { ...s, estado: "Aprobado", contrato: contratoNumero }
-            : s
-        )
-      );
-      setContadorSecuencial((prev) => prev + 1);
-      
-      // Usar Swal.fire para la alerta de éxito
-      Swal.fire({
-        icon: 'success',
-        title: '¡Solicitud aprobada!',
-        text: `Número de contrato: ${contratoNumero}`,
-        timer: 2000,
-        showConfirmButton: false,
-      });
-      
-      handleCerrarModal();
+      aprobarSolicitud(solicitudSeleccionada);
     }
   };
+
+  const aprobarSolicitud = (solicitud) => {
+    const numeroSecuencial = String(contadorSecuencial).padStart(3, "0");
+    const contratoNumero = `IFEMI/CRED-${numeroSecuencial}/${añoActual}`;
+
+    setSolicitudes((prev) =>
+      prev.map((s) =>
+        s.id === solicitud.id
+          ? { ...s, estado: "Aprobado", contrato: contratoNumero }
+          : s
+      )
+    );
+    setContadorSecuencial((prev) => prev + 1);
+
+    // Mostrar mensaje de éxito con Swal
+    Swal.fire({
+      icon: "success",
+      title: "¡Solicitud aprobada!",
+      text: `Número de contrato: ${contratoNumero}`,
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  };
+
+  // Estado para gestionar la solicitud seleccionada
+  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
 
   // Filtrar solicitudes según la búsqueda
   const solicitudesFiltradas = solicitudes.filter((s) =>
@@ -110,7 +138,6 @@ const Aprobacion = () => {
         <Header toggleMenu={toggleMenu} />
 
         <div className="pt-20 px-8">
-
           {/* Mostrar mensaje de éxito */}
           {mensajeExito && (
             <div className="mb-4 p-3 bg-green-200 text-green-800 rounded">
@@ -205,80 +232,6 @@ const Aprobacion = () => {
             ))}
           </section>
         </div>
-
-        {/* Modal detalles y aprobación */}
-        {mostrarModal && solicitudSeleccionada && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-            style={{
-              background: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.3))",
-            }}
-          >
-            <div className="bg-white p-6 rounded shadow-lg max-w-lg w-full relative">
-              <button
-                className="absolute top-2 right-2 text-gray-600 text-xl"
-                onClick={handleCerrarModal}
-              >
-                ✖
-              </button>
-              <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                <i className="bx bx-info-circle"></i>
-                <span>Detalles de {solicitudSeleccionada.solicitante}</span>
-              </h2>
-              <p>
-                <strong>Emprendimiento:</strong>{" "}
-                {solicitudSeleccionada.detalles.emprendimiento}
-              </p>
-              <p>
-                <strong>Requerimientos:</strong>{" "}
-                {solicitudSeleccionada.detalles.requerimientos}
-              </p>
-              <p>
-                <strong>Número de contrato:</strong>{" "}
-                {solicitudSeleccionada.contrato
-                  ? solicitudSeleccionada.contrato
-                  : "Pendiente"}
-              </p>
-              <p>
-                <strong>Estado:</strong>{" "}
-                <span
-                  className={`font-semibold ${
-                    solicitudSeleccionada.estado === "Pendiente"
-                      ? "text-red-600"
-                      : "text-green-600"
-                  } flex items-center space-x-2`}
-                >
-                  <i
-                    className={`bx ${
-                      solicitudSeleccionada.estado === "Pendiente"
-                        ? "bx-time"
-                        : "bx-check-circle"
-                    }`}
-                  ></i>
-                  <span>{solicitudSeleccionada.estado}</span>
-                </span>
-              </p>
-              <div className="mt-4 flex justify-end space-x-2">
-                <button
-                  className="bg-gray-300 px-4 py-2 rounded"
-                  onClick={handleCerrarModal}
-                >
-                  Cancelar
-                </button>
-                {/* Botón en modal */}
-                {solicitudSeleccionada.estado !== "Aprobado" && (
-                  <button
-                    className="bg-green-600 text-white px-4 py-2 rounded flex items-center space-x-2 hover:bg-green-700 transition"
-                    onClick={handleAprobar}
-                  >
-                    <i className="bx bx-check"></i>
-                    <span>Aprobar y asignar contrato</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
