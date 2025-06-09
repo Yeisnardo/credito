@@ -18,7 +18,7 @@ const Dashboard = () => {
     // Simulación de inicio de sesión y obtención de datos del usuario
     const fetchUserData = async () => {
       try {
-        const response = await api.getUsers(); // Llama a la API para obtener los usuarios
+        const response = await api.getUsuario(); // Llama a la API para obtener los usuarios
         // Aquí puedes establecer el usuario que deseas mostrar, por ejemplo, el primero
         if (response.length > 0) {
           setUser (response[0]); // Establece el primer usuario como el usuario actual
@@ -64,7 +64,7 @@ const Dashboard = () => {
                   <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">
                     Resumen de usuario
                   </h2>
-                  <p className="text-gray-700 mb-2">Nombre: {user?.nombre || "Cargando..."}</p>
+                  <p className="text-gray-700 mb-2">Nombre: {user?.nombre }</p>
                   <p className="text-gray-700">
                     Status:{" "}
                     <span className="font-semibold text-green-500">Activo</span>
