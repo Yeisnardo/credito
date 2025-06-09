@@ -158,12 +158,11 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
         <h4 class="font-semibold mb-1">Datos Personales</h4>
         <p><strong>Email:</strong> ${user?.email || "correo@ejemplo.com"}</p>
         <p><strong>Teléfono:</strong> ${user?.telefono || "N/A"}</p>
-        <p><strong>Dirección:</strong> ${user?.direccion || "N/A"}</p>
-        <p><strong>Tipo de Carnet:</strong> ${user?.tipoCarnet || "No especificado"}</p>
+        <p><strong>Dirección:</strong> ${user?.direccion_actual || "N/A"}</p>
       </div>
       <div class="border-t border-gray-300 pt-2 mb-2 px-4">
         <h4 class="font-semibold mb-1">Emprendimiento</h4>
-        <p>${user?.emprendimiento || "No especificado"}</p>
+        <p>${user?.tipo_sector || "No especificado"}</p>
       </div>
       <div class="border-t border-gray-300 pt-2 mb-2 px-4">
         <h4 class="font-semibold mb-1">Consejo Comunale</h4>

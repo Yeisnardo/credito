@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import "../assets/css/style.css";
@@ -8,45 +8,28 @@ import Menu from "../components/Menu";
 const Perfil = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [solicitudes, setSolicitudes] = useState([
-    // Datos de ejemplo...
-    {
-      id: 1,
-      solicitante: "Juan Pérez",
-      contrato: null,
-      estado: "Pendiente",
-      foto: "https://via.placeholder.com/150",
-      detalles: {
-        emprendimiento: "Tienda en línea",
-        requerimientos: "Inversión en publicidad y desarrollo web",
-        datosPersonales: {
-          nombre: "Juan Pérez",
-          email: "juan.perez@example.com",
-          telefono: "123456789",
-          direccion: "Calle Falsa 123",
-        },
-      },
-    },
-    {
-      id: 2,
-      solicitante: "María Gómez",
-      contrato: "CONTR-1234",
-      estado: "Aprobado",
-      foto: "https://via.placeholder.com/150",
-      detalles: {
-        emprendimiento: "App móvil",
-        requerimientos: "Desarrollo de backend y diseño UI/UX",
-        datosPersonales: {
-          nombre: "María Gómez",
-          email: "maria.gomez@example.com",
-          telefono: "987654321",
-          direccion: "Avenida Siempre Viva 742",
-        },
-      },
-    },
-  ]);
+  const [solicitudes, setSolicitudes] = useState([]);
   const [busqueda, setBusqueda] = useState("");
 
+  // Cargar solicitudes desde la API en montaje
+  useEffect(() => {
+  const fetchSolicitudes = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/solicitudes');
+      if (!response.ok) throw new Error("Error en la respuesta");
+      const data = await response.json();
+      setSolicitudes(data);
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudieron cargar las solicitudes.',
+      });
+    }
+  };
+  fetchSolicitudes();
+}, []);
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
@@ -73,6 +56,7 @@ const Perfil = () => {
     });
   };
 
+  // Filtrar solicitudes según búsqueda
   const solicitudesFiltradas = solicitudes.filter((s) =>
     s.solicitante.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -90,6 +74,7 @@ const Perfil = () => {
         <div className="pt-12 px-6 md:px-12 pb-8 flex-1 overflow-y-auto">
           {/* Encabezado y buscador */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-8">
+            {/* Título e icono */}
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-gradient-to-r from-indigo-400 to-purple-500 p-4 rounded-full shadow-lg text-white hover:scale-105 transform transition-transform cursor-pointer">
                 <i className="bx bx-group text-3xl"></i>
@@ -98,7 +83,10 @@ const Perfil = () => {
             </div>
             {/* Buscador */}
             <div className="w-full md:w-1/3">
-              <label htmlFor="buscarSolicitante" className="block mb-2 text-gray-700 font-semibold">
+              <label
+                htmlFor="buscarSolicitante"
+                className="block mb-2 text-gray-700 font-semibold"
+              >
                 Buscar Emprendedor
               </label>
               <div className="relative">
@@ -125,7 +113,7 @@ const Perfil = () => {
                   key={s.id}
                   className="bg-white rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 p-6 flex flex-col"
                 >
-                  {/* Imagen */}
+                  {/* Foto */}
                   <div className="flex justify-center mb-4">
                     <img
                       src={s.foto}
@@ -144,7 +132,7 @@ const Perfil = () => {
                       <strong>Estado:</strong> {s.estado}
                     </p>
                   </div>
-                  {/* Botón ver detalles */}
+                  {/* Botón detalles */}
                   <div className="mt-auto flex justify-center">
                     <button
                       className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full shadow hover:scale-105 transform transition"
@@ -163,7 +151,7 @@ const Perfil = () => {
           </section>
         </div>
 
-        {/* Pie de página */}
+        {/* Pie */}
         <footer className="mt-auto p-4 bg-gray-100 border-t border-gray-300 text-center text-gray-600 text-sm">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>

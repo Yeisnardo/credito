@@ -11,7 +11,6 @@ const Usuario = () => {
   const [menuOpen, setMenuOpen] = useState(true);
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: null });
 
   // Cargar datos
   useEffect(() => {
@@ -46,25 +45,8 @@ const Usuario = () => {
     );
   }, [data, searchTerm]);
 
-  // Ordenamiento
-  const sortedData = useMemo(() => {
-    if (sortConfig.key) {
-      return [...filteredData].sort((a, b) => {
-        const aVal = a[sortConfig.key];
-        const bVal = b[sortConfig.key];
-        return sortConfig.direction === "asc"
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
-      });
-    }
-    return filteredData;
-  }, [filteredData, sortConfig]);
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
+  const handleSort = () => {
+    // La lógica de ordenamiento se elimina, por lo tanto, esta función queda vacía o eliminada.
   };
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
@@ -298,23 +280,19 @@ const Usuario = () => {
                     <th
                       key={key}
                       className="px-4 py-3 cursor-pointer select-none text-gray-700 font-medium hover:bg-gray-200 transition"
-                      onClick={() => handleSort(key)}
+                      // Se elimina el onClick de handleSort
                     >
                       <div className="flex items-center justify-between">
                         <span className="capitalize">{label}</span>
-                        {sortConfig.key === key ? (
-                          <span className="text-sm ml-2">
-                            {sortConfig.direction === "asc" ? "↑" : "↓"}
-                          </span>
-                        ) : null}
+                        {/* Se elimina la indicación de orden */}
                       </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {sortedData.length > 0 ? (
-                  sortedData.map((item) => (
+                {filteredData.length > 0 ? (
+                  filteredData.map((item) => (
                     <tr key={item.cedula_usuario} className="transition hover:bg-gray-50">
                       <td className="px-4 py-3 text-center text-gray-600">{item.cedula_usuario}</td>
                       <td className="px-4 py-3 text-gray-700">{item.nombre}</td>
