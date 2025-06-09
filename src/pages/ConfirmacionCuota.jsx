@@ -5,7 +5,7 @@ import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 
-const Amortizacion = () => {
+const ConfirmacionCuota = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
 
@@ -54,42 +54,12 @@ const Amortizacion = () => {
 
   const [busqueda, setBusqueda] = useState("");
 
+  // Función para mostrar u ocultar el menú
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
-  // Función para calcular la cuota con incremento del 2% si no pagada
-  const getCuotaConIncremento = (pago) => {
-    if (!pago.pagado) {
-      return (pago.monto * 1.02).toFixed(2);
-    }
-    return pago.monto.toFixed(2);
-  };
-
-  // Función para calcular la amortización (sumar 2% en pagos no pagados)
-  const calcularAmortizacion = () => {
-    setSolicitudes((prev) =>
-      prev.map((s) => {
-        const pagosActualizados = s.pagos.map((p) => {
-          if (!p.pagado) {
-            const incremento = p.monto * 0.02; // 2%
-            return { ...p, monto: p.monto + incremento };
-          }
-          return p;
-        });
-        return { ...s, pagos: pagosActualizados };
-      })
-    );
-    Swal.fire({
-      icon: 'success',
-      title: 'Amortización calculada',
-      text: 'Se han incrementado en un 2% los pagos pendientes.',
-      showConfirmButton: false,
-      timer: 2000,
-    });
-  };
-
-  // Confirmar pago
+  // Función corregida y ajustada para confirmar pago
   const handleConfirmarPago = (solicitudId, pagoId) => {
     setSolicitudes((prev) =>
       prev.map((s) => {
@@ -97,13 +67,13 @@ const Amortizacion = () => {
           const pagosActualizados = s.pagos.map((p) =>
             p.id === pagoId ? { ...p, pagado: true, recibido: true } : p
           );
-          // Mostrar mensaje
+          // Mostrar mensaje de cuota recibida por 3 segundos
           Swal.fire({
             icon: 'success',
             title: 'Cuota recibida',
             showConfirmButton: false,
             timer: 3000,
-            toast: true,
+            toast: true, // opción para que sea en modo toast
             position: 'top-end',
             timerProgressBar: true,
           });
@@ -114,16 +84,13 @@ const Amortizacion = () => {
     );
   };
 
-  // Mostrar detalles en modal con cuota incrementada automáticamente
   const handleVerDetalles = (s) => {
+    // Generar tabla HTML con pagos
     const pagosHtml = s.pagos
       .map(
         (p) => `
         <tr>
-          <td class="border px-2 py-1 text-center">
-            $${p.pagado ? p.monto.toFixed(2) : getCuotaConIncremento(p)}
-            ${!p.pagado ? '<br><small class="text-gray-500">+2%</small>' : ''}
-          </td>
+          <td class="border px-2 py-1 text-center">$${p.monto}</td>
           <td class="border px-2 py-1 text-center">${p.pagado ? 'Sí' : 'No'}</td>
           <td class="border px-2 py-1 text-center">${p.recibido ? 'Sí' : 'No'}</td>
           <td class="border px-2 py-1 text-center">
@@ -131,7 +98,8 @@ const Amortizacion = () => {
           </td>
         </tr>
       `
-      ).join("");
+      )
+      .join("");
 
     Swal.fire({
       title: `Detalles de ${s.solicitante}`,
@@ -152,7 +120,6 @@ const Amortizacion = () => {
               <th class="border px-2 py-1">Pagado</th>
               <th class="border px-2 py-1">Recibido</th>
               <th class="border px-2 py-1">Acciones</th>
-              <th class="border px-2 py-1">Cuota + 2%</th>
             </tr>
           </thead>
           <tbody>
@@ -174,7 +141,7 @@ const Amortizacion = () => {
             const pagoId = parseInt(btn.getAttribute('data-pago'));
             handleConfirmarPago(solicitudId, pagoId);
             Swal.close();
-            // Reabrir detalles actualizados
+            // Opcional: reabrir detalles con datos actualizados
             handleVerDetalles(s);
           });
         });
@@ -182,6 +149,7 @@ const Amortizacion = () => {
     });
   };
 
+  // Filtrar solicitudes por búsqueda
   const solicitudesFiltradas = solicitudes.filter((s) =>
     s.solicitante.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -192,24 +160,27 @@ const Amortizacion = () => {
       <div className="flex-1 flex flex-col ml-0 md:ml-64">
         <Header toggleMenu={toggleMenu} />
 
-        {/* Encabezado y botón para amortización */}
         <div className="pt-20 px-8 max-w-7xl mx-auto">
+          {/* Encabezado y buscador */}
           <header className="flex items-center justify-between mb-8 flex-wrap gap-4">
+            {/* Icono y título */}
             <div className="flex items-center space-x-4">
               <div className="bg-blue-600 p-4 rounded-full shadow-lg text-white hover:bg-blue-700 transition">
                 <i className="bx bx-group text-3xl"></i>
               </div>
               <h1 className="text-3xl font-bold text-gray-800">
-                Gestor de Amortización
+                Gestor de Confirmación de Pago de Cuotas
               </h1>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-                onClick={calcularAmortizacion}
-              >
-                Calcular Amortización (2% en pendientes)
-              </button>
+            {/* Buscador */}
+            <div className="w-64">
+              <input
+                type="text"
+                placeholder="Buscar emprendedor..."
+                className="w-full p-3 pl-10 rounded-full shadow-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
             </div>
           </header>
 
@@ -221,6 +192,7 @@ const Amortizacion = () => {
                   key={s.id}
                   className="bg-white rounded-xl shadow-md hover:shadow-xl transform hover:scale-105 transition duration-300 p-6"
                 >
+                  {/* Imagen del solicitante */}
                   <div className="flex justify-center mb-4">
                     <img
                       src={s.foto}
@@ -228,6 +200,7 @@ const Amortizacion = () => {
                       className="w-20 h-20 object-cover rounded-full border-4 border-blue-400 shadow-md mx-auto"
                     />
                   </div>
+                  {/* Datos del solicitante */}
                   <h2 className="text-xl font-semibold text-center mb-2 text-gray-700">
                     {s.solicitante}
                   </h2>
@@ -245,6 +218,7 @@ const Amortizacion = () => {
                       <span className="text-red-500 font-semibold">Pendiente</span>
                     )}
                   </p>
+                  {/* Botón para ver detalles */}
                   <div className="flex justify-center">
                     <button
                       className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition"
@@ -267,4 +241,4 @@ const Amortizacion = () => {
   );
 };
 
-export default Amortizacion;
+export default ConfirmacionCuota;

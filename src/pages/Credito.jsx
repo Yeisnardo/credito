@@ -72,7 +72,7 @@ const Credito = () => {
 
       {/* Contenido principal */}
       <div className="flex-1 flex flex-col ml-0 md:ml-64">
-        <Header user={user} toggleMenu={toggleMenu} menuOpen={menuOpen} />
+        <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
 
         {/* Contenido principal con encabezado y formulario */}
         <div className="p-8 flex-1">

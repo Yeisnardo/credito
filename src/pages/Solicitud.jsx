@@ -34,7 +34,7 @@ const Solicitud = () => {
     <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
       {menuOpen && <Menu />}
       <div className={`flex-1 flex flex-col w-full transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
-        <Header user={user} toggleMenu={toggleMenu} menuOpen={menuOpen} />
+        <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
 
         {/* Contenido principal */}
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">

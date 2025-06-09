@@ -14,6 +14,7 @@ import Emprendimiento from "./pages/Emprendimiento";
 import Gestion from "./pages/Gestion";
 import Aprobacion from "./pages/Aprobacion";
 import Fondo from "./pages/Fondo";
+import ConfirmacionCuota from "./pages/ConfirmacionCuota";
 import Amortizacion from "./pages/Amortizacion";
 import Credito from "./pages/Credito";
 
@@ -35,6 +36,7 @@ function App() {
         <Route path="/Gestion" element={<Gestion />} />
         <Route path="/Aprobacion" element={<Aprobacion />} />
         <Route path="/Fondo" element={<Fondo />} />
+        <Route path="/ConfirmacionCuota" element={<ConfirmacionCuota />} />
         <Route path="/Amortizacion" element={<Amortizacion />} />
         <Route path="/Credito" element={<Credito />} />
       </Routes>

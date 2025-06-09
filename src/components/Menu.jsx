@@ -161,6 +161,19 @@ const Menu = ({ onClose }) => {
           </NavLink>
 
           <NavLink
+            to="/confirmacionCuota"
+            className={({ isActive }) =>
+              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
+                isActive ? activeClassName : ""
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bx bx-credit-card mr-3 text-xl"></i>
+            <span>Confirmacion de Cuotas</span>
+          </NavLink>
+
+          <NavLink
             to="/amortizacion"
             className={({ isActive }) =>
               `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${

@@ -71,7 +71,7 @@ const Encuesta = () => {
     <div className="flex min-h-screen bg-white">
       {menuOpen && <Menu />}
       <div className="flex-1 flex flex-col ml-0 md:ml-64 max-w-5xl mx-auto px-6 pt-20 pb-20">
-        <Header user={user} toggleMenu={toggleMenu} menuOpen={menuOpen} />
+        <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
 
         <header className="mb-12 text-center">
           <h1 className="text-5xl font-extrabold text-gray-900 mb-4">Requerimientos Obligatorios</h1>
