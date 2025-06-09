@@ -383,7 +383,7 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
           >
             <i className="bx bxs-user" style={{ fontSize: "24px" }}></i>
             <span className="ml-2 hidden sm:inline">
-              {user?.nombre || "Nombre"} - {user?.rol || "Rol"}
+              {user?.nombre || "Nombre"} - {user?.tipo_usuario || "Rol"}
             </span>
           </button>
 

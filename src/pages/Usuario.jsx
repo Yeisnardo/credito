@@ -11,7 +11,7 @@ const Usuario = () => {
   const [menuOpen, setMenuOpen] = useState(true);
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({ key: null });
 
   // Cargar datos
   useEffect(() => {

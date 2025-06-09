@@ -54,9 +54,18 @@ const loginUsuario = async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: "Usuario no encontrado" });
     }
+
+    // Verificar si el usuario está inactivo
+    if (user.estatus && user.estatus.toLowerCase() === "inactivo") {
+      return res.status(403).json({ error: "Usuario inactivo" });
+    }
+
+    // Verificar contraseña
     if (user.clave !== clave) {
       return res.status(401).json({ error: "Contraseña incorrecta" });
     }
+
+    // Inicio de sesión exitoso
     res.json({ message: "Inicio de sesión exitoso", user });
   } catch (err) {
     console.error("Error en loginUsuario:", err);
