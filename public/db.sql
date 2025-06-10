@@ -33,6 +33,22 @@ CREATE TABLE usuario (
   CONSTRAINT fk_usuario_persona FOREIGN KEY (cedula_usuario) REFERENCES persona(cedula)
 );
 
+CREATE TABLE requerimientos (
+  cedula_requerimiento VARCHAR(20) PRIMARY KEY,
+  carta_solicitud VARCHAR(2),
+  postulacion_UBCH VARCHAR(2),
+  certificado_emprender VARCHAR(2),
+  registro_municipal VARCHAR(2),
+  carta_residencia VARCHAR(2),
+  copia_cedula VARCHAR(2),
+  rif_personal VARCHAR(2),
+  fotos_emprendimiento VARCHAR(2),
+  rif_emprendimiento VARCHAR(2),
+  referencia_bancaria VARCHAR(2),
+  CONSTRAINT fk_requerimientos_persona FOREIGN KEY (cedula_requerimiento) REFERENCES persona(cedula) ON DELETE CASCADE
+);
+
+
 -- Insertar datos en la tabla persona
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES
 ('1234567890', 'Juan Pérez', 35, '0414-1234567', 'juan.perez@example.com', 'Estado1', 'Municipio1', 'Calle 123, Casa 4', 'Emprendedor'),

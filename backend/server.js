@@ -5,6 +5,7 @@ const usuarioRoutes = require('./routes/routes_usuario');
 const emprendimientoRoutes = require('./routes/routes_emprendimiento');
 const personaRoutes = require('./routes/routes_persona');
 const solicitudRoutes = require('./routes/routes_solicitudes');
+const requerimientoRoutes = require('./routes/routes_requerimiento');
 
 const app = express();
 
@@ -15,7 +16,9 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/emprendimientos', emprendimientoRoutes);
 app.use('/api/persona', personaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
+app.use('/api/requerimiento', requerimientoRoutes);
 
+// Middleware para manejo de errores
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: 'Error interno del servidor' });

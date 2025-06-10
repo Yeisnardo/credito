@@ -4,12 +4,12 @@ import Swal from "sweetalert2";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import api from "../services/api_usuario"; // Tu API
+import apiUsuario from "../services/api_usuario"; // Tu API
 
-const Credito = () => {
+const Credito = ({ menuOpenProp, setUser: setUserInParent }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUserState] = useState(null);
 
   // Estado del formulario
   const [formData, setFormData] = useState({
@@ -26,16 +26,24 @@ const Credito = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await api.getUsers();
-        if (response.length > 0) {
-          setUser(response[0]);
+        const response = await apiUsuario.getUsuario();
+        if (response && response.length > 0) {
+          const usuario = response[0];
+          setUserState(usuario);
+          setUserInParent(usuario);
+          setFormData(prevFormData => ({
+            ...prevFormData,
+            nombre: usuario.nombre_usuario || "", // Assuming the API returns 'nombre_usuario'
+            apellido: usuario.apellido_usuario || "", // Assuming the API returns 'apellido_usuario'
+            cedula: usuario.cedula_usuario || "" // Assuming the API returns 'cedula_usuario'
+          }));
         }
       } catch (error) {
         console.error("Error al obtener los usuarios:", error);
       }
     };
-    fetchUserData();
-  }, []);
+    if (!user) fetchUserData();
+  }, [user, setUserInParent]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -95,48 +103,35 @@ const Credito = () => {
               Motivo de Solicitud de Credito
             </h2>
 
-            {/* Nombre */}
-            <div className="mb-4">
-              <label className="block mb-2 font-semibold text-gray-700 flex items-center">
-                <i className="bx bx-user mr-2"></i> Nombre
-              </label>
-              <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="Ingrese su nombre"
-              />
-            </div>
-
-            {/* Apellido */}
-            <div className="mb-4">
-              <label className="block mb-2 font-semibold text-gray-700 flex items-center">
-                <i className="bx bx-user-circle mr-2"></i> Apellido
-              </label>
-              <input
-                type="text"
-                name="apellido"
-                value={formData.apellido}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="Ingrese su apellido"
-              />
-            </div>
-
             {/* Cédula */}
             <div className="mb-4">
               <label className="block mb-2 font-semibold text-gray-700 flex items-center">
-                <i className="bx bx-id-card mr-2"></i> Cédula
+                <i className="bx bx-id-card mr-2"></i> Cédula de Identidad
               </label>
               <input
                 type="text"
                 name="cedula"
-                value={formData.cedula}
+                value={user ? user.cedula_usuario : ""} // Use formData.cedula
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 placeholder="Ingrese su cédula"
+                readOnly // Make it read-only
+              />
+            </div>
+
+            {/* Nombre */}
+            <div className="mb-4">
+              <label className="block mb-2 font-semibold text-gray-700 flex items-center">
+                <i className="bx bx-user mr-2"></i> Nombre del Solicitate
+              </label>
+              <input
+                type="text"
+                name="nombre"
+                value={user ? user.nombre : ""} // Use formData.nombre
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Ingrese su nombre"
+                readOnly // Make it read-only
               />
             </div>
 

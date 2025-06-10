@@ -5,37 +5,31 @@ import logo from "../assets/imagenes/logo_header.jpg";
 import "../assets/css/style.css";
 import api from "../services/api_usuario";
 
-const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como prop
+const Header = ({ toggleMenu, menuOpen, setUser }) => {
   const navigate = useNavigate();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [user, setUserState] = useState(null); // Estado local para usuario
+  const [user, setUserState] = useState(null);
 
-  // Cargar usuario al inicio si no se pasa
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const response = await api.getUsuario();
         if (response && response.length > 0) {
-          const usuario = response[0]; // obtiene el primer usuario
-          setUserState(usuario); // actualiza estado local
-          if (setUser) {
-            setUser(usuario); // actualiza el estado en el componente padre
-          }
+          const usuario = response[0];
+          setUserState(usuario);
+          if (setUser) setUser(usuario);
         }
       } catch (error) {
         console.error("Error al obtener los usuarios:", error);
       }
     };
-
-    if (!user) {
-      fetchUserData();
-    }
+    if (!user) fetchUserData();
   }, [setUser, user]);
 
-  // Funciones para manejar estados
   const handleToggleProfileMenu = () => setProfileMenuOpen(!profileMenuOpen);
-  const handleToggleNotifications = () => setNotificationsOpen(!notificationsOpen);
+  const handleToggleNotifications = () =>
+    setNotificationsOpen(!notificationsOpen);
 
   const handleCerrarSesion = () => {
     Swal.fire({
@@ -66,34 +60,34 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
       },
       showCancelButton: true,
     });
-
-    if (value === "password") {
-      await handleCambiarContraseña();
-    } else if (value === "user") {
-      await handleCambiarUsuario();
-    }
+    if (value === "password") await handleCambiarContraseña();
+    if (value === "user") await handleCambiarUsuario();
   };
 
   const handleCambiarContraseña = async () => {
     const { value } = await Swal.fire({
       title: "Cambiar Contraseña",
       html: `
-      <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
-      <input id="password" type="password" placeholder="Nueva Contraseña" class="swal2-input"/>
-      <label for="repeatPassword" class="block text-sm font-medium text-gray-700 mb-1">Repetir Contraseña</label>
-      <input id="repeatPassword" type="password" placeholder="Repetir Contraseña" class="swal2-input"/>
-    `,
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
+        <input id="password" type="password" placeholder="Nueva Contraseña" class="swal2-input"/>
+        <label for="repeatPassword" class="block text-sm font-medium text-gray-700 mb-1">Repetir Contraseña</label>
+        <input id="repeatPassword" type="password" placeholder="Repetir Contraseña" class="swal2-input"/>
+      `,
       focusConfirm: false,
       showCancelButton: true,
       preConfirm: () => {
         const pass = document.getElementById("password").value.trim();
-        const repeatPass = document.getElementById("repeatPassword").value.trim();
+        const repeatPass = document
+          .getElementById("repeatPassword")
+          .value.trim();
         if (!pass || !repeatPass) {
           Swal.showValidationMessage("Por favor, completa todos los campos");
           return false;
         }
         if (pass.length < 6) {
-          Swal.showValidationMessage("La contraseña debe tener al menos 6 caracteres");
+          Swal.showValidationMessage(
+            "La contraseña debe tener al menos 6 caracteres"
+          );
           return false;
         }
         if (pass !== repeatPass) {
@@ -104,7 +98,7 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
       },
     });
     if (value) {
-      Swal.fire("Éxito", "Su contraseña ha sido actualizada", "success");
+      Swal.fire("¡Éxito!", "Su contraseña ha sido actualizada", "success");
     }
   };
 
@@ -112,23 +106,26 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
     const { value } = await Swal.fire({
       title: "Cambiar Usuario",
       html: `
-      <label for="usuario" class="block text-sm font-medium text-gray-700 mb-1">Nuevo Usuario</label>
-      <input id="usuario" type="text" placeholder="Nuevo Usuario" class="swal2-input"/>
-      <label for="repeatUsuario" class="block text-sm font-medium text-gray-700 mb-1">Repetir Usuario</label>
-      <input id="repeatUsuario" type="text" placeholder="Repetir Usuario" class="swal2-input"/>
-    `,
+        <label for="usuario" class="block text-sm font-medium text-gray-700 mb-1">Nuevo Usuario</label>
+        <input id="usuario" type="text" placeholder="Nuevo Usuario" class="swal2-input"/>
+        <label for="repeatUsuario" class="block text-sm font-medium text-gray-700 mb-1">Repetir Usuario</label>
+        <input id="repeatUsuario" type="text" placeholder="Repetir Usuario" class="swal2-input"/>
+      `,
       focusConfirm: false,
       showCancelButton: true,
       preConfirm: () => {
         const userVal = document.getElementById("usuario").value.trim();
-        const repeatUser = document.getElementById("repeatUsuario").value.trim();
-
+        const repeatUser = document
+          .getElementById("repeatUsuario")
+          .value.trim();
         if (!userVal || !repeatUser) {
           Swal.showValidationMessage("Por favor, completa todos los campos");
           return false;
         }
         if (userVal.length < 6) {
-          Swal.showValidationMessage("El usuario debe tener al menos 6 caracteres");
+          Swal.showValidationMessage(
+            "El usuario debe tener al menos 6 caracteres"
+          );
           return false;
         }
         if (userVal !== repeatUser) {
@@ -139,102 +136,167 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
       },
     });
     if (value) {
-      Swal.fire("Éxito", "Su usuario ha sido actualizado", "success");
+      Swal.fire("¡Éxito!", "Su usuario ha sido actualizado", "success");
     }
   };
 
-  // Ver perfil completo
   const handleVerPerfil = () => {
     Swal.fire({
       title: "Perfil de Usuario",
       html: `
-      <div class="flex flex-col items-center mb-4">
-        <img src="../public/OIP.jpeg" alt="Perfil" class="w-24 h-24 rounded-full border-4 border-green-500 mb-3"/>
-        <h3 class="text-lg font-semibold text-gray-700">${user?.nombre || "Nombre"}</h3>
-        <p class="text-sm text-gray-500">Rol: ${user?.tipo_usuario || "Rol"}</p>
-        <p class="text-sm text-gray-500">Edad: ${user?.edad || "N/A"}</p>
-      </div>
-      <div class="border-t border-gray-300 pt-2 mb-2 px-4">
-        <h4 class="font-semibold mb-1">Datos Personales</h4>
-        <p><strong>Email:</strong> ${user?.email || "correo@ejemplo.com"}</p>
-        <p><strong>Teléfono:</strong> ${user?.telefono || "N/A"}</p>
-        <p><strong>Dirección:</strong> ${user?.direccion_actual || "N/A"}</p>
-      </div>
-      <div class="border-t border-gray-300 pt-2 mb-2 px-4">
-        <h4 class="font-semibold mb-1">Emprendimiento</h4>
-        <p>${user?.tipo_sector || "No especificado"}</p>
-      </div>
-      <div class="border-t border-gray-300 pt-2 mb-2 px-4">
-        <h4 class="font-semibold mb-1">Consejo Comunale</h4>
-        <p>${user?.consejoComunale || "No especificado"}</p>
+      <div class="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <!-- Imagen y datos principales -->
+        <div class="flex flex-col items-center mb-4">
+          <h3 class="text-xl font-semibold text-gray-800 mb-1">${
+            user?.nombre || "Nombre"
+          }</h3>
+          <p class="text-sm text-gray-500 mb-2">${
+            user?.tipo_usuario || "Rol"
+          }</p>
+          <p class="text-sm text-gray-500">Edad: ${user?.edad || "N/A"}</p>
+        </div>
+
+        <!-- Datos Personales -->
+        <div class="border-t border-gray-200 pt-4 mb-4 px-4">
+          <h4 class="text-md font-semibold text-gray-700 mb-2">Datos Personales</h4>
+          <div class="space-y-1 text-sm text-gray-600">
+            <p><span class="font-semibold">Email:</span> ${
+              user?.email || "correo@ejemplo.com"
+            }</p>
+            <p><span class="font-semibold">Teléfono:</span> ${
+              user?.telefono || "N/A"
+            }</p>
+            <p><span class="font-semibold">Dirección:</span> ${
+              user?.direccion_actual || "N/A"
+            }</p>
+          </div>
+        </div>
+
+        <!-- Emprendimiento -->
+        <div class="border-t border-gray-200 pt-4 mb-4 px-4">
+          <h4 class="text-md font-semibold text-gray-700 mb-2">Emprendimiento</h4>
+          <p class="text-gray-600">${user?.tipo_sector || "No especificado"}</p>
+        </div>
+
+        <!-- Consejo Comunale -->
+        <div class="border-t border-gray-200 pt-4 mb-2 px-4">
+          <h4 class="text-md font-semibold text-gray-700 mb-2">Consejo Comunale</h4>
+          <p class="text-gray-600">${
+            user?.consejoComunale || "No especificado"
+          }</p>
+        </div>
       </div>
     `,
       showCloseButton: true,
       focusConfirm: false,
       confirmButtonText: "Cerrar",
+      customClass: {
+        popup: "rounded-lg p-4", // Opcional: para redondear la ventana
+      },
     });
   };
 
-  // Edición datos personales
   const handleEditarDatosPersonales = async () => {
     const { value } = await Swal.fire({
       title: "Editar Datos Personales",
       html: `
-      <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-      <input id="nombre" class="swal2-input" placeholder="Nombre Completo" value="${user?.nombre || ""}"/>
-      
-      <label for="edad" class="block text-sm font-medium text-gray-700 mb-1">Edad</label>
-      <input id="edad" type="number" class="swal2-input" placeholder="Edad" value="${user?.edad || ""}"/>
-      
-      <label for="telefono" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-      <input id="telefono" class="swal2-input" placeholder="Teléfono" value="${user?.telefono || ""}"/>
-      
-      <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-      <input id="email" type="email" class="swal2-input" placeholder="Correo" value="${user?.email || ""}"/>
-      
-      <label for="direccion" class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-      <input id="direccion" class="swal2-input" placeholder="Dirección" value="${user?.direccion || ""}"/>
-      
-      <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-      <input id="estado" class="swal2-input" placeholder="Estado" value="${user?.estado || ""}"/>
-      
-      <label for="municipio" class="block text-sm font-medium text-gray-700 mb-1">Municipio</label>
-      <input id="municipio" class="swal2-input" placeholder="Municipio" value="${user?.municipio || ""}"/>
-      
-      <label for="tipo_persona" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Persona</label>
-      <input id="tipo_persona" class="swal2-input" placeholder="Tipo de Persona" value="${user?.tipo_persona || ""}"/>
+      <form class="w-full max-w-3xl mx-auto p-4 space-y-4">
+        <!-- Cada fila será un flex container -->
+        <div class="flex flex-wrap gap-4">
+          <div class="flex-1 min-w-[300px] w-0">
+            <label for="nombre" class="block text-xs font-medium text-gray-700 mb-1">Nombre Completo</label>
+            <input id="nombre" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.nombre || ""
+            }">
+          </div>
+          <div class="flex-1 min-w-[400px] w-0">
+            <label for="edad" class="block text-xs font-medium text-gray-700 mb-1">Edad</label>
+            <input id="edad" type="number" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.edad || ""
+            }">
+          </div>
+          <div class="flex-1 min-w-[150px]">
+            <label for="telefono" class="block text-xs font-medium text-gray-700 mb-1">Teléfono</label>
+            <input id="telefono" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.telefono || ""
+            }">
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          <div class="flex-1 min-w-[150px]">
+            <label for="email" class="block text-xs font-medium text-gray-700 mb-1">Correo</label>
+            <input id="email" type="email" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.email || ""
+            }">
+          </div>
+          <div class="flex-1 min-w-[150px]">
+            <label for="direccion" class="block text-xs font-medium text-gray-700 mb-1">Dirección</label>
+            <input id="direccion" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.direccion_actual || ""
+            }">
+          </div>
+          <div class="flex-1 min-w-[150px]">
+            <label for="estado" class="block text-xs font-medium text-gray-700 mb-1">Estado</label>
+            <input id="estado" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.estado || ""
+            }">
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          <div class="flex-1 min-w-[150px]">
+            <label for="municipio" class="block text-xs font-medium text-gray-700 mb-1">Municipio</label>
+            <input id="municipio" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.municipio || ""
+            }">
+          </div>
+          <div class="flex-1 min-w-[150px]">
+            <label for="tipo_persona" class="block text-xs font-medium text-gray-700 mb-1">Tipo de Persona</label>
+            <input id="tipo_persona" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${
+              user?.tipo_persona || ""
+            }">
+          </div>
+        </div>
+      </form>
     `,
       focusConfirm: false,
       showCancelButton: true,
       preConfirm: () => {
-        const nombre_completo = document.getElementById("nombre").value.trim();
+        const nombre = document.getElementById("nombre").value.trim();
         const edad = document.getElementById("edad").value.trim();
         const telefono = document.getElementById("telefono").value.trim();
         const email = document.getElementById("email").value.trim();
         const direccion = document.getElementById("direccion").value.trim();
         const estado = document.getElementById("estado").value.trim();
         const municipio = document.getElementById("municipio").value.trim();
-        const tipo_persona = document.getElementById("tipo_persona").value.trim();
+        const tipo_persona = document
+          .getElementById("tipo_persona")
+          .value.trim();
 
-        if (!nombre_completo || !email || !edad) {
-          Swal.showValidationMessage("Nombre completo, edad y correo son obligatorios");
+        if (!nombre || !email || !edad) {
+          Swal.showValidationMessage("Nombre, Edad y Email son obligatorios");
           return false;
         }
-        return { nombre: nombre_completo, edad, telefono, email, direccion, estado, municipio, tipo_persona };
+        return {
+          nombre,
+          edad,
+          telefono,
+          email,
+          direccion,
+          estado,
+          municipio,
+          tipo_persona,
+        };
       },
     });
 
     if (value) {
-      // Aquí puedes hacer API para actualizar en la tabla persona
       await updatePersona(value);
-      // Actualizar usuario global
       if (setUser) {
         setUser((prev) => ({ ...prev, ...value }));
       }
       Swal.fire("Actualizado", "Datos personales actualizados", "success");
     }
   };
-
   const updatePersona = async (data) => {
     try {
       await api.put(`/api/persona/${user?.cedula_usuario}`, data);
@@ -243,33 +305,54 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
     }
   };
 
-  // Similar para editar emprendimiento
   const handleEditarEmprendimiento = async () => {
     const { value } = await Swal.fire({
       title: "Editar Emprendimiento",
       html: `
-        <label for="emprendimiento" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Emprendimiento</label>
-        <input id="emprendimiento" class="swal2-input" placeholder="Emprendimiento" value="${user?.emprendimiento || ""}"/>
-        <label for="tipo_sector" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Sector</label>
-        <input id="tipo_sector" class="swal2-input" placeholder="Tipo de Sector" value="${user?.tipo_sector || ""}"/>
-        <label for="tipo_negocio" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Negocio</label>
-        <input id="tipo_negocio" class="swal2-input" placeholder="Tipo de Negocio" value="${user?.tipo_negocio || ""}"/>
-        <label for="direccion_emprendimiento" class="block text-sm font-medium text-gray-700 mb-1">Dirección del Emprendimiento</label>
-        <input id="direccion_emprendimiento" class="swal2-input" placeholder="Dirección" value="${user?.direccion_emprendimiento || ""}"/>
-      `,
+      <label for="emprendimiento" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Emprendimiento</label>
+  <input id="emprendimiento" class="w-[300px] border rounded px-2 py-1" placeholder="Emprendimiento" value="${
+    user?.nombre_emprendimiento || ""
+  }"/>
+  
+  <label for="tipo_sector" class="block text-sm font-medium text-gray-700 mb-1 mt-2">Tipo de Sector</label>
+  <input id="tipo_sector" class="w-[300px] border rounded px-2 py-1" placeholder="Tipo de Sector" value="${
+    user?.tipo_sector || ""
+  }"/>
+  
+  <label for="tipo_negocio" class="block text-sm font-medium text-gray-700 mb-1 mt-2">Tipo de Negocio</label>
+  <input id="tipo_negocio" class="w-[300px] border rounded px-2 py-1" placeholder="Tipo de Negocio" value="${
+    user?.tipo_negocio || ""
+  }"/>
+  
+  <label for="direccion_emprendimiento" class="block text-sm font-medium text-gray-700 mb-1 mt-2">Dirección del Emprendimiento</label>
+  <input id="direccion_emprendimiento" class="w-[300px] border rounded px-2 py-1" placeholder="Dirección" value="${
+    user?.direccion_emprendimiento || ""
+  }"/>
+`,
       focusConfirm: false,
       showCancelButton: true,
       preConfirm: () => {
-        const emprendimiento = document.getElementById("emprendimiento").value.trim();
+        const emprendimiento = document
+          .getElementById("emprendimiento")
+          .value.trim();
         const tipo_sector = document.getElementById("tipo_sector").value.trim();
-        const tipo_negocio = document.getElementById("tipo_negocio").value.trim();
-        const direccion_emprendimiento = document.getElementById("direccion_emprendimiento").value.trim();
+        const tipo_negocio = document
+          .getElementById("tipo_negocio")
+          .value.trim();
+        const direccion_emprendimiento = document
+          .getElementById("direccion_emprendimiento")
+          .value.trim();
 
         if (!emprendimiento || !tipo_sector || !tipo_negocio) {
           Swal.showValidationMessage("Todos los campos son obligatorios");
           return false;
         }
-        return { emprendimiento, tipo_sector, tipo_negocio, direccion_emprendimiento };
+        return {
+          emprendimiento,
+          tipo_sector,
+          tipo_negocio,
+          direccion_emprendimiento,
+        };
       },
     });
     if (value) {
@@ -289,13 +372,14 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
     }
   };
 
-  // Para editar consejo
   const handleEditarConsejo = async () => {
     const { value } = await Swal.fire({
       title: "Editar Consejo Comunale",
       html: `
         <label for="consejo" class="block text-sm font-medium text-gray-700 mb-1">Consejo</label>
-        <input id="consejo" class="swal2-input" placeholder="Consejo" value="${user?.consejoComunale || ""}"/>
+        <input id="consejo" class="swal2-input" placeholder="Consejo" value="${
+          user?.consejoComunale || ""
+        }"/>
       `,
       focusConfirm: false,
       showCancelButton: true,
@@ -326,10 +410,14 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
   };
 
   return (
-    <header className="w-full fixed top-0 left-0 bg-gray-900 shadow-lg z-50 px-4 py-3 flex items-center justify-between">
+    <header className="w-full  mx-auto fixed top-0 left-0 bg-gray-900 shadow-lg z-50 px-4 py-3 flex items-center justify-between">
       {/* Logo y título */}
       <div className="flex items-center space-x-3">
-        <img src={logo} alt="Logo" className="w-12 h-12 rounded-full object-cover" />
+        <img
+          src={logo}
+          alt="Logo"
+          className="w-12 h-12 rounded-full object-cover shadow-md"
+        />
         <h1 className="text-xl font-bold text-white hidden sm:inline">IFEMI</h1>
       </div>
 
@@ -339,7 +427,10 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
         className="text-white focus:outline-none md:hidden"
         aria-label="Toggle menu"
       >
-        <i className={`bx ${menuOpen ? "bxs-x" : "bx-menu"}`} style={{ fontSize: "24px" }}></i>
+        <i
+          className={`bx ${menuOpen ? "bxs-x" : "bx-menu"}`}
+          style={{ fontSize: "24px" }}
+        ></i>
       </button>
 
       {/* Navegación en pantallas grandes */}
@@ -363,12 +454,15 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
             className="text-white focus:outline-none relative"
             aria-label="Notificaciones"
           >
-            <i className="bx bxs-bell" style={{ fontSize: "24px" }}></i>
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            <div className="relative">
+              <i className="bx bxs-bell" style={{ fontSize: "24px" }}></i>
+              <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+            </div>
           </button>
           {notificationsOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-50 p-2 animate-fadeInDown">
-              {/* Contenido notificaciones */}
+            <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg z-50 p-4 animate-fadeInDown">
+              {/* Aquí puedes agregar contenido de notificaciones */}
+              <p className="text-gray-600 text-sm">No hay notificaciones</p>
             </div>
           )}
         </div>
@@ -377,80 +471,83 @@ const Header = ({ toggleMenu, menuOpen, setUser }) => { // Recibe setUser como p
         <div className="relative">
           <button
             onClick={handleToggleProfileMenu}
-            className="flex items-center px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 transition text-white"
+            className="flex items-center px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-white"
             aria-label="Perfil"
           >
             <i className="bx bxs-user" style={{ fontSize: "24px" }}></i>
-            <span className="ml-2 hidden sm:inline">
+            <span className="ml-2 hidden sm:inline truncate">
               {user?.nombre || "Nombre"} - {user?.tipo_usuario || "Rol"}
             </span>
           </button>
 
           {profileMenuOpen && (
-            <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg z-50 divide-y divide-gray-200">
+            <div className="absolute right-0 mt-2 w-60 bg-white rounded-lg shadow-lg z-50 divide-y divide-gray-200 overflow-hidden">
               {/* Opciones del perfil */}
-              <button
-                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
-                onClick={() => {
-                  navigate("/Credito");
-                  setProfileMenuOpen(false);
-                }}
-              >
-                <i className="bx bx-credit-card mr-2"></i> Solicitud de Credito
-              </button>
-              <button
-                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
-                onClick={() => {
-                  handleAbrirConfiguracion();
-                  setProfileMenuOpen(false);
-                }}
-              >
-                <i className="bx bx-cog mr-2"></i> Configuración
-              </button>
-              <button
-                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
-                onClick={() => {
-                  handleVerPerfil();
-                  setProfileMenuOpen(false);
-                }}
-              >
-                <i className="bx bx-user-circle mr-2"></i> Ver Perfil
-              </button>
-              {/* Ediciones */}
-              <button
-                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
-                onClick={() => {
-                  handleEditarDatosPersonales();
-                  setProfileMenuOpen(false);
-                }}
-              >
-                <i className="bx bx-user mr-2"></i> Datos Personales
-              </button>
-              <button
-                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
-                onClick={() => {
-                  handleEditarEmprendimiento();
-                  setProfileMenuOpen(false);
-                }}
-              >
-                <i className="bx bx-rocket mr-2"></i> Emprendimiento
-              </button>
-              <button
-                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
-                onClick={() => {
-                  handleEditarConsejo();
-                  setProfileMenuOpen(false);
-                }}
-              >
-                <i className="bx bx-phone mr-2"></i> Consejo Comunale
-              </button>
-              {/* Cerrar sesión */}
-              <button
-                className="w-full px-4 py-2 flex items-center hover:bg-gray-100"
-                onClick={handleCerrarSesion}
-              >
-                <i className="bx bx-log-out mr-2"></i> Cerrar Sesión
-              </button>
+              <div className="flex flex-col">
+                <button
+                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
+                  onClick={() => {
+                    navigate("/Credito");
+                    setProfileMenuOpen(false);
+                  }}
+                >
+                  <i className="bx bx-credit-card mr-2"></i> Solicitud de
+                  Credito
+                </button>
+                <button
+                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
+                  onClick={() => {
+                    handleAbrirConfiguracion();
+                    setProfileMenuOpen(false);
+                  }}
+                >
+                  <i className="bx bx-cog mr-2"></i> Configuración
+                </button>
+                <button
+                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
+                  onClick={() => {
+                    handleVerPerfil();
+                    setProfileMenuOpen(false);
+                  }}
+                >
+                  <i className="bx bx-user-circle mr-2"></i> Ver Perfil
+                </button>
+                {/* Ediciones */}
+                <button
+                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
+                  onClick={() => {
+                    handleEditarDatosPersonales();
+                    setProfileMenuOpen(false);
+                  }}
+                >
+                  <i className="bx bx-user mr-2"></i> Datos Personales
+                </button>
+                <button
+                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
+                  onClick={() => {
+                    handleEditarEmprendimiento();
+                    setProfileMenuOpen(false);
+                  }}
+                >
+                  <i className="bx bx-rocket mr-2"></i> Emprendimiento
+                </button>
+                <button
+                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
+                  onClick={() => {
+                    handleEditarConsejo();
+                    setProfileMenuOpen(false);
+                  }}
+                >
+                  <i className="bx bx-phone mr-2"></i> Consejo Comunale
+                </button>
+                {/* Cerrar sesión */}
+                <button
+                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition text-red-600"
+                  onClick={handleCerrarSesion}
+                >
+                  <i className="bx bx-log-out mr-2"></i> Cerrar Sesión
+                </button>
+              </div>
             </div>
           )}
         </div>
