@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const requerimientoController = require('../controllers/controlador_requerimiento');
 
-router.get('/', requerimientoController.getRequerimientos);
-router.get('/:cedula_requerimiento', requerimientoController.getRequerimiento);
+// Crear requerimiento
 router.post('/', requerimientoController.createRequerimiento);
-router.put('/:cedula_requerimiento', requerimientoController.updateRequerimiento);
-router.delete('/:cedula_requerimiento', requerimientoController.deleteRequerimiento);
+
+// Obtener requerimiento por cédula
+router.get('/:cedula_requerimiento', requerimientoController.getRequerimiento);
 
 module.exports = router;

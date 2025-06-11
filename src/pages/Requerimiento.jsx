@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api from "../services/api_requerimiento";
@@ -13,22 +12,12 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
   const [user, setUserState] = useState(null);
   const setUserInParent = setUser ?? (() => {});
 
-  const [respuestas, setRespuestas] = useState([]);
-  const [modo, setModo] = useState("registrar"); // "registrar" o "visualizar"
-  const [cedulaMostrar, setCedulaMostrar] = useState(""); // Para mostrar cédula en resultados
-
-  // Datos personales
-  const [nombre_completo, setNombre_completo] = useState("");
   const [cedula_emprendimiento, setCedula_emprendimiento] = useState("");
-  const [fechaCita, setFechaCita] = useState("");
+  const [fecha, setFecha] = useState(""); // yyyy-mm-dd
+  const [fechaCita, setFechaCita] = useState(""); // dd/mm/aaaa
 
-  // Preguntas
   const [preguntas, setPreguntas] = useState([
-    {
-      id: 0,
-      texto: "Carta de Motivo para Solicitar Crédito",
-      respuesta: false,
-    },
+    { id: 0, texto: "Carta de Motivo para Solicitar Crédito", respuesta: false },
     { id: 1, texto: "Postulación UBCH", respuesta: false },
     { id: 2, texto: "Certificado de emprender juntos", respuesta: false },
     { id: 3, texto: "Registro Municipal", respuesta: false },
@@ -40,10 +29,32 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
     { id: 9, texto: "Referencia bancaria", respuesta: false },
   ]);
 
+  const [resultados, setResultados] = useState(null);
+  const [mostrarResultados, setMostrarResultados] = useState(false);
+
   const toggleMenu = () => setMenuOpen((prev) => !prev);
 
-  // Cargar usuario al montar
-  // Dentro de useEffect
+  // Función para mostrar resultados
+  const handleVerResultados = async () => {
+    if (cedula_emprendimiento) {
+      try {
+        const data = await api.getRequerimiento(cedula_emprendimiento);
+        if (data) {
+          setResultados(data);
+          setMostrarResultados(true);
+        } else {
+          alert("No se encontraron resultados para esa cédula");
+        }
+      } catch (error) {
+        alert("Error al obtener resultados");
+        console.error(error);
+      }
+    } else {
+      alert("Por favor, ingresa la cédula para ver resultados");
+    }
+  };
+
+  // Cargar usuario y datos existentes al montar
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -52,6 +63,7 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
           const usuario = response[0];
           setUserState(usuario);
           setUserInParent(usuario);
+          setCedula_emprendimiento(usuario.cedula_usuario);
         }
       } catch (error) {
         console.error("Error al obtener los usuarios:", error);
@@ -60,76 +72,110 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
     if (!user) fetchUserData();
   }, [user, setUser, setUserInParent]);
 
+  // Cuando cambie la cédula, buscar datos guardados y cargar respuestas
+  useEffect(() => {
+    const fetchExistingData = async () => {
+      if (cedula_emprendimiento) {
+        try {
+          const data = await api.getRequerimiento(cedula_emprendimiento);
+          if (data) {
+            setCedula_emprendimiento(data.cedula_requerimiento);
+            setFecha(data.fecha);
+            const [year, month, day] = data.fecha.split("-");
+            setFechaCita(`${day}/${month}/${year}`);
+
+            const updatedPreguntas = preguntas.map((p, index) => {
+              const keys = [
+                "carta_solicitud",
+                "postulacion_UBCH",
+                "certificado_emprender",
+                "registro_municipal",
+                "carta_residencia",
+                "copia_cedula",
+                "rif_personal",
+                "fotos_emprendimiento",
+                "rif_emprendimiento",
+                "referencia_bancaria",
+              ];
+              const key = keys[index];
+
+              return {
+                ...p,
+                respuesta: data[key] === "Si",
+              };
+            });
+            setPreguntas(updatedPreguntas);
+          }
+        } catch (error) {
+          // No hay datos o error
+        }
+      }
+    };
+    fetchExistingData();
+  }, [cedula_emprendimiento]);
+
+  // Manejar cambios en las respuestas (checkbox)
   const handleCheckboxChange = (id) => {
-    if (modo === "registrar") {
-      setPreguntas((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, respuesta: !p.respuesta } : p))
-      );
-    }
+    setPreguntas((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, respuesta: !p.respuesta } : p
+      )
+    );
   };
 
-  const handleNombre_completoChange = (e) => setNombre_completo(e.target.value);
-  const handleCedula_emprendimientoChange = (e) =>
-    setCedula_emprendimiento(e.target.value);
-
+  // Manejar cambio en la fecha
   const handleFechaChange = (e) => {
     const dateStr = e.target.value; // "yyyy-mm-dd"
+    setFecha(dateStr);
     if (dateStr) {
       const [year, month, day] = dateStr.split("-");
-      const formattedDate = `${day}/${month}/${year}`;
-      setFechaCita(formattedDate);
+      setFechaCita(`${day}/${month}/${year}`);
     } else {
       setFechaCita("");
     }
   };
 
+  // Guardar respuestas
   const handleSubmitEncuesta = async (e) => {
     e.preventDefault();
-    try {
-      await api.createPersona({ nombre_completo, cedula_emprendimiento });
 
-      if (cedula_emprendimiento) {
-        const existing = await api.getRequerimiento(cedula_emprendimiento);
-        if (existing) {
-          await api.updateRequerimiento(cedula_emprendimiento, preguntas);
-        } else {
-          await api.createRequerimiento(cedula_emprendimiento, preguntas);
-        }
+    if (!cedula_emprendimiento) {
+      alert("Por favor, ingresa la cédula de identidad");
+      return;
+    }
+    if (!fecha) {
+      alert("Por favor, selecciona la fecha");
+      return;
+    }
+
+    const requerimientoData = {
+      cedula_requerimiento: cedula_emprendimiento,
+      fecha: fecha,
+      carta_solicitud: preguntas[0].respuesta ? "Si" : "No",
+      postulacion_UBCH: preguntas[1].respuesta ? "Si" : "No",
+      certificado_emprender: preguntas[2].respuesta ? "Si" : "No",
+      registro_municipal: preguntas[3].respuesta ? "Si" : "No",
+      carta_residencia: preguntas[4].respuesta ? "Si" : "No",
+      copia_cedula: preguntas[5].respuesta ? "Si" : "No",
+      rif_personal: preguntas[6].respuesta ? "Si" : "No",
+      fotos_emprendimiento: preguntas[7].respuesta ? "Si" : "No",
+      rif_emprendimiento: preguntas[8].respuesta ? "Si" : "No",
+      referencia_bancaria: preguntas[9].respuesta ? "Si" : "No",
+    };
+
+    try {
+      const existing = await api.getRequerimiento(cedula_emprendimiento);
+      if (existing) {
+        await api.updateRequerimiento(cedula_emprendimiento, requerimientoData);
+      } else {
+        await api.createRequerimiento(requerimientoData);
       }
       alert("Datos guardados correctamente");
     } catch (error) {
-      console.error("Error al guardar:", error);
+      console.error("Error al guardar requerimiento:", error);
       alert("Hubo un problema al guardar los datos");
     }
   };
-
-  const handleMostrarResultados = () => {
-    setModo("visualizar");
-    if (cedula_emprendimiento) {
-      api.getRequerimiento(cedula_emprendimiento).then((data) => {
-        if (data) {
-          if (data.respuestas) {
-            setRespuestas(data.respuestas);
-          }
-          // Guardar la cédula para mostrar
-          setCedulaMostrar(data.cedula_requerimiento);
-        }
-      });
-    }
-  };
-
-  const handleResponder = () => {
-    setModo("registrar");
-    // Limpiar respuestas y cédula al responder nuevamente
-    setRespuestas([]);
-    setCedulaMostrar("");
-  };
-
-  useEffect(() => {
-    if (respuestas.length > 0) {
-      setPreguntas(respuestas);
-    }
-  }, [respuestas]);
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-arial text-gray-700">
@@ -137,43 +183,26 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
       <div className="flex-1 flex flex-col ml-0 md:ml-64 max-w-7xl mx-auto px-6 py-8">
         <Header toggleMenu={toggleMenu} />
 
-        {/* Encabezado */}
-        <header className="text-center mb-10 mt-9">
+        {/* Encabezado con botón para resultados */}
+        <header className="flex items-center justify-between mb-4 mt-9">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
             Requerimientos Obligatorios
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Queremos conocer qué requerimientos tienes. Además, agenda tu cita
-            para traer los requerimientos.
-          </p>
-        </header>
-
-        {/* Botones principales */}
-        {modo === "registrar" && (
-          <div className="flex justify-center mb-8 gap-4">
+          <div className="flex space-x-4">
+            {/* Botón para ver resultados */}
             <button
-              onClick={() => setModo("registrar")}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                modo === "registrar"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
+              onClick={handleVerResultados}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded"
             >
-              Responder
-            </button>
-            <button
-              onClick={handleMostrarResultados}
-              className="px-6 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all"
-            >
-              Mostrar Resultados
+              Ver Resultados
             </button>
           </div>
-        )}
+        </header>
 
         {/* Sección principal */}
-        {modo === "registrar" ? (
-          <section>
-            <div className="max-w-4xl mx-auto px-4">
+        <section>
+          <div className="max-w-4xl mx-auto px-4">
+            {!mostrarResultados ? (
               <form
                 className="bg-white p-8 rounded-xl shadow-lg space-y-8"
                 onSubmit={handleSubmitEncuesta}
@@ -183,32 +212,18 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label
-                      htmlFor="cedula_emprendimiento"
+                      htmlFor="cedula_requerimiento"
                       className="block mb-2 text-sm font-medium text-gray-700"
                     >
-                      Cédula de Identidad
-                    </label>
-                    <div className="mb-4">
-                      <input
-                        type="text"
-                        value={user ? user.cedula_usuario : ""}
-                        readOnly
-                        className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="nombre_completo"
-                      className="block mb-2 text-sm font-medium text-gray-700"
-                    >
-                      Nombre Completo
+                      Cédula de Identidad *
                     </label>
                     <input
                       type="text"
-                      value={user ? user.nombre : ""}
-                      readOnly
+                      id="cedula_requerimiento"
+                      value={cedula_emprendimiento}
+                      onChange={(e) => setCedula_emprendimiento(e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                      required
                     />
                   </div>
                 </div>
@@ -219,13 +234,14 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
                     htmlFor="fecha"
                     className="block mb-2 text-sm font-medium text-gray-700"
                   >
-                    Fecha para traer los requerimientos (dd/mm/aaaa)
+                    Fecha para traer los requerimientos (dd/mm/aaaa) *
                   </label>
                   <input
                     type="date"
                     id="fecha"
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={fecha}
                     onChange={handleFechaChange}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                   {fechaCita && (
@@ -247,9 +263,6 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
                       checked={pregunta.respuesta}
                       onChange={() => handleCheckboxChange(pregunta.id)}
                       className="h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                      disabled={modo !== "registrar"}
-                      aria-checked={pregunta.respuesta}
-                      role="checkbox"
                     />
                     <label
                       htmlFor={`pregunta-${pregunta.id}`}
@@ -260,7 +273,6 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
                   </div>
                 ))}
 
-                {/* Botón guardar */}
                 <button
                   type="submit"
                   className="w-full py-3 mt-8 px-6 rounded-lg font-semibold text-white transition-colors duration-300 bg-blue-600 hover:bg-blue-700"
@@ -268,47 +280,74 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
                   Guardar Respuestas
                 </button>
               </form>
-            </div>
-          </section>
-        ) : (
-          // Mostrar resultados
-          <section>
-            <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-md space-y-4">
-              <h3 className="text-2xl font-bold mb-4 text-gray-900">
-                Respuestas Registradas
-              </h3>
-              {/* Mostrar cédula */}
-              {cedulaMostrar && (
-                <p className="mb-4 font-semibold">
-                  Cédula del solicitante: {cedulaMostrar}
-                </p>
-              )}
-              {respuestas.length > 0 ? (
-                <ul className="list-disc list-inside space-y-2 text-gray-700">
-                  {respuestas.map((resp) => (
-                    <li
-                      key={resp.id}
-                      className="flex justify-between items-center"
+            ) : (
+              // Mostrar resultados
+              <div className="bg-white p-8 rounded-xl shadow-lg space-y-4">
+                <h2 className="text-2xl font-bold mb-4">Resultados</h2>
+                {resultados ? (
+                  <div className="space-y-2">
+                    <p>
+                      <strong>Cédula:</strong> {resultados.cedula_requerimiento}
+                    </p>
+                    <p>
+                      <strong>Fecha:</strong> {resultados.fecha}
+                    </p>
+                    <h3 className="text-xl font-semibold mt-4 mb-2">
+                      Respuestas:
+                    </h3>
+                    <ul className="list-disc list-inside">
+                      {[
+                        {
+                          label: "Carta de Motivo para Solicitar Crédito",
+                          key: "carta_solicitud",
+                        },
+                        { label: "Postulación UBCH", key: "postulacion_ubch" },
+                        {
+                          label: "Certificado de emprender juntos",
+                          key: "certificado_emprender",
+                        },
+                        {
+                          label: "Registro Municipal",
+                          key: "registro_municipal",
+                        },
+                        {
+                          label: "Carta de residencia",
+                          key: "carta_residencia",
+                        },
+                        { label: "Copia de cédula", key: "copia_cedula" },
+                        { label: "RIF personal", key: "rif_personal" },
+                        {
+                          label: "Fotos del emprendimiento",
+                          key: "fotos_emprendimiento",
+                        },
+                        {
+                          label: "RIF de emprendimiento",
+                          key: "rif_emprendimiento",
+                        },
+                        {
+                          label: "Referencia bancaria",
+                          key: "referencia_bancaria",
+                        },
+                      ].map((item) => (
+                        <li key={item.key}>
+                          <strong>{item.label}:</strong> {resultados[item.key]}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => setMostrarResultados(false)}
+                      className="mt-4 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded"
                     >
-                      <span className="font-semibold">{resp.texto}</span>
-                      <span className="ml-4 font-semibold text-green-600">
-                        {resp.respuesta ? "Sí" : "No"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No hay respuestas registradas.</p>
-              )}
-              <button
-                onClick={handleResponder}
-                className="mt-4 px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all"
-              >
-                Responder Nuevamente
-              </button>
-            </div>
-          </section>
-        )}
+                      Volver
+                    </button>
+                  </div>
+                ) : (
+                  <p>No hay resultados para mostrar.</p>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Pie de página */}
         <footer className="mt-auto py-6 border-t border-gray-200 text-center text-gray-500 text-sm">

@@ -1,38 +1,22 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: 'http://localhost:5000', // Cambia si es necesario
 });
 
-// Crear un requerimiento
-const createRequerimiento = async (cedula_requerimiento, preguntas) => {
-  const data = { cedula_requerimiento, respuestas: preguntas };
-  const response = await api.post('/api/requerimiento', data);
+// Crear requerimiento
+const createRequerimiento = async (requerimientoData) => {
+  const response = await api.post('/api/requerimiento', requerimientoData);
   return response.data;
 };
 
-// Obtener un requerimiento por cédula
+// Obtener requerimiento por cédula
 const getRequerimiento = async (cedula_requerimiento) => {
   const response = await api.get(`/api/requerimiento/${cedula_requerimiento}`);
-  return response.data;
-};
-
-// Actualizar un requerimiento por cédula
-const updateRequerimiento = async (cedula_requerimiento, preguntas) => {
-  const data = { respuestas: preguntas };
-  const response = await api.put(`/api/requerimiento/${cedula_requerimiento}`, data);
-  return response.data;
-};
-
-// Eliminar un requerimiento por cédula
-const deleteRequerimiento = async (cedula_requerimiento) => {
-  const response = await api.delete(`/api/requerimiento/${cedula_requerimiento}`);
-  return response.data;
+  return response.data; // Puede ser null si no existe
 };
 
 export default {
   createRequerimiento,
   getRequerimiento,
-  updateRequerimiento,
-  deleteRequerimiento,
 };

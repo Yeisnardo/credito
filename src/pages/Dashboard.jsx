@@ -38,7 +38,7 @@ const Dashboard = () => {
       {menuOpen && <Menu />}
 
       {/* Contenido principal, con margen para header y menu */}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64">
+      <div className="flex-1 flex flex-col ml-0 md:ml-64 ">
         {/* Header con botón para abrir/cerrar menu */}
         <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
 

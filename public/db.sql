@@ -35,6 +35,7 @@ CREATE TABLE usuario (
 
 CREATE TABLE requerimientos (
   cedula_requerimiento VARCHAR(20) PRIMARY KEY,
+  fecha VARCHAR (20) NULL NULL,
   carta_solicitud VARCHAR(2),
   postulacion_UBCH VARCHAR(2),
   certificado_emprender VARCHAR(2),
