@@ -24,7 +24,6 @@ import Header from './components/Header';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   // Verificar si hay usuario en localStorage al cargar
   useEffect(() => {
@@ -34,145 +33,28 @@ function App() {
     }
   }, []);
 
-  // Función para proteger rutas
-  const PrivateRoute = ({ children }) => {
-    if (!user) {
-      return <Navigate to="/login" replace />;
-    }
-    return children;
-  };
-
   return (
     <Router>
-
       <Routes>
         {/* Rutas públicas */}
-        <Route path="/login" element={<Login setUser={setUser} />} />
+        <Route path="/" element={<Login />} />
         <Route path="/RegistroEmprendedor" element={<RegistroEmprendedor />} />
+        <Route path="/Dashboard" element={<Dashboard />} />
+        <Route path="/Requerimiento" element={<Requerimiento />} />
+        <Route path="/Solicitud" element={<Solicitud />} />
+        <Route path="/Depositos" element={<Depositos />} />
+        <Route path="/Cuotas" element={<Cuotas />} />
+        <Route path="/Usuario" element={<Usuario />} />
+        <Route path="/Perfil_emprendedores" element={<Perfil_emprendedores />} />
+        <Route path="/Emprendimiento" element={<Emprendimiento />} />
+        <Route path="/Gestion" element={<Gestion />} />
+        <Route path="/Aprobacion" element={<Aprobacion />} />
+        <Route path="/Fondo" element={<Fondo />} />
+        <Route path="/ConfirmacionCuota" element={<ConfirmacionCuota />} />
+        <Route path="/Amortizacion" element={<Amortizacion />} />
+        <Route path="/Credito" element={<Credito />} />
 
-        {/* Rutas protegidas */}
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Requerimiento"
-          element={
-            <PrivateRoute>
-              <Requerimiento />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Solicitud"
-          element={
-            <PrivateRoute>
-              <Solicitud />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Depositos"
-          element={
-            <PrivateRoute>
-              <Depositos />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Cuotas"
-          element={
-            <PrivateRoute>
-              <Cuotas />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Usuario"
-          element={
-            <PrivateRoute>
-              <Usuario />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Perfil_emprendedores"
-          element={
-            <PrivateRoute>
-              <Perfil_emprendedores />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Emprendimiento"
-          element={
-            <PrivateRoute>
-              <Emprendimiento />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Gestion"
-          element={
-            <PrivateRoute>
-              <Gestion />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Aprobacion"
-          element={
-            <PrivateRoute>
-              <Aprobacion />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Fondo"
-          element={
-            <PrivateRoute>
-              <Fondo />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/ConfirmacionCuota"
-          element={
-            <PrivateRoute>
-              <ConfirmacionCuota />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Amortizacion"
-          element={
-            <PrivateRoute>
-              <Amortizacion />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/Credito"
-          element={
-            <PrivateRoute>
-              <Credito />
-            </PrivateRoute>
-          }
-        />
         {/* Redirección a login si ruta no encontrada */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

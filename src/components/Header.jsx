@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import api, { getUsuarioPorCedula } from '../services/api_usuario'; // ajusta la ruta según tu estructura
+import api, { getUsuarioPorCedula } from '../services/api_usuario'; // ajusta la ruta
 import logo from '../assets/imagenes/logo_header.jpg';
 
-const Header = ({ toggleMenu, menuOpen, setUser  }) => {
+const Header = ({ toggleMenu, menuOpen }) => {
   const navigate = useNavigate();
 
-  // Estados para los menús desplegables
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [user, setUserState] = useState(null);
+  const [user, setUser] = useState(null);
 
-  // Cargar usuario desde localStorage o API
+  // Cargar usuario en localStorage o desde API
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -20,22 +19,17 @@ const Header = ({ toggleMenu, menuOpen, setUser  }) => {
         if (cedula) {
           const usuario = await getUsuarioPorCedula(cedula);
           if (usuario) {
-            setUserState(usuario);
-            if (setUser ) setUser (usuario);
+            setUser(usuario);
           }
         }
       } catch (error) {
         console.error('Error al obtener usuario por cédula:', error);
       }
     };
-    if (!user) fetchUserData();
-  }, [setUser , user]);
+    fetchUserData();
+  }, []);
 
-  // Manejadores de interfaz
-  const handleToggleProfileMenu = () => setProfileMenuOpen(!profileMenuOpen);
-  const handleToggleNotifications = () => setNotificationsOpen(!notificationsOpen);
-
-  // Cerrar sesión
+  // Función para cerrar sesión
   const handleCerrarSesion = () => {
     Swal.fire({
       title: "¿Estás seguro que quieres cerrar sesión?",
@@ -46,18 +40,13 @@ const Header = ({ toggleMenu, menuOpen, setUser  }) => {
     }).then((result) => {
       if (result.isConfirmed) {
         Swal.fire("¡Sesión cerrada!", "", "success");
-        // Limpieza localStorage y estado
-        localStorage.removeItem("cedula_usuario");
-        localStorage.removeItem("usuario");
-        localStorage.removeItem("estatus");
-        setUser (null);
-        navigate("./");
-        setProfileMenuOpen(false);
+        localStorage.removeItem('cedula_usuario'); // limpia localStorage
+        navigate('/'); // redirige a Login
       }
     });
   };
 
-  // Configuración: cambiar contraseña o usuario
+  // Función para abrir configuración (cambiar password/usuario)
   const handleAbrirConfiguracion = async () => {
     const { value } = await Swal.fire({
       title: "¿Qué deseas cambiar?",
@@ -259,9 +248,7 @@ const Header = ({ toggleMenu, menuOpen, setUser  }) => {
 
     if (value) {
       await updatePersona(value);
-      if (setUser ) {
-        setUser ((prev) => ({ ...prev, ...value }));
-      }
+      // No actualizamos en el estado global, solo en la API
       Swal.fire("Actualizado", "Datos personales actualizados", "success");
     }
   };
@@ -309,9 +296,6 @@ const Header = ({ toggleMenu, menuOpen, setUser  }) => {
     });
     if (value) {
       await updateEmprendimiento(value);
-      if (setUser ) {
-        setUser ((prev) => ({ ...prev, ...value }));
-      }
       Swal.fire("Actualizado", "Emprendimiento actualizado", "success");
     }
   };
@@ -344,9 +328,6 @@ const Header = ({ toggleMenu, menuOpen, setUser  }) => {
     });
     if (value) {
       await updateConsejo(value);
-      if (setUser ) {
-        setUser ((prev) => ({ ...prev, ...value }));
-      }
       Swal.fire("Actualizado", "Consejo Comunale actualizado", "success");
     }
   };
@@ -400,7 +381,7 @@ const Header = ({ toggleMenu, menuOpen, setUser  }) => {
         {/* Notificaciones */}
         <div className="relative">
           <button
-            onClick={handleToggleNotifications}
+            onClick={() => setNotificationsOpen(!notificationsOpen)}
             className="text-white focus:outline-none relative"
             aria-label="Notificaciones"
           >
@@ -419,7 +400,7 @@ const Header = ({ toggleMenu, menuOpen, setUser  }) => {
         {/* Perfil */}
         <div className="relative">
           <button
-            onClick={handleToggleProfileMenu}
+            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
             className="flex items-center px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition text-white"
             aria-label="Perfil"
           >
