@@ -1,40 +1,40 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+// Importaciones
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import axios from 'axios';
-import miImagen from "../assets/imagenes/logo_ifemi.jpg";
+import miImagen from '../assets/imagenes/logo_ifemi.jpg';
 
-const Login = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+const Login = ({ setUser }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (username.trim() === "" || password.trim() === "") {
+    // Validaciones básicas
+    if (!username || !password) {
       Swal.fire({
-        icon: "error",
-        title: "Campos incompletos",
-        text: "Por favor, completa todos los campos.",
+        icon: 'error',
+        title: 'Campos incompletos',
+        text: 'Por favor, completa todos los campos.',
       });
       return;
     }
-
     if (username.length < 5) {
       Swal.fire({
-        icon: "error",
-        title: "Nombre de usuario inválido",
-        text: "El nombre de usuario debe tener al menos 5 caracteres.",
+        icon: 'error',
+        title: 'Nombre de usuario inválido',
+        text: 'El nombre de usuario debe tener al menos 5 caracteres.',
       });
       return;
     }
-
     if (password.length < 6) {
       Swal.fire({
-        icon: "error",
-        title: "Contraseña inválida",
-        text: "La contraseña debe tener al menos 6 caracteres.",
+        icon: 'error',
+        title: 'Contraseña inválida',
+        text: 'La contraseña debe tener al menos 6 caracteres.',
       });
       return;
     }
@@ -45,29 +45,34 @@ const Login = () => {
         clave: password,
       });
 
-      const user = response.data.user;
+      const user = response.data.user; // Asegúrate que backend devuelve así
 
+      // Guardar en localStorage
+      localStorage.setItem('cedula_usuario', user.cedula_usuario);
       localStorage.setItem('usuario', JSON.stringify(user));
       localStorage.setItem('estatus', user.estatus);
 
+      // Actualizar estado en componente superior
+      if (setUser) setUser(user);
+
       Swal.fire({
-        icon: "success",
-        title: "Éxito",
-        text: response.data.message || "Inicio de sesión exitoso",
+        icon: 'success',
+        title: 'Éxito',
+        text: response.data.message || 'Inicio de sesión exitoso',
       }).then(() => {
-        navigate("/dashboard");
+        navigate('/dashboard');
       });
     } catch (error) {
       Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.response?.data?.error || "Error al iniciar sesión",
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.error || 'Error al iniciar sesión',
       });
     }
   };
 
   const handleRegisterRedirect = () => {
-    navigate("/RegistroEmprendedor");
+    navigate('/RegistroEmprendedor');
   };
 
   return (
@@ -75,9 +80,7 @@ const Login = () => {
       {/* Lado izquierdo con la imagen */}
       <div className="w-1/2 hidden md:flex items-center justify-center p-4 bg-logoLoginEfimi">
         <div className="relative rounded-lg overflow-hidden w-max h-max">
-          {/* Degradado */}
           <div className="absolute inset-0 rounded-lg bg-gradient-to-tr from-purple-400 via-pink-500 to-red-500 opacity-50"></div>
-          {/* Imagen */}
           <img
             src={miImagen}
             alt="Logo Efemi"
@@ -86,7 +89,7 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Lado derecho con formulario */}
+      {/* Formulario */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md">
           <h2 className="mb-6 text-2xl font-bold text-center text-gray-700">
@@ -95,10 +98,7 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Usuario */}
             <div className="relative">
-              <label
-                htmlFor="username"
-                className="block mb-1 text-sm font-medium text-gray-600"
-              >
+              <label htmlFor="username" className="block mb-1 text-sm font-medium text-gray-600">
                 Nombre de Usuario
               </label>
               <div className="flex items-center border border-gray-300 rounded px-3 py-2 focus-within:ring-2 focus-within:ring-blue-400">
@@ -115,10 +115,7 @@ const Login = () => {
             </div>
             {/* Contraseña */}
             <div className="relative">
-              <label
-                htmlFor="password"
-                className="block mb-1 text-sm font-medium text-gray-600"
-              >
+              <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-600">
                 Contraseña
               </label>
               <div className="flex items-center border border-gray-300 rounded px-3 py-2 focus-within:ring-2 focus-within:ring-blue-400">
@@ -141,7 +138,7 @@ const Login = () => {
               Iniciar Sesión
             </button>
           </form>
-          {/* Enlace a registro */}
+          {/* Registro */}
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
               ¿No tienes cuenta?{" "}

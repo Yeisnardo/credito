@@ -1,8 +1,7 @@
-const { query } = require("../config/db");
+const { query } = require('../config/db');
 
 class Usuario {
   static validarUsuario(usuario) {
-    console.log("Datos del usuario:", usuario);
     const {
       cedula_usuario,
       usuario: nombreUsuario,
@@ -12,12 +11,19 @@ class Usuario {
     } = usuario;
 
     if (!cedula_usuario || !nombreUsuario || !clave || !rol || !estatus) {
-      throw new Error("Campos obligatorios incompletos");
+      throw new Error('Campos obligatorios incompletos');
     }
   }
 
-  static async getUsuario() {
-    // Join usuario with persona to get all personal data
+  static async getUsuarioPorCedula(cedula) {
+    const resultado = await query(
+      'SELECT * FROM usuario WHERE cedula_usuario = $1',
+      [cedula]
+    );
+    return resultado.rows[0];
+  }
+
+  static async getUsuarios() {
     const resultado = await query(`
       SELECT 
         u.cedula_usuario, 
@@ -34,20 +40,18 @@ class Usuario {
         u.rol, 
         u.estatus
       FROM usuario u
-      LEFT JOIN persona p ON u.cedula_usuario = p.cedula;
+      LEFT JOIN persona p ON u.cedula_usuario = p.cedula
     `);
-    
-    // Map results to include all necessary fields
     return resultado.rows.map((row) => ({
       cedula_usuario: row.cedula_usuario,
-      nombre: row.nombre_completo || "", // Nombre completo del usuario
-      edad: row.edad || null, // Edad del usuario
-      telefono: row.telefono || "", // Teléfono del usuario
-      email: row.email || "", // Correo del usuario
-      estado: row.estado || "", // Estado del usuario
-      municipio: row.municipio || "", // Municipio del usuario
-      direccion_actual: row.direccion_actual || "", // Dirección actual del usuario
-      tipo_persona: row.tipo_persona || "", // Tipo de persona
+      nombre: row.nombre_completo || '',
+      edad: row.edad || null,
+      telefono: row.telefono || '',
+      email: row.email || '',
+      estado: row.estado || '',
+      municipio: row.municipio || '',
+      direccion_actual: row.direccion_actual || '',
+      tipo_persona: row.tipo_persona || '',
       usuario: row.usuario,
       clave: row.clave,
       tipo_usuario: row.rol,
@@ -65,13 +69,14 @@ class Usuario {
       estatus,
     } = usuarioData;
 
-    const resultado = await query(`
-      INSERT INTO usuario (
-        cedula_usuario, usuario, clave, rol, estatus
-      ) VALUES ($1, $2, $3, $4, $5)
+    const resultado = await query(
+      `
+      INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING *
-    `, [cedula_usuario, nombreUsuario, clave, rol, estatus]);
-
+    `,
+      [cedula_usuario, nombreUsuario, clave, rol, estatus]
+    );
     return resultado.rows[0];
   }
 
@@ -79,31 +84,35 @@ class Usuario {
     const { usuario: nombreUsuario, clave, rol, estatus } = usuarioData;
 
     if (!nombreUsuario || !rol || !clave || !estatus) {
-      throw new Error("Campos obligatorios incompletos");
+      throw new Error('Campos obligatorios incompletos');
     }
 
-    const resultado = await query(`
-      UPDATE usuario SET 
-        usuario = $1, 
-        clave = $2, 
-        rol = $3, 
+    const resultado = await query(
+      `
+      UPDATE usuario SET
+        usuario = $1,
+        clave = $2,
+        rol = $3,
         estatus = $4
-      WHERE cedula_usuario = $5 RETURNING *
-    `, [nombreUsuario, clave, rol, estatus, cedula_usuario]);
-
+      WHERE cedula_usuario = $5
+      RETURNING *
+    `,
+      [nombreUsuario, clave, rol, estatus, cedula_usuario]
+    );
     return resultado.rows[0];
   }
 
   static async getUsuarioPorUsuario(nombreUsuario) {
-    const resultado = await query("SELECT * FROM usuario WHERE usuario = $1", [
-      nombreUsuario,
-    ]);
+    const resultado = await query(
+      'SELECT * FROM usuario WHERE usuario = $1',
+      [nombreUsuario]
+    );
     return resultado.rows[0];
   }
 
   static async updateEstatusUsuario(cedula, estatus) {
     const resultado = await query(
-      "UPDATE usuario SET estatus = $1 WHERE cedula_usuario = $2 RETURNING *",
+      'UPDATE usuario SET estatus = $1 WHERE cedula_usuario = $2 RETURNING *',
       [estatus, cedula]
     );
     return resultado.rows[0];
@@ -111,7 +120,7 @@ class Usuario {
 
   static async deleteUsuario(cedula_usuario) {
     const resultado = await query(
-      "DELETE FROM usuario WHERE cedula_usuario = $1 RETURNING *",
+      'DELETE FROM usuario WHERE cedula_usuario = $1 RETURNING *',
       [cedula_usuario]
     );
     return resultado.rows[0];

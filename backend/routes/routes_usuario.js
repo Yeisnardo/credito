@@ -5,6 +5,7 @@ const verificarEstatusUsuario = require('../middlewares/verificarEstatus');
 
 // Rutas de usuario
 router.get('/', usuarioController.getUsuario);
+router.get('/:cedula_usuario', usuarioController.getUsuarioPorCedula);
 router.post('/', usuarioController.createUsuario);
 router.post('/login', usuarioController.loginUsuario);
 router.put('/:cedula_usuario', usuarioController.updateUsuario);
