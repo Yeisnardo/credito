@@ -13,7 +13,6 @@ const getUsuarioPorCedula = async (req, res) => {
     res.status(500).json({ message: 'Error en servidor' });
   }
 };
-
 const getUsuario = async (req, res) => {
   try {
     const usuarios = await Usuario.getUsuarios();

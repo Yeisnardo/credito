@@ -65,11 +65,11 @@ const Dashboard = ({setUser}) => {
                     Resumen de usuario
                   </h2>
                   <p className="text-gray-700 mb-2">
-                    Nombre: {user?.usuario || "Cargando..."}
+                    Nombre: {user?.nombre || "Cargando..."}
                   </p>
                   <p className="text-gray-700">
-                    Status:{' '}
-                    <span className="font-semibold text-green-500">Activo</span>
+                    Estatus:{' '}
+                    <span className="font-semibold text-green-500"> {user?.estatus || "Cargando..."}</span>
                   </p>
                 </div>
               </div>

@@ -140,8 +140,8 @@ const Header = ({ toggleMenu, menuOpen }) => {
       html: `
       <div class="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-6">
         <div class="flex flex-col items-center mb-4">
-          <h3 class="text-xl font-semibold text-gray-800 mb-1">${user?.nombre || "Nombre"}</h3>
-          <p class="text-sm text-gray-500 mb-2">${user?.tipo_usuario || "Rol"}</p>
+          <h3 class="text-xl font-semibold text-gray-800 mb-1">${user?.nombre_completo || "Nombre"}</h3>
+          <p class="text-sm text-gray-500 mb-2">${user?.rol || "Rol"}</p>
           <p class="text-sm text-gray-500">Edad: ${user?.edad || "N/A"}</p>
         </div>
         <div class="border-t border-gray-200 pt-4 mb-4 px-4">
@@ -158,7 +158,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
         </div>
         <div class="border-t border-gray-200 pt-4 mb-2 px-4">
           <h4 class="text-md font-semibold text-gray-700 mb-2">Consejo Comunale</h4>
-          <p class="text-gray-600">${user?.consejoComunale || "No especificado"}</p>
+          <p class="text-gray-600">${user?.consejo_nombre || "No especificado"}</p>
         </div>
       </div>
     `,
@@ -180,7 +180,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
         <div class="flex flex-wrap gap-4">
           <div class="flex-1 min-w-[300px] w-0">
             <label for="nombre" class="block text-xs font-medium text-gray-700 mb-1">Nombre Completo</label>
-            <input id="nombre" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${user?.nombre || ""}">
+            <input id="nombre" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${user?.nombre_completo || ""}">
           </div>
           <div class="flex-1 min-w-[150px] w-0">
             <label for="edad" class="block text-xs font-medium text-gray-700 mb-1">Edad</label>
@@ -273,6 +273,10 @@ const Header = ({ toggleMenu, menuOpen }) => {
       <input id="tipo_negocio" class="w-[300px] border rounded px-2 py-1" placeholder="Tipo de Negocio" value="${user?.tipo_negocio || ""}"/>
       <label for="direccion_emprendimiento" class="block text-sm font-medium text-gray-700 mb-1 mt-2">Dirección del Emprendimiento</label>
       <input id="direccion_emprendimiento" class="w-[300px] border rounded px-2 py-1" placeholder="Dirección" value="${user?.direccion_emprendimiento || ""}"/>
+      <label for="direccion_emprendimiento" class="block text-sm font-medium text-gray-700 mb-1 mt-2">Consego Comunal</label>
+      <input id="direccion_emprendimiento" class="w-[300px] border rounded px-2 py-1" placeholder="Dirección" value="${user?.consejo_nombre || ""}"/>
+      <label for="direccion_emprendimiento" class="block text-sm font-medium text-gray-700 mb-1 mt-2">Comuna</label>
+      <input id="direccion_emprendimiento" class="w-[300px] border rounded px-2 py-1" placeholder="Dirección" value="${user?.comuna || ""}"/>
       `,
       focusConfirm: false,
       showCancelButton: true,
@@ -406,7 +410,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
           >
             <i className="bx bxs-user" style={{ fontSize: "24px" }}></i>
             <span className="ml-2 hidden sm:inline truncate">
-              {user?.usuario || "Nombre"} - {user?.tipo_usuario || "Rol"}
+              {user?.nombre || "Nombre"} - {user?.tipo_usuario || "Rol"}
             </span>
           </button>
 

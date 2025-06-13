@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api from "../services/api_requerimiento";
-import apiUsuario from "../services/api_usuario";
+import { getUsuarioPorCedula } from '../services/api_usuario';
 
-const Encuesta = ({ menuOpenProp, setUser }) => {
+const Encuesta = ({ menuOpenProp, }) => {
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(menuOpenProp ?? true);
-  const [user, setUserState] = useState(null);
+  const [user, setUser] = useState(null);
   const setUserInParent = setUser ?? (() => {});
 
   const [cedula_emprendimiento, setCedula_emprendimiento] = useState("");
@@ -56,21 +56,27 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
 
   // Cargar usuario y datos existentes al montar
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await apiUsuario.getUsuario();
-        if (response && response.length > 0) {
-          const usuario = response[0];
-          setUserState(usuario);
+  const fetchUserData = async () => {
+    try {
+      const cedula = localStorage.getItem('cedula_usuario');
+      if (cedula) {
+        const usuario = await getUsuarioPorCedula(cedula);
+        if (usuario) {
+          setUser(usuario);
           setUserInParent(usuario);
           setCedula_emprendimiento(usuario.cedula_usuario);
         }
-      } catch (error) {
-        console.error("Error al obtener los usuarios:", error);
       }
-    };
-    if (!user) fetchUserData();
-  }, [user, setUser, setUserInParent]);
+    } catch (error) {
+      console.error('Error al obtener usuario por cédula:', error);
+    }
+  };
+
+  // Solo ejecutar si no hay un usuario en estado
+  if (!user) {
+    fetchUserData();
+  }
+}, [user, setUser, setUserInParent]);
 
   // Cuando cambie la cédula, buscar datos guardados y cargar respuestas
   useEffect(() => {
@@ -84,21 +90,21 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
             const [year, month, day] = data.fecha.split("-");
             setFechaCita(`${day}/${month}/${year}`);
 
-            const updatedPreguntas = preguntas.map((p, index) => {
-              const keys = [
-                "carta_solicitud",
-                "postulacion_UBCH",
-                "certificado_emprender",
-                "registro_municipal",
-                "carta_residencia",
-                "copia_cedula",
-                "rif_personal",
-                "fotos_emprendimiento",
-                "rif_emprendimiento",
-                "referencia_bancaria",
-              ];
-              const key = keys[index];
+            const keys = [
+              "carta_solicitud",
+              "postulacion_UBCH",
+              "certificado_emprender",
+              "registro_municipal",
+              "carta_residencia",
+              "copia_cedula",
+              "rif_personal",
+              "fotos_emprendimiento",
+              "rif_emprendimiento",
+              "referencia_bancaria",
+            ];
 
+            const updatedPreguntas = preguntas.map((p, index) => {
+              const key = keys[index];
               return {
                 ...p,
                 respuesta: data[key] === "Si",
@@ -135,12 +141,25 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
     }
   };
 
+  // Validar solo números y longitud
+  const handleCedulaChange = (e) => {
+    const value = e.target.value;
+    // Solo números y entre 6 y 8 caracteres
+    if (/^\d*$/.test(value) && value.length <= 8) {
+      setCedula_emprendimiento(value);
+    }
+  };
+
   // Guardar respuestas
   const handleSubmitEncuesta = async (e) => {
     e.preventDefault();
 
-    if (!cedula_emprendimiento) {
-      alert("Por favor, ingresa la cédula de identidad");
+    if (
+      !cedula_emprendimiento ||
+      cedula_emprendimiento.length < 6 ||
+      cedula_emprendimiento.length > 8
+    ) {
+      alert("La cédula debe tener entre 6 y 8 dígitos numéricos");
       return;
     }
     if (!fecha) {
@@ -221,9 +240,10 @@ const Encuesta = ({ menuOpenProp, setUser }) => {
                       type="text"
                       id="cedula_requerimiento"
                       value={cedula_emprendimiento}
-                      onChange={(e) => setCedula_emprendimiento(e.target.value)}
+                      onChange={handleCedulaChange}
                       className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
                       required
+                      placeholder="6-8 dígitos numéricos"
                     />
                   </div>
                 </div>

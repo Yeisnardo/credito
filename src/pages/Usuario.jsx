@@ -16,7 +16,7 @@ const Usuario = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const usuarios = await api.getUsuario();
+        const usuarios = await api.getUsuarios();
         setData(Array.isArray(usuarios) ? usuarios : []);
       } catch (error) {
         Swal.fire({
@@ -44,10 +44,6 @@ const Usuario = () => {
         u.rol.toLowerCase().includes(term)
     );
   }, [data, searchTerm]);
-
-  const handleSort = () => {
-    // La lógica de ordenamiento se elimina, por lo tanto, esta función queda vacía o eliminada.
-  };
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
@@ -77,12 +73,32 @@ const Usuario = () => {
         const clave = document.getElementById('clave').value.trim();
         const rol = document.getElementById('rol').value.trim();
 
-        if (!cedula_usuario) { Swal.showValidationMessage('Por favor, ingrese la cédula de identidad.'); return false; }
-        if (!nombre_completo) { Swal.showValidationMessage('Por favor, ingrese el nombre completo.'); return false; }
-        if (!usuario) { Swal.showValidationMessage('Por favor, ingrese el nombre de usuario.'); return false; }
-        if (clave.length < 6) { Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres.'); return false; }
-        if (!rol) { Swal.showValidationMessage('Por favor, seleccione un tipo de usuario.'); return false; }
-
+        // Validación de cédula: solo números, entre 6 y 8 caracteres
+        const cedulaRegex = /^\d{6,8}$/;
+        if (!cedula_usuario) {
+          Swal.showValidationMessage('Por favor, ingrese la cédula de identidad.');
+          return false;
+        }
+        if (!cedulaRegex.test(cedula_usuario)) {
+          Swal.showValidationMessage('La cédula debe tener solo números y entre 6 y 8 dígitos.');
+          return false;
+        }
+        if (!nombre_completo) {
+          Swal.showValidationMessage('Por favor, ingrese el nombre completo.');
+          return false;
+        }
+        if (!usuario) {
+          Swal.showValidationMessage('Por favor, ingrese el nombre de usuario.');
+          return false;
+        }
+        if (clave.length < 6 || clave.length > 20) {
+          Swal.showValidationMessage('La contraseña debe tener entre 6 y 20 caracteres.');
+          return false;
+        }
+        if (!rol) {
+          Swal.showValidationMessage('Por favor, seleccione un tipo de usuario.');
+          return false;
+        }
         return { cedula_usuario, nombre_completo, usuario, clave, rol };
       },
     });
@@ -124,9 +140,9 @@ const Usuario = () => {
         <input id="clave" type="password" class="swal2-input" placeholder="Dejar en blanco para mantener" />
         <select id="rol" class="swal2-input">
           <option value="">Selecciona un tipo de usuario</option>
-          <option value="Administrador" ${user.tipo_usuario === "Administrador" ? "selected" : ""}>Administrador</option>
-          <option value="Credito y Cobranza 1" ${user.tipo_usuario === "Credito y Cobranza 1" ? "selected" : ""}>Admin. Credito y Cobranza</option>
-          <option value="Credito y Cobranza 2" ${user.tipo_usuario === "Credito y Cobranza 2" ? "selected" : ""}>Asist. Credito y Cobranza</option>
+          <option value="Administrador" ${user.rol === "Administrador" ? "selected" : ""}>Administrador</option>
+          <option value="Credito y Cobranza 1" ${user.rol === "Credito y Cobranza 1" ? "selected" : ""}>Admin. Credito y Cobranza</option>
+          <option value="Credito y Cobranza 2" ${user.rol === "Credito y Cobranza 2" ? "selected" : ""}>Asist. Credito y Cobranza</option>
         </select>
       `,
       focusConfirm: false,
@@ -280,7 +296,7 @@ const Usuario = () => {
                     <th
                       key={key}
                       className="px-4 py-3 cursor-pointer select-none text-gray-700 font-medium hover:bg-gray-200 transition"
-                      // Se elimina el onClick de handleSort
+                      // La lógica de ordenamiento la eliminamos
                     >
                       <div className="flex items-center justify-between">
                         <span className="capitalize">{label}</span>

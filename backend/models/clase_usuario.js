@@ -15,13 +15,48 @@ class Usuario {
     }
   }
 
-  static async getUsuarioPorCedula(cedula) {
-    const resultado = await query(
-      'SELECT * FROM usuario WHERE cedula_usuario = $1',
-      [cedula]
-    );
-    return resultado.rows[0];
+  // Método de la clase Usuario
+static async getUsuarioPorCedula(cedula) {
+  const resultado = await query(
+    `SELECT 
+      u.cedula_usuario, 
+      p.nombre_completo, 
+      p.edad, 
+      p.telefono, 
+      p.email, 
+      p.estado, 
+      p.municipio, 
+      p.direccion_actual, 
+      p.tipo_persona,
+      u.usuario, 
+      u.clave, 
+      u.rol, 
+      u.estatus
+    FROM usuario u
+    LEFT JOIN persona p ON u.cedula_usuario = p.cedula
+    WHERE u.cedula_usuario = $1`,
+    [cedula]
+  );
+  if (resultado.rows.length === 0) {
+    return null; // si no encuentra, devuelve null
   }
+  const row = resultado.rows[0];
+  return {
+    cedula_usuario: row.cedula_usuario,
+    nombre: row.nombre_completo || '',
+    edad: row.edad || null,
+    telefono: row.telefono || '',
+    email: row.email || '',
+    estado: row.estado || '',
+    municipio: row.municipio || '',
+    direccion_actual: row.direccion_actual || '',
+    tipo_persona: row.tipo_persona || '',
+    usuario: row.usuario,
+    clave: row.clave,
+    tipo_usuario: row.rol,
+    estatus: row.estatus,
+  };
+}
 
   static async getUsuarios() {
     const resultado = await query(`
