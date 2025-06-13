@@ -368,18 +368,6 @@ const Header = ({ toggleMenu, menuOpen }) => {
         ></i>
       </button>
 
-      {/* Navegación en pantallas grandes */}
-      <nav className="hidden md:flex space-x-4 items-center">
-        <button
-          className="flex items-center px-3 py-2 rounded text-white hover:bg-gray-700 transition"
-          onClick={() => navigate("/Credito")}
-          title="Crédito"
-        >
-          <i className="bx bx-credit-card mr-2"></i>
-          <span className="hidden sm:inline">Solicitud de Credito</span>
-        </button>
-      </nav>
-
       {/* Notificaciones y perfil */}
       <div className="flex items-center space-x-4 relative ml-4">
         {/* Notificaciones */}
@@ -417,15 +405,6 @@ const Header = ({ toggleMenu, menuOpen }) => {
           {profileMenuOpen && (
             <div className="absolute right-0 mt-2 w-60 bg-white rounded-lg shadow-lg z-50 divide-y divide-gray-200 overflow-hidden">
               <div className="flex flex-col">
-                <button
-                  className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
-                  onClick={() => {
-                    navigate("/Credito");
-                    setProfileMenuOpen(false);
-                  }}
-                >
-                  <i className="bx bx-credit-card mr-2"></i> Solicitud de Credito
-                </button>
                 <button
                   className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
                   onClick={() => {

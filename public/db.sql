@@ -49,6 +49,14 @@ CREATE TABLE requerimientos (
   CONSTRAINT fk_requerimientos_persona FOREIGN KEY (cedula_requerimiento) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
+CREATE TABLE Solicitud(
+  cedula_solicitud VARCHAR (20) PRIMARY KEY,
+  Motivo VARCHAR (1000) NOT NULL,
+  CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_solicitud) REFERENCES persona(cedula) ON DELETE CASCADE
+);
+
+
+
 
 -- Insertar datos en la tabla persona
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES
