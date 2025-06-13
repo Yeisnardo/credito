@@ -313,7 +313,7 @@ const Usuario = () => {
                       <td className="px-4 py-3 text-center text-gray-600">{item.cedula_usuario}</td>
                       <td className="px-4 py-3 text-gray-700">{item.nombre}</td>
                       <td className="px-4 py-3 text-gray-700">{item.usuario}</td>
-                      <td className="px-4 py-3 text-gray-700">{item.tipo_usuario}</td>
+                      <td className="px-4 py-3 text-gray-700">{item.rol}</td>
                       <td className="px-4 py-3 text-center">
                         <span
                           className={`px-3 py-1 rounded-full text-sm font-semibold ${
