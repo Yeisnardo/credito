@@ -57,7 +57,16 @@ const RegistroEmprendedor = () => {
 
   // Función para manejar cambios en los inputs
   const handleChange = (campo, valor) => {
-    setDatos({ ...datos, [campo]: valor });
+    // Validación específica para el campo de cédula
+    if (campo === "cedula") {
+      // Solo números y longitud entre 6 y 9
+      const soloNumeros = valor.replace(/\D/g, ""); // elimina no dígitos
+      if (soloNumeros.length <= 9) {
+        setDatos((prev) => ({ ...prev, [campo]: soloNumeros }));
+      }
+    } else {
+      setDatos((prev) => ({ ...prev, [campo]: valor }));
+    }
   };
 
   // Función para avanzar en el formulario
@@ -67,6 +76,8 @@ const RegistroEmprendedor = () => {
       () => {
         if (
           !datos.cedula.trim() ||
+          datos.cedula.length < 6 ||
+          datos.cedula.length > 9 ||
           !datos.nombre_completo.trim() ||
           !datos.edad.toString().trim() ||
           !datos.telefono.trim() ||
@@ -75,7 +86,7 @@ const RegistroEmprendedor = () => {
           Swal.fire({
             icon: "error",
             title: "Campos incompletos",
-            text: "Por favor, completa todos los datos personales.",
+            text: "Por favor, completa todos los datos personales correctamente. La cédula debe tener entre 6 y 9 dígitos y solo números.",
           });
           return false;
         }
@@ -184,7 +195,6 @@ const RegistroEmprendedor = () => {
     }
   };
 
-  // Renderizado componente
   return (
     <div className="flex min-h-screen">
       {/* Lado izquierdo con imagen (solo en md y superior) */}
@@ -280,7 +290,6 @@ const RegistroEmprendedor = () => {
                   className="w-full border border-gray-300 rounded px-3 py-2"
                 >
                   <option value="Emprendedor">Emprendedor</option>
-                  {/* Agrega más opciones si es necesario */}
                 </select>
               </div>
               {/* Botón Siguiente */}
@@ -419,7 +428,6 @@ const RegistroEmprendedor = () => {
                   <option value="">Selecciona un rol</option>
                   <option value="Admin">Admin</option>
                   <option value="Emprendedor">Emprendedor</option>
-                  {/* Agrega más roles si es necesario */}
                 </select>
               </div>
               {/* Botones */}
