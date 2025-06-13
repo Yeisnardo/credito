@@ -4,32 +4,28 @@ import Swal from "sweetalert2";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
+import axios from 'axios';
 
 const Perfil = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [solicitudes, setSolicitudes] = useState([]);
+  const [perfil, setPerfil] = useState([]); // Cambiado a perfiles
   const [busqueda, setBusqueda] = useState("");
 
-  // Cargar solicitudes desde la API en montaje
+  // Cargar perfiles desde la API
   useEffect(() => {
-  const fetchSolicitudes = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/solicitudes');
-      if (!response.ok) throw new Error("Error en la respuesta");
-      const data = await response.json();
-      setSolicitudes(data);
-    } catch (error) {
-      console.error(error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudieron cargar las solicitudes.',
-      });
-    }
-  };
-  fetchSolicitudes();
-}, []);
+    const fetchPerfiles = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/perfiles");
+        setPerfil(response.data);
+      } catch (error) {
+        console.error(error);
+        // Manejo del error
+      }
+    };
+    fetchPerfiles();
+  }, []);
+
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
@@ -56,17 +52,13 @@ const Perfil = () => {
     });
   };
 
-  // Filtrar solicitudes según búsqueda
-  const solicitudesFiltradas = solicitudes.filter((s) =>
+  const perfilesFiltrados = perfil.filter((s) =>
     s.solicitante.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 font-sans">
-      {/* Menú lateral */}
       {menuOpen && <Menu />}
-
-      {/* Contenido principal */}
       <div className="flex-1 flex flex-col ml-0 md:ml-64 transition-all duration-300">
         <Header toggleMenu={toggleMenu} />
 
@@ -74,12 +66,13 @@ const Perfil = () => {
         <div className="pt-12 px-6 md:px-12 pb-8 flex-1 overflow-y-auto">
           {/* Encabezado y buscador */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-8">
-            {/* Título e icono */}
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-gradient-to-r from-indigo-400 to-purple-500 p-4 rounded-full shadow-lg text-white hover:scale-105 transform transition-transform cursor-pointer">
                 <i className="bx bx-group text-3xl"></i>
               </div>
-              <h1 className="text-4xl font-extrabold text-gray-800">Perfiles de emprendedores</h1>
+              <h1 className="text-4xl font-extrabold text-gray-800">
+                Perfiles de emprendedores
+              </h1>
             </div>
             {/* Buscador */}
             <div className="w-full md:w-1/3">
@@ -105,10 +98,10 @@ const Perfil = () => {
             </div>
           </div>
 
-          {/* Lista de solicitudes */}
+          {/* Lista de perfiles */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            {solicitudesFiltradas.length > 0 ? (
-              solicitudesFiltradas.map((s) => (
+            {perfilesFiltrados.length > 0 ? (
+              perfilesFiltrados.map((s) => (
                 <div
                   key={s.id}
                   className="bg-white rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 p-6 flex flex-col"
@@ -122,11 +115,14 @@ const Perfil = () => {
                     />
                   </div>
                   {/* Nombre */}
-                  <h2 className="text-xl font-semibold mb-2 text-center text-gray-800">{s.solicitante}</h2>
+                  <h2 className="text-xl font-semibold mb-2 text-center text-gray-800">
+                    {s.solicitante}
+                  </h2>
                   {/* Contrato y Estado */}
                   <div className="mb-4 text-center">
                     <p className="text-sm text-gray-600">
-                      <strong>Contrato:</strong> {s.contrato ? s.contrato : "Pendiente"}
+                      <strong>Contrato:</strong>{" "}
+                      {s.contrato ? s.contrato : "Pendiente"}
                     </p>
                     <p className="text-sm text-gray-600">
                       <strong>Estado:</strong> {s.estado}
@@ -145,7 +141,7 @@ const Perfil = () => {
               ))
             ) : (
               <p className="col-span-3 text-center text-gray-500 text-lg mt-12">
-                No hay solicitudes que coincidan
+                No hay perfiles que coincidan
               </p>
             )}
           </section>

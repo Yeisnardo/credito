@@ -4,8 +4,9 @@ const cors = require('cors');
 const usuarioRoutes = require('./routes/routes_usuario');
 const emprendimientoRoutes = require('./routes/routes_emprendimiento');
 const personaRoutes = require('./routes/routes_persona');
-const solicitudRoutes = require('./routes/routes_solicitudes');
+const perfilRoutes = require('./routes/routes_perfil');
 const requerimientoRoutes = require('./routes/routes_requerimiento');
+const solicitudRoutes = require('./routes/routes_solicitud');
 
 const app = express();
 
@@ -15,8 +16,9 @@ app.use(express.json());
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/emprendimientos', emprendimientoRoutes);
 app.use('/api/persona', personaRoutes);
-app.use('/api/solicitudes', solicitudRoutes);
+app.use('/api/perfiles', perfilRoutes);
 app.use('/api/requerimiento', requerimientoRoutes);
+app.use('/api/solicitudes', solicitudRoutes);
 
 // Middleware para manejo de errores
 app.use((err, req, res, next) => {

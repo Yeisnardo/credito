@@ -1,62 +1,75 @@
-// models/clase_emprendimiento.js
 const { query } = require('../config/db');
 
-class Emprendimiento {
-  // Obtener todos los emprendimientos con datos del emprendedor
-  static async getAllWithEmprendedor() {
+class Solicitud {
+  // Validar campos obligatorios
+  static validarSolicitud(solicitud) {
+    const { cedula_solicitud, motivo } = solicitud;
+    if (!cedula_solicitud || !motivo) {
+      throw new Error('Campos obligatorios incompletos');
+    }
+  }
+
+  // Obtener todas las solicitudes
+  static async getSolicitudes() {
     const resultado = await query(`
-      SELECT e.*, p.nombre_completo, p.email
-      FROM emprendimientos e
-      JOIN persona p ON e.cedula_emprendedor = p.cedula
+      SELECT cedula_solicitud, motivo
+      FROM solicitud
     `);
     return resultado.rows;
   }
 
-  // Obtener emprendimientos por cédula del emprendedor
-  static async getByCedulaEmprendedor(cedula) {
-    const resultado = await query(`
-      SELECT e.*, p.nombre_completo, p.email
-      FROM emprendimientos e
-      JOIN persona p ON e.cedula_emprendedor = p.cedula
-      WHERE e.cedula_emprendedor = $1
-    `, [cedula]);
-    return resultado.rows;
+  // Obtener una solicitud por cedula_solicitud
+  static async getSolicitudPorCedula(cedula_solicitud) {
+    const resultado = await query(
+      `SELECT cedula_solicitud, motivo FROM solicitud WHERE cedula_solicitud = $1`,
+      [cedula_solicitud]
+    );
+    if (resultado.rows.length === 0) return null;
+    return resultado.rows[0];
   }
 
-  // Crear nuevo emprendimiento
-  static async createEmprendimiento(data) {
-    const {
-      cedula_emprendedor,
-      tipo_sector,
-      tipo_negocio,
-      nombre_emprendimiento,
-      consejo_nombre,
-      comuna,
-      direccion_emprendimiento
-    } = data;
+  // Crear una nueva solicitud
+  static async createSolicitud(solicitudData) {
+    this.validarSolicitud(solicitudData);
+    const { cedula_solicitud, motivo } = solicitudData;
 
     const resultado = await query(
-      `INSERT INTO emprendimientos (
-        cedula_emprendedor,
-        tipo_sector,
-        tipo_negocio,
-        nombre_emprendimiento,
-        consejo_nombre,
-        comuna,
-        direccion_emprendimiento
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [
-        cedula_emprendedor,
-        tipo_sector,
-        tipo_negocio,
-        nombre_emprendimiento,
-        consejo_nombre,
-        comuna,
-        direccion_emprendimiento
-      ]
+      `
+      INSERT INTO solicitud (cedula_solicitud, motivo)
+      VALUES ($1, $2)
+      RETURNING *
+      `,
+      [cedula_solicitud, motivo]
     );
     return resultado.rows[0];
   }
+
+  // Actualizar una solicitud
+  static async updateSolicitud(cedula_solicitud, solicitudData) {
+    const { motivo } = solicitudData;
+    if (!motivo) {
+      throw new Error('El motivo es obligatorio');
+    }
+
+    const resultado = await query(
+      `
+      UPDATE solicitud SET motivo = $1
+      WHERE cedula_solicitud = $2
+      RETURNING *
+      `,
+      [motivo, cedula_solicitud]
+    );
+    return resultado.rows[0];
+  }
+
+  // Eliminar una solicitud
+  static async deleteSolicitud(cedula_solicitud) {
+    const resultado = await query(
+      `DELETE FROM solicitud WHERE cedula_solicitud = $1 RETURNING *`,
+      [cedula_solicitud]
+    );
+    return resultado.rows[0]; // null si no existe
+  }
 }
 
-module.exports = Emprendimiento;
+module.exports = Solicitud;

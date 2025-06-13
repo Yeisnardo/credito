@@ -1,39 +1,70 @@
-// controllers/controlador_solicitud.js
-const { query } = require('../config/db');
+const Solicitud = require('../models/clase_solicitud');
 
-const getSolicitudesComplejas = async (req, res) => {
+const getSolicitudes = async (req, res) => {
   try {
-    const resultado = await query(`
-      SELECT p.cedula, p.nombre_completo, p.email, p.telefono, p.estado, p.municipio, p.direccion_actual,
-             e.tipo_sector, e.tipo_negocio, e.nombre_emprendimiento, e.consejo_nombre, e.comuna, e.direccion_emprendimiento
-      FROM persona p
-      LEFT JOIN emprendimientos e ON p.cedula = e.cedula_emprendedor
-    `);
-    // Formatear en la estructura que necesita el frontend
-    const solicitudes = resultado.rows.map(row => ({
-      id: row.cedula, // o puedes hacer un ID autogenerado si quieres
-      solicitante: row.nombre_completo,
-      contrato: null, // si tienes contrato, ajusta aquí
-      estado: row.estado,
-      foto: "https://via.placeholder.com/150", // o un campo en la tabla persona con la foto
-      detalles: {
-        emprendimiento: row.nombre_emprendimiento,
-        requerimientos: row.consejo_nombre,
-        datosPersonales: {
-          nombre: row.nombre_completo,
-          email: row.email,
-          telefono: row.telefono,
-          direccion: row.direccion_actual,
-        },
-      },
-    }));
+    const solicitudes = await Solicitud.getSolicitudes();
     res.json(solicitudes);
   } catch (err) {
-    console.error('Error en getSolicitudesComplejas:', err);
-    res.status(500).json({ error: 'Error al obtener solicitudes' });
+    console.error('Error en getSolicitudes:', err);
+    res.status(500).json({ message: 'Error al obtener solicitudes' });
+  }
+};
+
+const getSolicitudPorCedula = async (req, res) => {
+  try {
+    const { cedula_solicitud } = req.params;
+    const solicitud = await Solicitud.getSolicitudPorCedula(cedula_solicitud);
+    if (!solicitud) {
+      return res.status(404).json({ message: 'Solicitud no encontrada' });
+    }
+    res.json(solicitud);
+  } catch (err) {
+    console.error('Error en getSolicitudPorCedula:', err);
+    res.status(500).json({ message: 'Error en servidor' });
+  }
+};
+
+const createSolicitud = async (req, res) => {
+  try {
+    const solicitudData = req.body;
+    const nuevaSolicitud = await Solicitud.createSolicitud(solicitudData);
+    res.status(201).json(nuevaSolicitud);
+  } catch (err) {
+    console.error('Error en createSolicitud:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const updateSolicitud = async (req, res) => {
+  try {
+    const { cedula_solicitud } = req.params;
+    const solicitudData = req.body;
+    const solicitudActualizada = await Solicitud.updateSolicitud(cedula_solicitud, solicitudData);
+    res.json(solicitudActualizada);
+  } catch (err) {
+    console.error('Error en updateSolicitud:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const deleteSolicitud = async (req, res) => {
+  try {
+    const { cedula_solicitud } = req.params;
+    const solicitudEliminada = await Solicitud.deleteSolicitud(cedula_solicitud);
+    if (!solicitudEliminada) {
+      return res.status(404).json({ message: 'Solicitud no encontrada' });
+    }
+    res.json({ message: 'Solicitud eliminada', solicitud: solicitudEliminada });
+  } catch (err) {
+    console.error('Error en deleteSolicitud:', err);
+    res.status(500).json({ message: err.message });
   }
 };
 
 module.exports = {
-  getSolicitudesComplejas,
+  getSolicitudes,
+  getSolicitudPorCedula,
+  createSolicitud,
+  updateSolicitud,
+  deleteSolicitud,
 };

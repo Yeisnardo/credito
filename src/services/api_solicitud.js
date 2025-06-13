@@ -1,36 +1,46 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: 'http://localhost:5000', // ajusta si es necesario
 });
 
-// Crear una nueva solicitud
-const createSolicitud = async (solicitud) => {
-  const response = await api.post('/api/solicitud', solicitud);
+// Funciones API para Solicitud
+export const getSolicitudes = async () => {
+  const response = await api.get('/api/solicitudes');
   return response.data;
 };
 
-// Obtener una solicitud por cédula
-const getSolicitud = async (cedula_solicitud) => {
-  const response = await api.get(`/api/solicitud/${cedula_solicitud}`);
+export const getSolicitudPorCedula = async (cedula_solicitud) => {
+  const response = await api.get(`/api/solicitudes/${cedula_solicitud}`);
   return response.data;
 };
 
-// Actualizar una solicitud por cédula
-const updateSolicitud = async (cedula_solicitud, solicitud) => {
-  const response = await api.put(`/api/solicitud/${cedula_solicitud}`, solicitud);
+export const createSolicitud = async (solicitud) => {
+  const response = await api.post('/api/solicitudes', solicitud);
   return response.data;
 };
 
-// Eliminar una solicitud por cédula
-const deleteSolicitud = async (cedula_solicitud) => {
-  const response = await api.delete(`/api/solicitud/${cedula_solicitud}`);
+export const updateSolicitud = async (cedula_solicitud, solicitud) => {
+  const response = await api.put(`/api/solicitudes/${cedula_solicitud}`, solicitud);
+  return response.data;
+};
+
+export const deleteSolicitud = async (cedula_solicitud) => {
+  const response = await api.delete(`/api/solicitudes/${cedula_solicitud}`);
+  return response.data;
+};
+
+// Opcional: si necesitas actualizar algún campo específico, como motivo o estado
+export const updateSolicitudMotivo = async (cedula_solicitud, motivo) => {
+  const response = await api.put(`/api/solicitudes/${cedula_solicitud}/motivo`, { motivo });
   return response.data;
 };
 
 export default {
+  getSolicitudes,
+  getSolicitudPorCedula,
   createSolicitud,
-  getSolicitud,
   updateSolicitud,
   deleteSolicitud,
+  updateSolicitudMotivo,
 };

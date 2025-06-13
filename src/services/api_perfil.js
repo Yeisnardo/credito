@@ -1,43 +1,43 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // reemplaza con tu URL base
+  baseURL: 'http://localhost:5000', // ajusta si es necesario
 });
 
-// Obtener todas las solicitudes
-const getSolicitudes = async () => {
-  const response = await api.get('/api/solicitudes');
+// Obtener todos los perfiles
+const getPerfiles = async () => {
+  const response = await api.get('/api/perfiles');
   return response.data;
 };
 
-// Crear una solicitud
-const createSolicitud = async (solicitud) => {
-  const response = await api.post('/api/solicitudes', solicitud);
+// Crear un perfil
+const createPerfil = async (perfil) => {
+  const response = await api.post('/api/perfiles', perfil);
   return response.data;
 };
 
-// Obtener una solicitud por cedula
-const getSolicitudPorcedula = async (cedula) => {
-  const response = await api.get(`/api/solicitudes/${cedula}`);
+// Obtener un perfil por cédula
+const getPerfilPorCedula = async (cedula) => {
+  const response = await api.get(`/api/perfiles/${cedula}`);
   return response.data;
 };
 
-// Actualizar una solicitud por cedula
-const updateSolicitud = async (cedula, solicitud) => {
-  const response = await api.put(`/api/solicitudes/${cedula}`, solicitud);
+// Actualizar un perfil por cédula
+const updatePerfil = async (cedula, perfil) => {
+  const response = await api.put(`/api/perfiles/${cedula}`, perfil);
   return response.data;
 };
 
-// Eliminar una solicitud por cedula
-const deleteSolicitud = async (cedula) => {
-  const response = await api.delete(`/api/solicitudes/${cedula}`);
+// Eliminar un perfil por cédula
+const deletePerfil = async (cedula) => {
+  const response = await api.delete(`/api/perfiles/${cedula}`);
   return response.data;
 };
 
-export default {
-  getSolicitudes,
-  createSolicitud,
-  getSolicitudPorcedula,
-  updateSolicitud,
-  deleteSolicitud,
+export {
+  getPerfiles,
+  createPerfil,
+  getPerfilPorCedula,
+  updatePerfil,
+  deletePerfil,
 };
