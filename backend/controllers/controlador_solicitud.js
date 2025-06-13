@@ -1,5 +1,6 @@
 const Solicitud = require('../models/clase_solicitud');
 
+// Get all solicitudes
 const getSolicitudes = async (req, res) => {
   try {
     const solicitudes = await Solicitud.getSolicitudes();
@@ -10,20 +11,23 @@ const getSolicitudes = async (req, res) => {
   }
 };
 
+// Get solicitud by cedula
 const getSolicitudPorCedula = async (req, res) => {
   try {
-    const { cedula_solicitud } = req.params;
-    const solicitud = await Solicitud.getSolicitudPorCedula(cedula_solicitud);
-    if (!solicitud) {
-      return res.status(404).json({ message: 'Solicitud no encontrada' });
+    const { cedula } = req.params;
+    // Assumes Solicitud model has a method to get multiple solicitudes by cedula
+    const solicitudes = await Solicitud.getSolicitudesPorCedula(cedula);
+    if (!solicitudes || solicitudes.length === 0) {
+      return res.status(404).json({ message: 'No se encontraron solicitudes para la cédula proporcionada' });
     }
-    res.json(solicitud);
+    res.json(solicitudes);
   } catch (err) {
-    console.error('Error en getSolicitudPorCedula:', err);
+    console.error('Error en getSolicitudesPorCedula:', err);
     res.status(500).json({ message: 'Error en servidor' });
   }
 };
 
+// Create a new solicitud
 const createSolicitud = async (req, res) => {
   try {
     const solicitudData = req.body;
@@ -35,11 +39,15 @@ const createSolicitud = async (req, res) => {
   }
 };
 
+// Update an existing solicitud
 const updateSolicitud = async (req, res) => {
   try {
     const { cedula_solicitud } = req.params;
     const solicitudData = req.body;
     const solicitudActualizada = await Solicitud.updateSolicitud(cedula_solicitud, solicitudData);
+    if (!solicitudActualizada) {
+      return res.status(404).json({ message: 'Solicitud no encontrada' });
+    }
     res.json(solicitudActualizada);
   } catch (err) {
     console.error('Error en updateSolicitud:', err);
@@ -47,6 +55,7 @@ const updateSolicitud = async (req, res) => {
   }
 };
 
+// Delete a solicitud
 const deleteSolicitud = async (req, res) => {
   try {
     const { cedula_solicitud } = req.params;

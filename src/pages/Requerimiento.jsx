@@ -78,6 +78,29 @@ const Encuesta = ({ menuOpenProp, }) => {
   }
 }, [user, setUser, setUserInParent]);
 
+useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      const cedula = localStorage.getItem('cedula_usuario');
+      if (cedula) {
+        const usuario = await getUsuarioPorCedula(cedula);
+        if (usuario) {
+          setUser(usuario);
+          setUserInParent(usuario);
+          setCedula_emprendimiento(usuario.cedula_usuario);
+        }
+      }
+    } catch (error) {
+      console.error('Error al obtener usuario por cédula:', error);
+    }
+  };
+
+  // Solo ejecutar si no hay un usuario en estado
+  if (!user) {
+    fetchUserData();
+  }
+}, [user, setUser, setUserInParent]);
+
   // Cuando cambie la cédula, buscar datos guardados y cargar respuestas
   useEffect(() => {
     const fetchExistingData = async () => {

@@ -51,7 +51,8 @@ CREATE TABLE requerimientos (
 
 CREATE TABLE solicitud (
   cedula_solicitud VARCHAR(20) PRIMARY KEY,
-  motivo VARCHAR(1000) NOT NULL,
+  motivo VARCHAR (1000) NOT NULL,
+  estatus VARCHAR (20),
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_solicitud) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
