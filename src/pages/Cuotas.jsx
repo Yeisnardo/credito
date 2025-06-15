@@ -7,7 +7,7 @@ import Menu from "../components/Menu";
 const Cuotas = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser ] = useState(null);
 
   // Estado de cuotas con campo 'cayo'
   const [cuotas, setCuotas] = useState([
@@ -33,7 +33,7 @@ const Cuotas = () => {
       try {
         const response = await api.getUsers();
         if (response.length > 0) {
-          setUser(response[0]);
+          setUser (response[0]);
         }
       } catch (error) {
         console.error("Error al obtener los usuarios:", error);
@@ -105,7 +105,7 @@ const Cuotas = () => {
         <div className="p-8 pt-24 w-full mx-auto">
           {/* Encabezado */}
           <div className="flex items-center mb-8">
-            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 rounded-full shadow-lg text-white flex items-center justify-center">
+            <div className="bg-gray-200 p-4 rounded-full shadow-lg text-gray-700 flex items-center justify-center">
               <i className="bx bx-wallet text-3xl"></i>
             </div>
             <h1 className="ml-4 text-4xl font-bold text-gray-700">
@@ -135,8 +135,8 @@ const Cuotas = () => {
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
                       Pagada
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
-                      Confirmacion
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 rounded-tr-lg">
+                      Confirmación
                     </th>
                   </tr>
                 </thead>

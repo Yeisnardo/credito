@@ -48,8 +48,7 @@ const Usuario = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   // Funciones CRUD con Swal
-
-  const handleCreateUser = async () => {
+  const handleCreateUser  = async () => {
     const result = await Swal.fire({
       title: 'Agregar Nuevo Usuario',
       html: `
@@ -130,7 +129,7 @@ const Usuario = () => {
     }
   };
 
-  const handleEditUser = async (user) => {
+  const handleEditUser  = async (user) => {
     const result = await Swal.fire({
       title: 'Editar Usuario',
       html: `
@@ -180,7 +179,7 @@ const Usuario = () => {
     }
   };
 
-  const handleDeleteUser = (cedula_usuario) => {
+  const handleDeleteUser  = (cedula_usuario) => {
     Swal.fire({
       title: "¿Estás seguro?",
       text: `¿Deseas eliminar al usuario ${cedula_usuario}?`,
@@ -229,23 +228,23 @@ const Usuario = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
       {menuOpen && <Menu />}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64 transition-all duration-300 ease-in-out">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? "ml-64" : "ml-0"}`}>
         <Header toggleMenu={toggleMenu} />
 
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
           {/* Encabezado y botón */}
           <div className="flex items-center justify-between mb-8 mt-10">
             <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-tr from-indigo-500 to-blue-500 p-4 rounded-full shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out">
-                <i className="bx bx-user text-3xl text-white"></i>
+              <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
+                <i className="bx bx-user text-3xl text-gray-700"></i>
               </div>
-              <h1 className="text-3xl font-semibold text-gray-700">Gestión de Usuarios</h1>
+              <h1 className="text-3xl font-semibold text-gray-800">Gestión de Usuarios</h1>
             </div>
             <button
-              className="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 px-6 py-3 rounded-full shadow-lg text-white font-semibold flex items-center space-x-2 transition-transform hover:scale-105"
-              onClick={handleCreateUser}
+              className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-full shadow-md transform hover:scale-105 transition duration-300"
+              onClick={handleCreateUser }
             >
               <i className="bx bx-plus text-xl"></i>
               <span>Nuevo Usuario</span>
@@ -296,11 +295,9 @@ const Usuario = () => {
                     <th
                       key={key}
                       className="px-4 py-3 cursor-pointer select-none text-gray-700 font-medium hover:bg-gray-200 transition"
-                      // La lógica de ordenamiento la eliminamos
                     >
                       <div className="flex items-center justify-between">
                         <span className="capitalize">{label}</span>
-                        {/* Se elimina la indicación de orden */}
                       </div>
                     </th>
                   ))}
@@ -328,14 +325,14 @@ const Usuario = () => {
                       <td className="px-4 py-3 flex justify-center space-x-3">
                         <button
                           className="text-blue-500 hover:text-blue-700 transition-transform transform hover:scale-105"
-                          onClick={() => handleEditUser(item)}
+                          onClick={() => handleEditUser (item)}
                           aria-label="Editar"
                         >
                           <i className="bx bx-edit-alt text-xl"></i>
                         </button>
                         <button
                           className="text-red-500 hover:text-red-700 transition-transform transform hover:scale-105"
-                          onClick={() => handleDeleteUser(item.cedula_usuario)}
+                          onClick={() => handleDeleteUser (item.cedula_usuario)}
                           aria-label="Eliminar"
                         >
                           <i className="bx bx-trash text-xl"></i>
@@ -366,7 +363,7 @@ const Usuario = () => {
         </div>
 
         {/* Pie de página */}
-        <footer className="mt-auto p-6 bg-gray-100 border-t border-gray-300 text-center text-gray-600 text-sm rounded-tr-xl rounded-tl-xl transition-shadow duration-300 hover:shadow-inner">
+        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-600 text-sm rounded-t-xl shadow-inner">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>

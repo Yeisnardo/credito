@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import api, { getUsuarioPorCedula } from '../services/api_usuario'; // Ajusta la ruta si es necesario
+import api, { getUsuarioPorCedula } from '../services/api_usuario';
 
-const Dashboard = ({setUser}) => {
+const Dashboard = ({ setUser  }) => {
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(true); // controla si el menu está abierto
+  const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUserState] = useState(null);
 
   const toggleMenu = () => {
@@ -22,7 +22,7 @@ const Dashboard = ({setUser}) => {
           const usuario = await getUsuarioPorCedula(cedula);
           if (usuario) {
             setUserState(usuario);
-            if (setUser) setUser(usuario);
+            if (setUser ) setUser (usuario);
           }
         }
       } catch (error) {
@@ -30,80 +30,79 @@ const Dashboard = ({setUser}) => {
       }
     };
     if (!user) fetchUserData();
-  }, [setUser, user]);
+  }, [setUser , user]);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Menú condicional */}
+    <div className="flex min-h-screen bg-gray-100 font-sans">
+      {/* Menú lateral */}
       {menuOpen && <Menu />}
 
-      {/* Contenido principal, con margen en md para dejar espacio para Header y Menu */}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64">
-        {/* Header con botón para abrir/cerrar menu */}
+      {/* Contenido principal */}
+      <div className={`flex-1 flex flex-col transition-margin duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
+        {/* Header */}
         <Header toggleMenu={toggleMenu} />
 
-        {/* Contenido debajo del header */}
-        <div className="pt-20 px-8">
-          {/* Encabezado con título y botón */}
-          <header className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
-                <i className="bx bx-home text-2xl"></i>
+        {/* Contenido principal */}
+        <main className="flex-1 p-8 bg-gray-50">
+          {/* Encabezado */}
+          <div className="flex items-center justify-between mb-8 mt-10">
+            <div className="flex items-center space-x-3">
+              <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
+                <i className="bx bx-home text-3xl text-gray-700"></i>
               </div>
-              <h1 className="text-3xl font-bold text-gray-800">Inicio</h1>
+              <h1 className="text-3xl font-semibold text-gray-800">Inicio</h1>
             </div>
-          </header>
+          </div>
 
           {/* Tarjetas de resumen */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Tarjeta 1: Resumen de usuario */}
-            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Tarjeta 1 */}
+            <div className="bg-white rounded-xl shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out border-t-4 border-blue-500 hover:shadow-xl">
               <div className="p-6 flex items-center space-x-4">
-                <i className="bx bx-user-circle text-4xl text-[#07142A]"></i>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <i className="bx bx-user-circle text-4xl text-blue-700"></i>
+                </div>
                 <div>
-                  <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">
-                    Resumen de usuario
-                  </h2>
-                  <p className="text-gray-700 mb-2">
-                    Nombre: {user?.nombre || "Cargando..."}
+                  <h2 className="text-xl font-semibold mb-2 text-gray-700">Resumen de usuario</h2>
+                  <p className="text-gray-600 mb-1">
+                    <strong>Nombre:</strong> {user?.nombre || "Cargando..."}
                   </p>
-                  <p className="text-gray-700">
-                    Estatus:{' '}
-                    <span className="font-semibold text-green-500"> {user?.estatus || "Cargando..."}</span>
+                  <p className="text-gray-600">
+                    <strong>Estatus:</strong> <span className="font-semibold text-green-600">{user?.estatus || "Cargando..."}</span>
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Tarjeta 2: Estadísticas */}
-            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl">
+            {/* Tarjeta 2 */}
+            <div className="bg-white rounded-xl shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out border-t-4 border-purple-500 hover:shadow-xl">
               <div className="p-6 flex items-center space-x-4">
-                <i className="bx bx-chart bar-chart text-4xl text-[#07142A]"></i>
+                <div className="bg-purple-100 p-3 rounded-full">
+                  <i className="bx bx-chart text-4xl text-purple-700"></i>
+                </div>
                 <div>
-                  <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">
-                    Estadísticas
-                  </h2>
-                  <div className="space-y-2">
-                    <p className="text-gray-700">
-                      Mensajes enviados: <span className="font-semibold">120</span>
+                  <h2 className="text-xl font-semibold mb-2 text-gray-700">Estadísticas</h2>
+                  <div className="space-y-2 text-gray-600">
+                    <p>
+                      <strong>Mensajes enviados:</strong> <span className="font-semibold">120</span>
                     </p>
-                    <p className="text-gray-700">
-                      Sesiones hoy: <span className="font-semibold">5</span>
+                    <p>
+                      <strong>Sesiones hoy:</strong> <span className="font-semibold">5</span>
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Tarjeta 3: Configuraciones */}
-            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl">
+            {/* Tarjeta 3 */}
+            <div className="bg-white rounded-xl shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out border-t-4 border-green-500 hover:shadow-xl">
               <div className="p-6 flex items-center space-x-4">
-                <i className="bx bx-cog text-4xl text-[#07142A]"></i>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <i className="bx bx-cog text-4xl text-green-700"></i>
+                </div>
                 <div>
-                  <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">
-                    Configuraciones
-                  </h2>
-                  <ul className="list-disc list-inside text-gray-700 space-y-1">
+                  <h2 className="text-xl font-semibold mb-2 text-gray-700">Configuraciones</h2>
+                  <ul className="list-disc list-inside text-gray-600 space-y-1">
                     <li>Perfil</li>
                     <li>Seguridad</li>
                     <li>Notificaciones</li>
@@ -112,10 +111,10 @@ const Dashboard = ({setUser}) => {
               </div>
             </div>
           </section>
-        </div>
+        </main>
 
         {/* Pie de página */}
-        <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
+        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>

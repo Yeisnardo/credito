@@ -5,12 +5,12 @@ import Menu from "../components/Menu";
 import api from "../services/api_requerimiento";
 import { getUsuarioPorCedula } from '../services/api_usuario';
 
-const Encuesta = ({ menuOpenProp, }) => {
+const Encuesta = ({ menuOpenProp }) => {
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(menuOpenProp ?? true);
-  const [user, setUser] = useState(null);
-  const setUserInParent = setUser ?? (() => {});
+  const [user, setUser ] = useState(null);
+  const setUserInParent = setUser  ?? (() => {});
 
   const [cedula_emprendimiento, setCedula_emprendimiento] = useState("");
   const [fecha, setFecha] = useState(""); // yyyy-mm-dd
@@ -56,50 +56,27 @@ const Encuesta = ({ menuOpenProp, }) => {
 
   // Cargar usuario y datos existentes al montar
   useEffect(() => {
-  const fetchUserData = async () => {
-    try {
-      const cedula = localStorage.getItem('cedula_usuario');
-      if (cedula) {
-        const usuario = await getUsuarioPorCedula(cedula);
-        if (usuario) {
-          setUser(usuario);
-          setUserInParent(usuario);
-          setCedula_emprendimiento(usuario.cedula_usuario);
+    const fetchUserData = async () => {
+      try {
+        const cedula = localStorage.getItem('cedula_usuario');
+        if (cedula) {
+          const usuario = await getUsuarioPorCedula(cedula);
+          if (usuario) {
+            setUser (usuario);
+            setUserInParent(usuario);
+            setCedula_emprendimiento(usuario.cedula_usuario);
+          }
         }
+      } catch (error) {
+        console.error('Error al obtener usuario por cédula:', error);
       }
-    } catch (error) {
-      console.error('Error al obtener usuario por cédula:', error);
+    };
+
+    // Solo ejecutar si no hay un usuario en estado
+    if (!user) {
+      fetchUserData();
     }
-  };
-
-  // Solo ejecutar si no hay un usuario en estado
-  if (!user) {
-    fetchUserData();
-  }
-}, [user, setUser, setUserInParent]);
-
-useEffect(() => {
-  const fetchUserData = async () => {
-    try {
-      const cedula = localStorage.getItem('cedula_usuario');
-      if (cedula) {
-        const usuario = await getUsuarioPorCedula(cedula);
-        if (usuario) {
-          setUser(usuario);
-          setUserInParent(usuario);
-          setCedula_emprendimiento(usuario.cedula_usuario);
-        }
-      }
-    } catch (error) {
-      console.error('Error al obtener usuario por cédula:', error);
-    }
-  };
-
-  // Solo ejecutar si no hay un usuario en estado
-  if (!user) {
-    fetchUserData();
-  }
-}, [user, setUser, setUserInParent]);
+  }, [user, setUser , setUserInParent]);
 
   // Cuando cambie la cédula, buscar datos guardados y cargar respuestas
   useEffect(() => {
@@ -115,7 +92,7 @@ useEffect(() => {
 
             const keys = [
               "carta_solicitud",
-              "postulacion_UBCH",
+              "postulacion_ubch",
               "certificado_emprender",
               "registro_municipal",
               "carta_residencia",
@@ -194,7 +171,7 @@ useEffect(() => {
       cedula_requerimiento: cedula_emprendimiento,
       fecha: fecha,
       carta_solicitud: preguntas[0].respuesta ? "Si" : "No",
-      postulacion_UBCH: preguntas[1].respuesta ? "Si" : "No",
+      postulacion_ubch: preguntas[1].respuesta ? "Si" : "No",
       certificado_emprender: preguntas[2].respuesta ? "Si" : "No",
       registro_municipal: preguntas[3].respuesta ? "Si" : "No",
       carta_residencia: preguntas[4].respuesta ? "Si" : "No",
@@ -220,13 +197,13 @@ useEffect(() => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-arial text-gray-700">
+    <div className="flex min-h-screen bg-gray-100 font-sans mt-9">
       {menuOpen && <Menu />}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64 max-w-7xl mx-auto px-6 py-8">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
         <Header toggleMenu={toggleMenu} />
 
         {/* Encabezado con botón para resultados */}
-        <header className="flex items-center justify-between mb-4 mt-9">
+        <header className="flex items-center justify-between mb-4 mt-9 px-6">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
             Requerimientos Obligatorios
           </h1>

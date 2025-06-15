@@ -10,7 +10,7 @@ import { getUsuarioPorCedula } from "../services/api_usuario";
 const Solicitud = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser ] = useState(null);
   const [solicitudesCredito, setSolicitudesCredito] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +21,7 @@ const Solicitud = () => {
         if (cedula) {
           const usuario = await getUsuarioPorCedula(cedula);
           if (usuario) {
-            setUser(usuario);
+            setUser (usuario);
           }
         }
       } catch (error) {
@@ -137,7 +137,7 @@ const Solicitud = () => {
   const estatusColor = (estatus) => {
     switch (estatus?.toLowerCase()) {
       case "pendiente":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-red-200 text-red-800";
       case "aprobado":
         return "bg-green-100 text-green-800";
       case "rechazado":
@@ -151,96 +151,45 @@ const Solicitud = () => {
     <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
       {menuOpen && <Menu />}
       <div
-        className={`flex-1 flex flex-col w-full transition-all duration-300 ${
-          menuOpen ? "ml-64" : "ml-0"
-        }`}
+        className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? "ml-64" : "ml-0"}`}
       >
         <Header toggleMenu={toggleMenu} />
+
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
-          <div className="flex items-center mb-8">
-            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 rounded-full shadow-lg text-white flex items-center justify-center transition-transform hover:scale-105 hover:shadow-xl">
-              <i className="bx bx-user-circle text-3xl"></i>
+          <div className="flex items-center mb-8 mt-10">
+            <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
+              <i className="bx bx-file text-3xl text-gray-700"></i>
             </div>
-            <h1 className="ml-4 text-4xl font-bold text-gray-800 tracking-wide">
+            <h1 className="ml-4 text-3xl font-semibold text-gray-800 tracking-wide">
               Mis Solicitudes
             </h1>
           </div>
-          <div className="mb-6">
-            <button
-              onClick={handleSolicitud}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition transform hover:scale-105"
-              aria-label="Crear nueva solicitud"
-            >
-              <i className="bx bx-plus-circle mr-2"></i> Nueva Solicitud
-            </button>
-          </div>
-          <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 transition-shadow hover:shadow-2xl border border-gray-200">
-            <h2 className="text-3xl font-semibold mb-6 border-b pb-3 border-gray-200 text-gray-800">
-              Solicitudes de Crédito
-            </h2>
-            <div className="overflow-x-auto rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200 rounded-lg border border-gray-300 shadow-sm">
-                <thead>
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide select-none"
-                    >
-                      Cédula de Solicitud
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide select-none"
-                    >
-                      Motivo
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide select-none"
-                    >
-                      Estatus
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {solicitudesUsuario.map((sol, index) => (
-                    <tr
-                      key={sol.id || sol.cedula_solicitud + sol.motivo + index}
-                      className={`transition-colors duration-300 ${
-                        index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                      } hover:bg-indigo-50 cursor-pointer`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-800 font-medium border-r border-gray-200">
-                        {sol.cedula_solicitud}
-                      </td>
-                      <td className="px-6 py-4 max-w-xs truncate text-gray-600 flex items-center space-x-3 border-r border-gray-200">
-                        <span>{sol.motivo || "Sin motivo"}</span>
-                        <button
-                          onClick={() => mostrarMotivo(sol.motivo)}
-                          className="text-indigo-600 hover:text-indigo-900 p-1 rounded focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                          title="Ver motivo"
-                          aria-label={`Ver motivo: ${sol.motivo}`}
-                        >
-                          <i className="bx bx-info-circle text-xl"></i>
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${estatusColor(
-                            sol.estatus
-                          )}`}
-                        >
-                          {sol.estatus || "Pendiente"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200 transition-shadow hover:shadow-xl">
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-300 h-12 w-12 animate-spin"></div>
+              </div>
+            ) : solicitudesUsuario.length === 0 ? (
+              <p className="text-gray-500 text-center">No tienes solicitudes registradas.</p>
+            ) : (
+              solicitudesUsuario.map((sol, index) => (
+                <div key={sol.id || `${sol.cedula_solicitud}-${index}`} className="flex justify-between items-center bg-gray-50 rounded-lg p-4 mb-4 shadow-md border border-gray-200">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Solicitud #{index + 1}</h3>
+                    <p className="text-gray-600">Cédula: {sol.cedula_solicitud}</p>
+                    <p className="text-gray-600">Motivo: {sol.motivo || "Sin motivo"}</p>
+                  </div>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${estatusColor(sol.estatus)}`}>
+                    {sol.estatus || "Pendiente"}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
-        <footer className="mt-auto p-4 bg-gray-200 border-t border-gray-300 text-center text-gray-600 text-sm rounded-t-lg shadow-inner">
+
+        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-600 text-sm rounded-t-xl shadow-inner">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>
@@ -249,4 +198,3 @@ const Solicitud = () => {
 };
 
 export default Solicitud;
-

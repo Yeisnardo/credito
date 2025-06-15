@@ -9,10 +9,10 @@ import axios from 'axios';
 const Perfil = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [perfil, setPerfil] = useState([]); // Cambiado a perfiles
+  const [perfil, setPerfil] = useState([]);
   const [busqueda, setBusqueda] = useState("");
 
-  // Cargar perfiles desde la API
+  // Cargar perfiles desde API
   useEffect(() => {
     const fetchPerfiles = async () => {
       try {
@@ -20,7 +20,6 @@ const Perfil = () => {
         setPerfil(response.data);
       } catch (error) {
         console.error(error);
-        // Manejo del error
       }
     };
     fetchPerfiles();
@@ -32,12 +31,12 @@ const Perfil = () => {
 
   const handleVerDetalles = (s) => {
     const detallesHtml = `
-      <h3 style="margin-top:10px; font-weight:700;">Datos Personales</h3>
+      <h3 class="font-semibold mt-4 mb-2">Datos Personales</h3>
       <p><strong>Nombre:</strong> ${s.detalles.datosPersonales.nombre}</p>
       <p><strong>Email:</strong> ${s.detalles.datosPersonales.email}</p>
       <p><strong>Teléfono:</strong> ${s.detalles.datosPersonales.telefono}</p>
       <p><strong>Dirección:</strong> ${s.detalles.datosPersonales.direccion}</p>
-      <h3 style="margin-top:10px; font-weight:700;">Emprendimiento</h3>
+      <h3 class="font-semibold mt-6 mb-2">Emprendimiento</h3>
       <p><strong>Nombre:</strong> ${s.detalles.emprendimiento}</p>
       <p><strong>Requerimientos:</strong> ${s.detalles.requerimientos}</p>
     `;
@@ -57,28 +56,30 @@ const Perfil = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 font-sans">
+    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
       {menuOpen && <Menu />}
-      <div className="flex-1 flex flex-col ml-0 md:ml-64 transition-all duration-300">
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          menuOpen ? 'ml-64' : 'ml-0'
+        }`}
+      >
         <Header toggleMenu={toggleMenu} />
 
-        {/* Contenido */}
-        <div className="pt-12 px-6 md:px-12 pb-8 flex-1 overflow-y-auto">
-          {/* Encabezado y buscador */}
+        <main className="pt-16 px-8 max-w-7xl mx-auto w-full">
+          {/* Encabezado y búsqueda */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-8">
-            <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <div className="bg-gradient-to-r from-indigo-400 to-purple-500 p-4 rounded-full shadow-lg text-white hover:scale-105 transform transition-transform cursor-pointer">
+            <div className="flex items-center space-x-4 mb-6 md:mb-0">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 rounded-full shadow-lg text-white hover:scale-105 transform transition-transform duration-300 cursor-pointer">
                 <i className="bx bx-group text-3xl"></i>
               </div>
-              <h1 className="text-4xl font-extrabold text-gray-800">
+              <h1 className="text-4xl font-extrabold text-gray-800 select-none">
                 Perfiles de emprendedores
               </h1>
             </div>
-            {/* Buscador */}
             <div className="w-full md:w-1/3">
               <label
                 htmlFor="buscarSolicitante"
-                className="block mb-2 text-gray-700 font-semibold"
+                className="block mb-2 text-gray-700 font-semibold select-none"
               >
                 Buscar Emprendedor
               </label>
@@ -87,7 +88,7 @@ const Perfil = () => {
                   id="buscarSolicitante"
                   type="text"
                   placeholder="Buscar..."
-                  className="w-full p-3 pl-10 pr-4 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                  className="w-full p-3 pl-10 pr-4 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-300"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                 />
@@ -102,53 +103,55 @@ const Perfil = () => {
           <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             {perfilesFiltrados.length > 0 ? (
               perfilesFiltrados.map((s) => (
-                <div
+                <article
                   key={s.id}
-                  className="bg-white rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 p-6 flex flex-col"
+                  className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 flex flex-col"
+                  tabIndex={0}
+                  aria-label={`Perfil de ${s.solicitante}`}
                 >
-                  {/* Foto */}
-                  <div className="flex justify-center mb-4">
+                  <div className="flex justify-center mb-5">
                     <img
                       src={s.foto}
                       alt={`Foto de ${s.solicitante}`}
-                      className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-lg"
+                      className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-md"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src =
+                          'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/4b8866b8-756b-4991-98de-8c479b712417.png';
+                      }}
                     />
                   </div>
-                  {/* Nombre */}
                   <h2 className="text-xl font-semibold mb-2 text-center text-gray-800">
                     {s.solicitante}
                   </h2>
-                  {/* Contrato y Estado */}
-                  <div className="mb-4 text-center">
-                    <p className="text-sm text-gray-600">
-                      <strong>Contrato:</strong>{" "}
-                      {s.contrato ? s.contrato : "Pendiente"}
+                  <div className="mb-6 text-center text-gray-600 text-sm">
+                    <p>
+                      <span className="font-semibold">Contrato:</span>{" "}
+                      {s.contrato ?? "Pendiente"}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      <strong>Estado:</strong> {s.estado}
+                    <p>
+                      <span className="font-semibold">Estado:</span> {s.estado}
                     </p>
                   </div>
-                  {/* Botón detalles */}
-                  <div className="mt-auto flex justify-center">
-                    <button
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full shadow hover:scale-105 transform transition"
-                      onClick={() => handleVerDetalles(s)}
-                    >
-                      Ver detalles
-                    </button>
-                  </div>
-                </div>
+                  <button
+                    onClick={() => handleVerDetalles(s)}
+                    className="mt-auto bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-5 py-2 rounded-full shadow-md hover:scale-105 transform transition duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    aria-label={`Ver detalles de ${s.solicitante}`}
+                  >
+                    Ver detalles
+                  </button>
+                </article>
               ))
             ) : (
-              <p className="col-span-3 text-center text-gray-500 text-lg mt-12">
+              <p className="col-span-3 text-center text-gray-500 text-lg mt-12 select-none">
                 No hay perfiles que coincidan
               </p>
             )}
           </section>
-        </div>
+        </main>
 
-        {/* Pie */}
-        <footer className="mt-auto p-4 bg-gray-100 border-t border-gray-300 text-center text-gray-600 text-sm">
+        {/* Pie de página */}
+        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-600 text-sm rounded-t-xl shadow-inner select-none">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>
