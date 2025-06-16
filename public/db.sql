@@ -56,6 +56,18 @@ CREATE TABLE solicitud (
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_solicitud) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
+CREATE TABLE clasificacion (
+  id_clasificacion SERIAL PRIMARY KEY,
+  sector VARCHAR(100) NOT NULL,
+  negocio VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE aprobacion (
+  cedula_aprobacion VARCHAR (20) PRIMARY KEY,
+  contrato VARCHAR (50) NOT NULL,
+  fecha_aprobacion VARCHAR (20) NOT NULL,
+  CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_aprobacion) REFERENCES persona(cedula) ON DELETE CASCADE
+);
 
 
 

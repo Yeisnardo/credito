@@ -1,59 +1,57 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import "../assets/css/style.css"; // ajusta si es necesario
 import Header from "../components/Header";
 import Menu from "../components/Menu";
+import api from "../services/api_clasificacion";
 
-// Datos de ejemplo
-const solicitudesEjemplo = [
-  {
-    id: 1,
-    solicitante: "Manufactura",
-    monto: 10000,
-    detalles: {
-      sector: "Tecnología",
-      tipoNegocio: "Tienda",
-    },
-    emprendimientos: ["App de servicios", "Marketplace tecnológico"],
-  },
-];
-
-// Componente SectorCard con botón para ver detalles
-const SectorCard = ({ sector, onVerDetalles }) => {
-  return (
-    <div className="bg-white p-4 rounded-xl shadow-lg transform transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-xl">
-      <h2 className="text-xl font-semibold mb-2 text-center">{sector}</h2>
-      <div className="flex justify-end space-x-2 mt-4">
-        <button
-          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
-          onClick={onVerDetalles}
-        >
-          Ver detalles
-        </button>
-      </div>
+// Componente para mostrar cada sector
+const SectorCard = ({ sector, onVerDetalles }) => (
+  <div className="bg-white p-4 rounded-xl shadow-lg transform transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-xl">
+    <h2 className="text-xl font-semibold mb-2 text-center">{sector}</h2>
+    <div className="flex justify-end space-x-2 mt-4">
+      <button
+        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
+        onClick={onVerDetalles}
+      >
+        Ver detalles
+      </button>
     </div>
-  );
-};
+  </div>
+);
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(true);
-  const [solicitudes, setSolicitudes] = useState(solicitudesEjemplo);
+  const [solicitudes, setSolicitudes] = useState([]); // Sin datos ficticios
   const [sectores, setSectores] = useState([]); // Estado para los sectores
   const [searchTerm, setSearchTerm] = useState("");
   const [mostrarDetalleModal, setMostrarDetalleModal] = useState(false);
   const [solicitudDetalle, setSolicitudDetalle] = useState(null);
   const [nuevoEmprendimiento, setNuevoEmprendimiento] = useState("");
-  const [nuevoSector, setNuevoSector] = useState(""); // Estado para el nuevo sector
-  const [emprendimientoEditado, setEmprendimientoEditado] = useState(""); // Estado para el emprendimiento a editar
-  const [indexEmprendimientoEditado, setIndexEmprendimientoEditado] = useState(null); // Índice del emprendimiento a editar
+  const [nuevoSector, setNuevoSector] = useState(""); // Nuevo sector
+  const [emprendimientoEditado, setEmprendimientoEditado] = useState("");
+  const [indexEmprendimientoEditado, setIndexEmprendimientoEditado] = useState(null);
 
-  // Funciones para manejar eventos
+  // Cargar sectores desde API
+  useEffect(() => {
+    const fetchSectores = async () => {
+      try {
+        const data = await api.getClasificaciones();
+        setSectores(data.map((item) => item.sector));
+      } catch (err) {
+        Swal.fire("Error", "No se pudieron cargar los sectores: " + err.message, "error");
+      }
+    };
+    fetchSectores();
+  }, []);
+
+  // Funciones para manejar acciones
   const handleVerDetalles = (s) => {
     setSolicitudDetalle(s);
     setMostrarDetalleModal(true);
-    setNuevoEmprendimiento(""); // Limpia el campo de nuevo emprendimiento
-    setEmprendimientoEditado(""); // Limpia el campo de edición
-    setIndexEmprendimientoEditado(null); // Resetea el índice de edición
+    setNuevoEmprendimiento("");
+    setEmprendimientoEditado("");
+    setIndexEmprendimientoEditado(null);
   };
 
   const handleCerrarModal = () => {
@@ -68,14 +66,9 @@ const App = () => {
     if (nuevoEmprendimiento.trim() && solicitudDetalle) {
       const updated = {
         ...solicitudDetalle,
-        emprendimientos: [
-          ...solicitudDetalle.emprendimientos,
-          nuevoEmprendimiento.trim(),
-        ],
+        emprendimientos: [...solicitudDetalle.emprendimientos, nuevoEmprendimiento.trim()],
       };
-      setSolicitudes((prev) =>
-        prev.map((s) => (s.id === updated.id ? updated : s))
-      );
+      setSolicitudes(prev => prev.map(s => (s.id === updated.id ? updated : s)));
       setSolicitudDetalle(updated);
       setNuevoEmprendimiento("");
     } else {
@@ -98,9 +91,7 @@ const App = () => {
         emprendimientos: updatedEmprendimientos,
       };
 
-      setSolicitudes((prev) =>
-        prev.map((s) => (s.id === updated.id ? updated : s))
-      );
+      setSolicitudes(prev => prev.map(s => (s.id === updated.id ? updated : s)));
       setSolicitudDetalle(updated);
       setEmprendimientoEditado("");
       setIndexEmprendimientoEditado(null);
@@ -109,7 +100,8 @@ const App = () => {
     }
   };
 
-  const handleRegistrarSector = () => {
+  // Registrar sector en API y estado local
+  const handleRegistrarSector = async () => {
     const sectorTrimmed = nuevoSector.trim();
     if (sectorTrimmed === "") {
       Swal.fire("Error", "Ingrese un sector válido.", "error");
@@ -119,12 +111,17 @@ const App = () => {
       Swal.fire("Error", "Este sector ya existe.", "error");
       return;
     }
-    setSectores([...sectores, sectorTrimmed]);
-    Swal.fire("¡Listo!", `Sector "${sectorTrimmed}" registrado.`, "success");
-    setNuevoSector(""); // Limpia input
+    try {
+      await api.createClasificacion({ sector: sectorTrimmed });
+      setSectores(prev => [...prev, sectorTrimmed]);
+      Swal.fire("¡Listo!", `Sector "${sectorTrimmed}" registrado.`, "success");
+      setNuevoSector("");
+    } catch (err) {
+      Swal.fire("Error", "No se pudo registrar en la API: " + err.message, "error");
+    }
   };
 
-  // Filtrado de solicitudes
+  // Filtrar solicitudes según búsqueda
   const solicitudesFiltradas = solicitudes.filter((s) =>
     s.solicitante.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -150,7 +147,7 @@ const App = () => {
             </div>
           </header>
 
-          {/* Barra búsqueda y botón */}
+          {/* Barra de búsqueda y creación de sector */}
           <div className="mb-6 max-w-4xl mx-auto flex items-center space-x-4">
             {/* Buscador */}
             <div className="relative flex-1">
@@ -178,7 +175,7 @@ const App = () => {
                 </svg>
               </div>
             </div>
-            {/* Botón crear sector */}
+            {/* Crear nuevo sector */}
             <input
               type="text"
               placeholder="Nuevo sector"
@@ -195,9 +192,9 @@ const App = () => {
           </div>
 
           {/* Mostrar sectores registrados */}
-          <div className="mb-4 max-w-4xl mx-auto" >
+          <div className="mb-4 max-w-4xl mx-auto">
             <h3 className="font-semibold mb-2">Sectores Registrados:</h3>
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6" >
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {sectores.length === 0 ? (
                 <p className="col-span-full text-center text-gray-500">
                   No se encontraron sectores registrados.
@@ -206,14 +203,11 @@ const App = () => {
                 sectores.map((sector, index) => (
                   <SectorCard
                     key={index}
-                    style={{
-                background: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.3))",
-              }}
                     sector={sector}
                     onVerDetalles={() => {
-                      // Buscamos la solicitud que coincida con el sector para mostrar emprendimientos relacionados
-                      // Aquí ajuste: si quieres mostrar emprendimientos específicos del sector, hay que implementar la relación, aquí se asume que mostramos la primera solicitud como ejemplo.
-                      const solicitudRelacionada = solicitudes.find((sol) => sol.detalles.sector === sector) || solicitudes[0];
+                      const solicitudRelacionada =
+                        solicitudes.find((sol) => sol.detalles?.sector === sector) ||
+                        solicitudes[0]; // fallback
                       handleVerDetalles(solicitudRelacionada);
                     }}
                   />
@@ -305,7 +299,7 @@ const App = () => {
           </div>
         )}
 
-        {/* Footer */}
+        {/* Pie de página */}
         <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
