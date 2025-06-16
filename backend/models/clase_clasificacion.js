@@ -10,7 +10,7 @@ class Clasificacion {
     const { sector, negocio } = clasificacionData;
     const resultado = await query(
       `INSERT INTO clasificacion (sector, negocio) VALUES ($1, $2) RETURNING *`,
-      [sector ?? null, negocio ?? null]
+      [sector, negocio ?? null]  // negocio puede ser null
     );
     return resultado.rows[0];
   }
@@ -19,7 +19,7 @@ class Clasificacion {
     const { sector, negocio } = clasificacionData;
     const resultado = await query(
       `UPDATE clasificacion SET sector = $1, negocio = $2 WHERE id_clasificacion = $3 RETURNING *`,
-      [sector ?? null, negocio ?? null, id_clasificacion]
+      [sector, negocio ?? null, id_clasificacion]  // negocio puede ser null
     );
     return resultado.rows[0];
   }

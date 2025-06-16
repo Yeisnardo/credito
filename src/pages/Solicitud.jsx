@@ -10,7 +10,7 @@ import { getUsuarioPorCedula } from "../services/api_usuario";
 const Solicitud = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [user, setUser ] = useState(null);
+  const [user, setUser] = useState(null);
   const [solicitudesCredito, setSolicitudesCredito] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +21,7 @@ const Solicitud = () => {
         if (cedula) {
           const usuario = await getUsuarioPorCedula(cedula);
           if (usuario) {
-            setUser (usuario);
+            setUser(usuario);
           }
         }
       } catch (error) {
@@ -137,7 +137,7 @@ const Solicitud = () => {
   const estatusColor = (estatus) => {
     switch (estatus?.toLowerCase()) {
       case "pendiente":
-        return "bg-red-200 text-red-800";
+        return "bg-yellow-100 text-yellow-800";
       case "aprobado":
         return "bg-green-100 text-green-800";
       case "rechazado":
@@ -148,53 +148,116 @@ const Solicitud = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
+    <>
+    {/* Google Material Icons CDN */}
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+    <div className="flex min-h-screen bg-gray-50 font-sans overflow-hidden">
       {menuOpen && <Menu />}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? "ml-64" : "ml-0"}`}
+        className={`flex-1 flex flex-col w-full transition-all duration-300 ${menuOpen ? "ml-64" : "ml-0"}`}
       >
         <Header toggleMenu={toggleMenu} />
 
+        {/* Main Content */}
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
-          <div className="flex items-center mb-8 mt-10">
-            <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
-              <i className="bx bx-file text-3xl text-gray-700"></i>
+          {/* Header Section */}
+          <div className="flex items-center mb-8">
+            <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-4 rounded-full shadow-lg text-white flex items-center justify-center transition-transform hover:scale-105 hover:shadow-xl">
+              <i className="material-icons text-3xl">account_circle</i>
             </div>
-            <h1 className="ml-4 text-3xl font-semibold text-gray-800 tracking-wide">
+            <h1 className="ml-4 text-3xl md:text-4xl font-bold text-gray-800 tracking-wide">
               Mis Solicitudes
             </h1>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200 transition-shadow hover:shadow-xl">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-300 h-12 w-12 animate-spin"></div>
-              </div>
-            ) : solicitudesUsuario.length === 0 ? (
-              <p className="text-gray-500 text-center">No tienes solicitudes registradas.</p>
+          {/* Button to create new request */}
+          <div className="mb-8 flex justify-end">
+            <button
+              onClick={handleSolicitud}
+              className="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              aria-label="Crear nueva solicitud"
+            >
+              <i className="material-icons mr-2 text-xl">add_circle_outline</i>
+              <span>Nueva Solicitud</span>
+            </button>
+          </div>
+
+          {/* Formulario tipo reporte con diseño moderno */}
+          <div className="bg-white rounded-3xl shadow-xl p-8 mb-12 border border-gray-200 transition-shadow hover:shadow-2xl space-y-8">
+            {solicitudesUsuario.length === 0 ? (
+              <p className="text-gray-600 text-center text-lg">No hay solicitudes registradas.</p>
             ) : (
               solicitudesUsuario.map((sol, index) => (
-                <div key={sol.id || `${sol.cedula_solicitud}-${index}`} className="flex justify-between items-center bg-gray-50 rounded-lg p-4 mb-4 shadow-md border border-gray-200">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Solicitud #{index + 1}</h3>
-                    <p className="text-gray-600">Cédula: {sol.cedula_solicitud}</p>
-                    <p className="text-gray-600">Motivo: {sol.motivo || "Sin motivo"}</p>
+                <div
+                  key={sol.id || `${sol.cedula_solicitud}-${index}`}
+                  className="flex flex-col md:flex-row md:items-center md:justify-between bg-gradient-to-r from-indigo-50 via-white to-indigo-50 rounded-xl p-6 shadow-md border border-indigo-100 hover:shadow-lg transition-shadow duration-300"
+                >
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-indigo-700 mb-3">
+                      Solicitud #{index + 1}
+                    </h3>
+                    <div className="text-gray-700 space-y-1">
+                      <p className="text-sm md:text-base">
+                        <span className="font-semibold">Cédula de Solicitud:</span>{" "}
+                        {sol.cedula_solicitud}
+                      </p>
+                      <p className="text-sm md:text-base max-w-lg truncate cursor-pointer hover:text-indigo-900"
+                        onClick={() => mostrarMotivo(sol.motivo)}
+                        title={sol.motivo || "Sin motivo registrado"}
+                        aria-label={`Ver motivo completo: ${sol.motivo || "Sin motivo registrado"}`}>
+                        <span className="font-semibold">Motivo:</span>{" "}
+                        {sol.motivo ? sol.motivo.length > 40 ? sol.motivo.slice(0, 40) + "..." : sol.motivo : "Sin motivo"}
+                        <i className="material-icons align-middle ml-1 text-indigo-600" style={{ fontSize: "16px" }}>info</i>
+                      </p>
+                    </div>
                   </div>
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${estatusColor(sol.estatus)}`}>
-                    {sol.estatus || "Pendiente"}
-                  </span>
+                  <div className="mt-4 md:mt-0 md:ml-8 flex flex-col items-center">
+                    <span
+                      className={`inline-flex items-center px-4 py-1 rounded-full text-sm font-semibold tracking-wide ${
+                        sol.estatus?.toLowerCase() === "pendiente"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : sol.estatus?.toLowerCase() === "aprobado"
+                          ? "bg-green-100 text-green-800"
+                          : sol.estatus?.toLowerCase() === "rechazado"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                      aria-label={`Estatus de la solicitud: ${sol.estatus || "Pendiente"}`}
+                    >
+                      {sol.estatus?.toLowerCase() === "pendiente" && (
+                        <i className="material-icons mr-1 text-yellow-600" style={{ fontSize: "18px" }}>
+                          schedule
+                        </i>
+                      )}
+                      {sol.estatus?.toLowerCase() === "aprobado" && (
+                        <i className="material-icons mr-1 text-green-600" style={{ fontSize: "18px" }}>
+                          check_circle
+                        </i>
+                      )}
+                      {sol.estatus?.toLowerCase() === "rechazado" && (
+                        <i className="material-icons mr-1 text-red-600" style={{ fontSize: "18px" }}>
+                          cancel
+                        </i>
+                      )}
+                      {sol.estatus || "Pendiente"}
+                    </span>
+                  </div>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-600 text-sm rounded-t-xl shadow-inner">
+        {/* Footer */}
+        <footer className="mt-auto p-4 bg-gray-200 border-t border-gray-300 text-center text-gray-600 text-sm rounded-t-lg shadow-inner">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>
     </div>
+    </>
   );
 };
 
 export default Solicitud;
+

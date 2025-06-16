@@ -135,41 +135,42 @@ const Header = ({ toggleMenu, menuOpen }) => {
   };
 
   const handleVerPerfil = () => {
-    Swal.fire({
-      title: "Perfil de Usuario",
-      html: `
-      <div class="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-6">
-        <div class="flex flex-col items-center mb-4">
-          <h3 class="text-xl font-semibold text-gray-800 mb-1">${user?.nombre_completo || "Nombre"}</h3>
-          <p class="text-sm text-gray-500 mb-2">${user?.rol || "Rol"}</p>
-          <p class="text-sm text-gray-500">Edad: ${user?.edad || "N/A"}</p>
-        </div>
-        <div class="border-t border-gray-200 pt-4 mb-4 px-4">
-          <h4 class="text-md font-semibold text-gray-700 mb-2">Datos Personales</h4>
-          <div class="space-y-1 text-sm text-gray-600">
-            <p><span class="font-semibold">Email:</span> ${user?.email || "correo@ejemplo.com"}</p>
-            <p><span class="font-semibold">Teléfono:</span> ${user?.telefono || "N/A"}</p>
-            <p><span class="font-semibold">Dirección:</span> ${user?.direccion_actual || "N/A"}</p>
-          </div>
-        </div>
-        <div class="border-t border-gray-200 pt-4 mb-4 px-4">
-          <h4 class="text-md font-semibold text-gray-700 mb-2">Emprendimiento</h4>
-          <p class="text-gray-600">${user?.tipo_sector || "No especificado"}</p>
-        </div>
-        <div class="border-t border-gray-200 pt-4 mb-2 px-4">
-          <h4 class="text-md font-semibold text-gray-700 mb-2">Consejo Comunale</h4>
-          <p class="text-gray-600">${user?.consejo_nombre || "No especificado"}</p>
+  Swal.fire({
+    title: "Perfil de Usuario",
+    html: `
+    <div class="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-6">
+      <div class="flex flex-col items-center mb-4">
+        <h3 class="text-xl font-semibold text-gray-800 mb-1">${user?.nombre || "Nombre"}</h3>
+        <p class="text-sm text-gray-500 mb-2">${user?.tipo_usuario || "Rol"}</p>
+        <p class="text-sm text-gray-500">Edad: ${user?.edad || "N/A"}</p>
+      </div>
+      <div class="border-t border-gray-200 pt-4 mb-4 px-4">
+        <h4 class="text-md font-semibold text-gray-700 mb-2">Datos Personales</h4>
+        <div class="space-y-1 text-sm text-gray-600">
+          <p><span class="font-semibold">Email:</span> ${user?.email || "correo@ejemplo.com"}</p>
+          <p><span class="font-semibold">Teléfono:</span> ${user?.telefono || "N/A"}</p>
+          <p><span class="font-semibold">Dirección:</span> ${user?.direccion_actual || "N/A"}</p>
+          <p><span class="font-semibold">Estado:</span> ${user?.estado || "N/A"}</p>
+          <p><span class="font-semibold">Municipio:</span> ${user?.municipio || "N/A"}</p>
         </div>
       </div>
+      <div class="border-t border-gray-200 pt-4 mb-4 px-4">
+        <h4 class="text-md font-semibold text-gray-700 mb-2">Emprendimiento</h4>
+        <p class="text-gray-600">Nombre: ${user?.nombre_emprendimiento || "No especificado"}</p>
+        <p class="text-gray-600">Consejo: ${user?.consejo_nombre || "No especificado"}</p>
+        <p class="text-gray-600">Comuna: ${user?.comuna || "No especificado"}</p>
+        <p class="text-gray-600">Dirección Emprendimiento: ${user?.direccion_emprendimiento || "No especificado"}</p>
+      </div>
+    </div>
     `,
-      showCloseButton: true,
-      focusConfirm: false,
-      confirmButtonText: "Cerrar",
-      customClass: {
-        popup: "rounded-lg p-4",
-      },
-    });
-  };
+    showCloseButton: true,
+    focusConfirm: false,
+    confirmButtonText: "Cerrar",
+    customClass: {
+      popup: "rounded-lg p-4",
+    },
+  });
+};
 
   // Funciones para editar datos
   const handleEditarDatosPersonales = async () => {
@@ -180,7 +181,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
         <div class="flex flex-wrap gap-4">
           <div class="flex-1 min-w-[300px] w-0">
             <label for="nombre" class="block text-xs font-medium text-gray-700 mb-1">Nombre Completo</label>
-            <input id="nombre" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${user?.nombre_completo || ""}">
+            <input id="nombre" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${user?.nombre || ""}">
           </div>
           <div class="flex-1 min-w-[150px] w-0">
             <label for="edad" class="block text-xs font-medium text-gray-700 mb-1">Edad</label>

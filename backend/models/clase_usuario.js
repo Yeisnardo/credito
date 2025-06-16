@@ -31,9 +31,16 @@ static async getUsuarioPorCedula(cedula) {
       u.usuario, 
       u.clave, 
       u.rol, 
-      u.estatus
+      u.estatus,
+      e.tipo_sector,
+      e.tipo_negocio,
+      e.nombre_emprendimiento,
+      e.consejo_nombre,
+      e.comuna,
+      e.direccion_emprendimiento
     FROM usuario u
     LEFT JOIN persona p ON u.cedula_usuario = p.cedula
+    LEFT JOIN emprendimientos e ON u.cedula_usuario = e.cedula_emprendedor
     WHERE u.cedula_usuario = $1`,
     [cedula]
   );
@@ -55,6 +62,12 @@ static async getUsuarioPorCedula(cedula) {
     clave: row.clave,
     tipo_usuario: row.rol,
     estatus: row.estatus,
+    tipo_sector: row.tipo_sector || '',
+    tipo_negocio: row.tipo_negocio || '',
+    nombre_emprendimiento: row.nombre_emprendimiento || '',
+    consejo_nombre: row.consejo_nombre || '',
+    comuna: row.comuna || '',
+    direccion_emprendimiento: row.direccion_emprendimiento || ''
   };
 }
 
