@@ -65,6 +65,7 @@ CREATE TABLE clasificacion (
 CREATE TABLE aprobacion (
   cedula_aprobacion VARCHAR (20) PRIMARY KEY,
   contrato VARCHAR (50) NOT NULL,
+  estatus VARCHAR (10) NOT NULL,
   fecha_aprobacion VARCHAR (20) NOT NULL,
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_aprobacion) REFERENCES persona(cedula) ON DELETE CASCADE
 );
