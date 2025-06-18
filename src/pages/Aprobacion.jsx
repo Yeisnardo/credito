@@ -4,22 +4,22 @@ import Swal from "sweetalert2";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import api from "../services/api_aprobacion"; // Ruta correcta
+import api from "../services/api_aprobacion";
 
 const Aprobacion = () => {
   const navigate = useNavigate();
 
-  // Estado y referencias
+  // Estados y referencias
   const [menuOpen, setMenuOpen] = useState(true);
   const [perfiles, setPerfiles] = useState([]);
   const [mensajeExito, setMensajeExito] = useState("");
   const [contadorSecuencial, setContadorSecuencial] = useState(1);
-  const secuencialRef = useRef(contadorSecuencial); // referencia para mantener el valor en tiempo real
+  const secuencialRef = useRef(contadorSecuencial);
   const [busqueda, setBusqueda] = useState("");
   const [motivoFiltro, setMotivoFiltro] = useState("");
   const [activarFiltroMotivo, setActivarFiltroMotivo] = useState(false);
 
-  // Estado para el formulario
+  // Estado para formulario
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [cedulaFormulario, setCedulaFormulario] = useState("");
   const [contratoFormulario, setContratoFormulario] = useState("");
@@ -27,7 +27,7 @@ const Aprobacion = () => {
 
   const añoActual = new Date().getFullYear().toString().slice(-2);
 
-  // Sincronizar la ref con el estado del contador
+  // Sincronizar ref con el estado del contador
   useEffect(() => {
     secuencialRef.current = contadorSecuencial;
   }, [contadorSecuencial]);
@@ -37,12 +37,19 @@ const Aprobacion = () => {
     const fetchData = async () => {
       try {
         const usuarios = await api.getAprobaciones();
-        console.log("Usuarios cargados:", usuarios);
-        const perfilesConestatus_solicitud = Array.isArray(usuarios)
-          ? usuarios.map((p) => ({ ...p, estatus_solicitud: p.estatus_solicitud || "Pendiente" }))
-          : [];
-        setPerfiles(perfilesConestatus_solicitud);
+        console.log("Usuarios cargados:", usuarios); // Depuración
+        // Asegúrate que usuarios sea un array
+        if (Array.isArray(usuarios)) {
+          const perfilesConEstatus = usuarios.map((p) => ({
+            ...p,
+            estatus: p.estatus || "Pendiente",
+          }));
+          setPerfiles(perfilesConEstatus);
+        } else {
+          setPerfiles([]);
+        }
       } catch (error) {
+        console.error("Error al cargar usuarios:", error);
         Swal.fire({
           title: "Error",
           text: "No se pudo cargar la lista de usuarios.",
@@ -74,6 +81,7 @@ const Aprobacion = () => {
     setFechaFormulario("");
     setMostrarFormulario(true);
   };
+
   const handleCerrarFormulario = () => {
     setMostrarFormulario(false);
   };
@@ -93,7 +101,7 @@ const Aprobacion = () => {
         cedula_aprobacion: cedulaFormulario,
         contrato: contratoFormulario,
         fecha_aprobacion: fechaFormulario,
-        estatus_solicitud: "Pendiente",
+        estatus: "Pendiente",
       });
       // Actualizar lista local
       setPerfiles((prev) =>
@@ -101,7 +109,7 @@ const Aprobacion = () => {
           p.cedula === cedulaFormulario
             ? {
                 ...p,
-                estatus_solicitud: "Pendiente",
+                estatus: "Pendiente",
                 contrato: contratoFormulario,
                 fecha_aprobacion: fechaFormulario,
               }
@@ -111,6 +119,7 @@ const Aprobacion = () => {
       setMensajeExito(`Aprobación registrada para cédula ${cedulaFormulario}`);
       handleCerrarFormulario();
     } catch (error) {
+      console.error("Error al registrar aprobación:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -119,7 +128,7 @@ const Aprobacion = () => {
     }
   };
 
-  // Función para mostrar detalles
+  // Ver detalles
   const handleVerDetalles = (s) => {
     Swal.fire({
       title: `Detalles de ${s.nombre_completo}`,
@@ -136,7 +145,7 @@ const Aprobacion = () => {
         <hr/>
         <h3>Solicitud</h3>
         <p><strong>Motivo:</strong> ${s.motivo}</p>
-        <p><strong>estatus_solicitud:</strong> ${s.estatus_solicitud}</p>
+        <p><strong>estatus:</strong> ${s.estatus}</p>
         <hr/>
         <h3>Emprendimiento</h3>
         <p><strong>Nombre:</strong> ${s.nombre_emprendimiento}</p>
@@ -148,9 +157,9 @@ const Aprobacion = () => {
         <hr/>
         <h3>Requerimientos</h3>
         <p><strong>Fecha:</strong> ${s.fecha_aprobacion}</p>
-        <p><strong>Número de contrato:</strong> ${s.contrato_aprobacion}</p>
-        <p><strong>estatus_solicitud:</strong> ${
-          s.estatus_solicitud === "hola"
+        <p><strong>Número de contrato:</strong> ${s.contrato}</p>
+        <p><strong>estatus:</strong> ${
+          s.estatus === "Pendiente"
             ? '<span style="color:rgb(223, 0, 0);">Pendiente</span>'
             : '<span style="color:rgb(0, 153, 56);">Aprobado</span>'
         }</p>
@@ -161,7 +170,7 @@ const Aprobacion = () => {
     });
   };
 
-  // Función para aprobar desde lista
+  // Aprobar desde lista
   const handleAprobarDesdeLista = (s) => {
     Swal.fire({
       title: `¿Aprobar solicitud de ${s.nombre_completo}?`,
@@ -179,7 +188,7 @@ const Aprobacion = () => {
 
   // Función para aprobar solicitud
   const aprobarSolicitud = async (s) => {
-    // Incrementar en la ref y actualizar estado
+    // Incrementar secuencial
     secuencialRef.current += 1;
     setContadorSecuencial(secuencialRef.current);
 
@@ -187,13 +196,13 @@ const Aprobacion = () => {
     const contratoNumero = `IFEMI/CRED-${numeroSecuencial}/${añoActual}`;
     const fechaActual = new Date().toISOString().slice(0, 10);
 
-    // Actualizar en lista local
+    // Actualizar lista local
     setPerfiles((prev) =>
       prev.map((p) =>
         p.cedula === s.cedula
           ? {
               ...p,
-              estatus_solicitud: "Aprobado",
+              estatus: "Aprobado",
               contrato: contratoNumero,
               fecha_aprobacion: fechaActual,
             }
@@ -209,9 +218,10 @@ const Aprobacion = () => {
         cedula_aprobacion: s.cedula,
         contrato: contratoNumero,
         fecha_aprobacion: fechaActual,
-        estatus_solicitud: "Aprobado",
+        estatus: "Aprobado",
       });
     } catch (error) {
+      console.error("Error en enviar aprobación a API:", error);
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -222,7 +232,7 @@ const Aprobacion = () => {
 
   // Filtrar perfiles
   const perfilesFiltrados = perfiles.filter((s) => {
-    if (s.estatus_solicitud === "Aprobado") return false;
+    if (s.estatus === "Pendientes") return false; // Solo pendientes
     const coincideBusqueda = s.nombre_completo
       ?.toLowerCase()
       .includes(busqueda.toLowerCase());
@@ -231,6 +241,10 @@ const Aprobacion = () => {
       : true;
     return coincideBusqueda && coincideMotivo;
   });
+
+  // Para verificar qué datos tiene
+  console.log("Perfiles cargados:", perfiles);
+  console.log("Perfiles filtrados:", perfilesFiltrados);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -362,7 +376,7 @@ const Aprobacion = () => {
                     <span>{s.nombre_completo}</span>
                   </h2>
                   <p className="mb-2">
-                    <strong>Contrato:</strong> {s.contrato_aprobacion ?? "Pendiente"}
+                    <strong>Contrato:</strong> {s.contrato ?? "Pendiente"}
                   </p>
                   <p
                     className={`mb-2 font-semibold ${
@@ -373,12 +387,12 @@ const Aprobacion = () => {
                   >
                     <i
                       className={`bx ${
-                        s.estatus_solicitud === "Pendiente"
+                        s.estatus === "Pendiente"
                           ? "bx-time"
                           : "bx-check-circle"
                       }`}
                     ></i>
-                    <span>{s.estatus_solicitud}</span>
+                    <span>{s.estatus}</span>
                   </p>
                   {/* Botón detalles */}
                   <button

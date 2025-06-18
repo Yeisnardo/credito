@@ -1,126 +1,216 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
+import fondoService from "../services/api_fondo"; // ajusta la ruta
 import Swal from "sweetalert2";
 
+const InputDerechaIzquierda = ({ valor, setValor, placeholder }) => {
+  const inputRef = useRef(null);
+
+  const handleChange = (e) => {
+    const nuevoValor = e.target.value.replace(/\D/g, ""); // Solo dígitos
+    setValor(nuevoValor);
+  };
+
+  const valorFormateado = () => {
+    if (!valor) return "";
+    const num = parseInt(valor, 10);
+    if (isNaN(num)) return "";
+    return num.toLocaleString("es-VE");
+  };
+
+  const handleFocus = () => {
+    if (inputRef.current) {
+      const length = valorFormateado().length;
+      inputRef.current.setSelectionRange(length, length);
+    }
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      value={valorFormateado()}
+      placeholder={placeholder}
+      onChange={handleChange}
+      onFocus={handleFocus}
+      style={{
+        textAlign: "right",
+        padding: "12px",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        width: "100%",
+        fontSize: "1rem",
+        outline: "none",
+      }}
+    />
+  );
+};
+
 const Fondo = () => {
+  // Estados
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [registros, setRegistros] = useState([]);
   const [fondoCapital, setFondoCapital] = useState(0);
-  const tasaCambio = 4.5; // 1 dólar = 4.5 Bs
-
-  // Estados de modales
-  const [mostrarModalFondo, setMostrarModalFondo] = useState(false);
-  const [montoFondo, setMontoFondo] = useState("");
-  const [mostrarModalInspeccion, setMostrarModalInspeccion] = useState(false);
+  const [nextId, setNextId] = useState(1);
   const [registroSeleccionado, setRegistroSeleccionado] = useState(null);
-  const [montoAsignar, setMontoAsignar] = useState("");
-  const [mostrarModalFormulario, setMostrarModalFormulario] = useState(false);
-  const [formEmprendimiento, setFormEmprendimiento] = useState("");
-  const [formMonto, setFormMonto] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
-  // Funciones de apertura y cierre de modales
-  const handleAbrirModalFondo = () => setMostrarModalFondo(true);
-  const handleCerrarModalFondo = () => {
-    setMostrarModalFondo(false);
-    setMontoFondo("");
-  };
-
-  const handleAgregarFondo = () => {
-    const montoTotal = parseFloat(montoFondo);
-    if (isNaN(montoTotal) || montoTotal <= 0) {
-      alert("Por favor ingresa un monto válido");
-      return;
-    }
-    setFondoCapital(fondoCapital + montoTotal);
-    handleCerrarModalFondo();
-  };
-
-  const handleCerrarModal = () => {
-    setMostrarModalFormulario(false);
-    setFormEmprendimiento("");
-    setFormMonto("");
-  };
-
-  const handleEnviarFormulario = () => {
-    const montoTotal = parseFloat(formMonto);
-    if (isNaN(montoTotal) || montoTotal <= 0) {
-      alert("Por favor ingresa un monto válido");
-      return;
-    }
-    if (!formEmprendimiento.trim()) {
-      alert("Por favor ingresa un nombre de emprendimiento válido");
-      return;
-    }
-    if (fondoCapital < montoTotal) {
-      alert("Fondo insuficiente para asignar");
-      return;
-    }
-    const nuevoRegistro = {
-      id: Date.now(),
-      emprendimiento: formEmprendimiento.trim(),
-      fondoAsignado: montoTotal,
-      fecha: new Date().toLocaleString(),
-    };
-    setRegistros([nuevoRegistro, ...registros]);
-    setFondoCapital(fondoCapital - montoTotal);
-    handleCerrarModal();
-  };
-
-  const handleInspeccionar = (registro) => {
-    setRegistroSeleccionado(registro);
-    setMontoAsignar("");
-    setMostrarModalInspeccion(true);
-  };
-
-  const handleCerrarInspeccion = () => {
-    setMostrarModalInspeccion(false);
-    setRegistroSeleccionado(null);
-  };
-
-  const registrosFiltrados = registros.filter((reg) =>
-    reg.emprendimiento.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
-  const handleAsignarDesdeInspeccion = () => {
-    const monto = parseFloat(montoAsignar);
-    if (isNaN(monto) || monto <= 0) {
-      alert("Ingresa un monto válido");
-      return;
-    }
-    if (fondoCapital < monto) {
-      alert("Fondo insuficiente");
-      return;
-    }
-    setFondoCapital(fondoCapital - monto);
-    const nuevosRegistros = registros.map((reg) => {
-      if (reg.id === registroSeleccionado.id) {
-        return {
-          ...reg,
-          fondoAsignado: reg.fondoAsignado + monto,
-        };
+  // Cargar fondos desde API al montar
+  useEffect(() => {
+    const fetchFondos = async () => {
+      try {
+        const fondos = await fondoService.getFondos();
+        if (fondos.length > 0) {
+          const registrosDesdeAPI = fondos.map((fondo, index) => ({
+            id: fondo.id || index + 1,
+            fecha: fondo.fecha || new Date().toLocaleString(),
+            tipo_movimiento: fondo.tipo_movimiento || "Ingreso",
+            monto: parseFloat(fondo.monto),
+            saldo: parseFloat(fondo.saldo),
+          }));
+          setRegistros(registrosDesdeAPI);
+          const saldoTotal = fondos.reduce(
+            (acc, f) => acc + parseFloat(f.monto),
+            0
+          );
+          setFondoCapital(saldoTotal);
+          setNextId(fondos.length + 1);
+        }
+      } catch (error) {
+        console.error("Error al cargar fondos:", error);
       }
-      return reg;
+    };
+    fetchFondos();
+  }, []);
+
+  // Formatear moneda
+  const formatearMoneda = (value) => {
+    if (value == null || value === "") return "";
+    const num = parseFloat(value.toString().replace(/[^0-9.-]+/g, ""));
+    if (isNaN(num)) return "";
+    return num.toLocaleString("es-VE", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
-    setRegistros(nuevosRegistros);
-    handleCerrarInspeccion();
   };
 
-  const handleAbrirFormulario = () => setMostrarModalFormulario(true);
-  const handleCerrarFormulario = () => {
-    setMostrarModalFormulario(false);
-    setFormEmprendimiento("");
-    setFormMonto("");
+  // Agregar fondo con Swal
+  const handleAgregarFondoSwal = async () => {
+    const { value: montoStr } = await Swal.fire({
+      title: "Agregar Fondo",
+      input: "text",
+      inputPlaceholder: "Monto a agregar",
+      showCancelButton: true,
+      inputValidator: (value) => {
+        if (!value || isNaN(parseFloat(value.replace(/\D/g, "")))) {
+          return "Por favor ingresa un monto válido";
+        }
+        return null;
+      },
+    });
+
+    if (montoStr) {
+      const montoNum = parseFloat(montoStr.replace(/\D/g, ""));
+      if (isNaN(montoNum) || montoNum <= 0) {
+        Swal.fire("Error", "Monto inválido", "error");
+        return;
+      }
+
+      try {
+        // Crear fondo con monto y saldo actualizado
+        const data = await fondoService.createFondo({ monto: montoNum });
+
+        // Actualizar la lista local
+        const nuevoRegistro = {
+          id: data.id,
+          fecha: data.fecha,
+          tipo_movimiento: data.tipo_movimiento,
+          monto: montoNum,
+          saldo: parseFloat(data.saldo),
+        };
+
+        setRegistros([nuevoRegistro, ...registros]);
+        setFondoCapital((prev) => prev + montoNum);
+        Swal.fire("Éxito", "Fondo agregado correctamente", "success");
+      } catch (error) {
+        console.error("Error al agregar fondo:", error);
+        Swal.fire("Error", "No se pudo agregar el fondo", "error");
+      }
+    }
   };
+
+  // Inspeccionar y asignar monto
+  const handleInspeccionarSwal = async (registro) => {
+    setRegistroSeleccionado(registro);
+    const { value: montoStr } = await Swal.fire({
+      title: "Detalle del Registro",
+      html: `
+        <p><strong>ID:</strong> ${registro.id}</p>
+        <p><strong>Fecha:</strong> ${registro.fecha}</p>
+        <p><strong>Tipo:</strong> ${registro.tipo_movimiento}</p>
+        <p><strong>Monto:</strong> ${formatearMoneda(registro.monto)} Bs</p>
+        <p><strong>Saldo:</strong> ${formatearMoneda(registro.saldo)} Bs</p>
+        <hr/>
+        <label>Monto a Asignar:</label>
+        <input id="montoAsignar" class="swal2-input" type="number" placeholder="Monto" min="0"/>
+      `,
+      showCancelButton: true,
+      focusConfirm: false,
+      preConfirm: () => {
+        const montoInput = Swal.getPopup().querySelector("#montoAsignar");
+        const montoValue = montoInput.value;
+        if (
+          !montoValue ||
+          isNaN(parseFloat(montoValue)) ||
+          parseFloat(montoValue) <= 0
+        ) {
+          Swal.showValidationMessage("Ingresa un monto válido");
+          return false;
+        }
+        return montoValue;
+      },
+    });
+
+    if (montoStr !== undefined) {
+      const monto = parseFloat(montoStr);
+      if (fondoCapital < monto) {
+        Swal.fire("Error", "Fondo insuficiente", "error");
+        return;
+      }
+      // Actualizar fondos y registros
+      setFondoCapital(fondoCapital - monto);
+      const nuevosRegistros = registros.map((reg) =>
+        reg.id === registroSeleccionado.id
+          ? {
+              ...reg,
+              monto: reg.monto + monto,
+              saldo: reg.saldo - monto,
+            }
+          : reg
+      );
+      setRegistros(nuevosRegistros);
+      Swal.fire("Éxito", "Monto asignado correctamente", "success");
+    }
+  };
+
+  // Filtrar registros por búsqueda
+  const registrosFiltrados = registros.filter((reg) =>
+    reg.tipo_movimiento.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       {isMenuOpen && <Menu />}
-      <div className={`flex-1 flex flex-col ${isMenuOpen ? "ml-0 md:ml-64" : "ml-0"}`}>
+      <div
+        className={`flex-1 flex flex-col ${
+          isMenuOpen ? "ml-0 md:ml-64" : "ml-0"
+        }`}
+      >
         <Header toggleMenu={() => setIsMenuOpen(!isMenuOpen)} />
 
         <main className="pt-20 px-8 flex-1 flex-col">
+          {/* Encabezado */}
           <header className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-2">
               <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
@@ -132,27 +222,27 @@ const Fondo = () => {
             </div>
           </header>
 
+          {/* Fondo General */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl">
-              <div className="p-6 flex items-center space-x-4">
-                <div>
-                  <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">
-                    Fondo General en Bolívares
-                  </h2>
-                  <p className="text-gray-700 mb-2">
-                    Saldo Disponible: {fondoCapital.toFixed(2)} Bs
-                  </p>
-                  <button
-                    onClick={handleAbrirModalFondo}
-                    className="mt-4 bg-blue-500 text-white py-2 px-4 rounded"
-                  >
-                    Agregar Fondo
-                  </button>
-                </div>
+            <div className="bg-white rounded-xl shadow-lg transform hover:scale-105 transition-transform duration-300 ease-in-out hover:shadow-xl p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold mb-3 text-[#07142A]">
+                  Fondo General en Bolívares
+                </h2>
+                <p className="text-gray-700 mb-2">
+                  Saldo Disponible: {fondoCapital.toFixed(2)} Bs
+                </p>
+                <button
+                  onClick={handleAgregarFondoSwal}
+                  className="mt-4 bg-blue-500 text-white py-2 px-4 rounded"
+                >
+                  Agregar Fondo
+                </button>
               </div>
             </div>
           </section>
 
+          {/* Buscador */}
           <div className="mb-6 max-w-4xl mx-auto flex items-center space-x-4">
             <div className="relative flex-1">
               <input
@@ -178,56 +268,61 @@ const Fondo = () => {
                 </svg>
               </div>
             </div>
-            <button
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-full shadow-lg transition"
-              onClick={handleAbrirFormulario}
-            >
-              + Asignar fondo a Emprendimiento
-            </button>
           </div>
 
+          {/* Tabla de registros */}
           <div className="overflow-x-auto rounded-lg shadow-lg border border-gray-200 bg-white max-w-4xl mx-auto mb-20">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   {[
                     { label: "ID", key: "id" },
-                    { label: "Nombre", key: "emprendimiento" },
-                    { label: "Fondo Asignado", key: "fondoAsignado" },
                     { label: "Fecha", key: "fecha" },
+                    { label: "Tipo de Movimiento", key: "tipo_movimiento" },
+                    { label: "Monto", key: "monto" },
+                    { label: "Saldo", key: "saldo" },
+                    { label: "Acciones", key: "acciones" },
                   ].map(({ label, key }) => (
                     <th
                       key={key}
                       className="px-4 py-3 cursor-pointer select-none text-gray-700 font-medium hover:bg-gray-100 transition"
                     >
-                      <div className="flex items-center justify-between">{label}</div>
+                      {label}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-gray-700 font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {registrosFiltrados.length > 0 ? (
                   registrosFiltrados.map((item) => (
                     <tr key={item.id} className="transition hover:bg-gray-100">
-                      <td className="px-4 py-3 text-center text-gray-600">{item.id}</td>
-                      <td className="px-4 py-3 text-gray-700">{item.emprendimiento}</td>
-                      <td className="px-4 py-3 text-gray-700">{item.fondoAsignado.toFixed(2)} Bs</td>
+                      <td className="px-4 py-3 text-center text-gray-600">
+                        {item.id}
+                      </td>
                       <td className="px-4 py-3">{item.fecha}</td>
-                      <td className="px-4 py-3 flex justify-center space-x-3">
+                      <td className="px-4 py-3">{item.tipo_movimiento}</td>
+                      <td className="px-4 py-3">
+                        {formatearMoneda(item.monto)} Bs
+                      </td>
+                      <td className="px-4 py-3">
+                        {formatearMoneda(item.saldo)} Bs
+                      </td>
+                      <td className="px-4 py-3">
                         <button
-                          className="text-blue-600 hover:text-blue-800"
-                          onClick={() => handleInspeccionar(item)}
-                          aria-label="Detalle"
+                          onClick={() => handleInspeccionarSwal(item)}
+                          className="bg-yellow-500 text-white py-1 px-3 rounded"
                         >
-                          <i className="bx bx-align-left text-xl"></i>
+                          Inspeccionar
                         </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-gray-500 font-semibold">
+                    <td
+                      colSpan={6}
+                      className="text-center py-4 text-gray-500 font-semibold"
+                    >
                       No se encontraron resultados.
                     </td>
                   </tr>
@@ -236,119 +331,6 @@ const Fondo = () => {
             </table>
           </div>
         </main>
-
-        {/* Modal para agregar fondo */}
-        {mostrarModalFondo && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
-              <h2 className="text-xl font-semibold mb-4">Agregar Fondo</h2>
-              <input
-                type="number"
-                value={montoFondo}
-                onChange={(e) => setMontoFondo(e.target.value)}
-                placeholder="Monto a agregar"
-                className="border border-gray-300 p-2 rounded w-full mb-4"
-              />
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={handleCerrarModalFondo}
-                  className="bg-gray-300 py-2 px-4 rounded"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleAgregarFondo}
-                  className="bg-blue-500 text-white py-2 px-4 rounded"
-                >
-                  Agregar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal para inspección y asignación */}
-        {mostrarModalInspeccion && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded shadow-lg max-w-md w-full overflow-y-auto max-h-full">
-              <h2 className="text-xl font-semibold mb-4">Detalle del Registro</h2>
-              {registroSeleccionado && (
-                <div>
-                  <p>
-                    <strong>Emprendimiento:</strong> {registroSeleccionado.emprendimiento}
-                  </p>
-                  <p>
-                    <strong>Monto:</strong> {registroSeleccionado.monto.toFixed(2)} Bs
-                  </p>
-                  <p>
-                    <strong>Fondo Asignado:</strong> {registroSeleccionado.fondoAsignado.toFixed(2)} Bs
-                  </p>
-                  <div className="mt-4">
-                    <label className="block mb-1 font-semibold">Monto a Asignar</label>
-                    <input
-                      type="number"
-                      value={montoAsignar}
-                      onChange={(e) => setMontoAsignar(e.target.value)}
-                      placeholder="Monto"
-                      className="border border-gray-300 p-2 rounded w-full"
-                    />
-                  </div>
-                  <button
-                    onClick={handleAsignarDesdeInspeccion}
-                    className="mt-4 bg-green-500 text-white py-2 px-4 rounded"
-                  >
-                    Confirmar Asignación
-                  </button>
-                </div>
-              )}
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={handleCerrarInspeccion}
-                  className="bg-gray-300 py-2 px-4 rounded"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal para formulario de asignar fondo a emprendimiento */}
-        {mostrarModalFormulario && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded shadow-lg max-w-md w-full">
-              <h2 className="text-xl font-semibold mb-4">Asignar Fondo a Emprendimiento</h2>
-              <input
-                type="text"
-                value={formEmprendimiento}
-                onChange={(e) => setFormEmprendimiento(e.target.value)}
-                placeholder="Nombre del Emprendimiento"
-                className="border border-gray-300 p-2 rounded w-full mb-4"
-              />
-              <input
-                type="number"
-                value={formMonto}
-                onChange={(e) => setFormMonto(e.target.value)}
-                placeholder="Monto"
-                className="border border-gray-300 p-2 rounded w-full mb-4"
-              />
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={handleCerrarFormulario}
-                  className="bg-gray-300 py-2 px-4 rounded"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleEnviarFormulario}
-                  className="bg-green-500 text-white py-2 px-4 rounded"
-                >
-                  Asignar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
@@ -359,4 +341,3 @@ const Fondo = () => {
 };
 
 export default Fondo;
-

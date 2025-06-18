@@ -71,6 +71,14 @@ CREATE TABLE aprobacion (
 );
 
 
+CREATE TABLE fondo (
+  id_fondo SERIAL PRIMARY KEY,
+  fecha VARCHAR (40),
+  tipo_movimiento VARCHAR (10),
+  monto VARCHAR (100),
+  Saldo VARCHAR (100)
+);
+
 
 -- Insertar datos en la tabla persona
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES

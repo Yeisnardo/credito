@@ -9,6 +9,7 @@ const requerimientoRoutes = require('./routes/routes_requerimiento');
 const solicitudRoutes = require('./routes/routes_solicitud');
 const clasificacionRoutes = require('./routes/routes_clasificacion');
 const aprobacionRoutes = require('./routes/routes_aprobacion');
+const fondoRoutes = require('./routes/routes_fondo'); // ajusta la ruta si es diferente
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/api/requerimiento', requerimientoRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/clasificacion', clasificacionRoutes);
 app.use('/api/aprobacion', aprobacionRoutes);
+app.use('/api/fondos', fondoRoutes);
 
 // Middleware para manejo de errores
 app.use((err, req, res, next) => {

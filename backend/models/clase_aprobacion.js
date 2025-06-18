@@ -34,10 +34,10 @@ class Aprobacion {
         r.rif_emprendimiento,
         r.referencia_bancaria,
         s.motivo,
-        s.estatus AS estatus_solicitud,
-        a.contrato AS contrato_aprobacion,
+        s.estatus,
+        a.contrato,
         a.fecha_aprobacion,
-        a.estatus AS estatus_aprobacion -- Añadido para traer también el estado de aprobación
+        a.estatus
       FROM persona p
       LEFT JOIN emprendimientos e ON p.cedula = e.cedula_emprendedor
       LEFT JOIN usuario u ON p.cedula = u.cedula_usuario
