@@ -191,7 +191,7 @@ const Gestion = () => {
                 <i className="bx bx-credit-card text-2xl"></i>
               </div>
               <h1 className="text-3xl font-bold text-gray-800">
-                Gestor de Créditos y Depósitos
+                Gestor de Créditos
               </h1>
             </div>
           </header>
