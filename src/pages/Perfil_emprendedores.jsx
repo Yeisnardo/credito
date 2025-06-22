@@ -31,12 +31,12 @@ const Perfil = () => {
 
   const handleVerDetalles = (s) => {
     const detallesHtml = `
-      <h3 class="font-semibold mt-4 mb-2">Datos Personales</h3>
+      <h3 class="font-semibold mt-4 mb-2 text-[#374151]">Datos Personales</h3>
       <p><strong>Nombre:</strong> ${s.detalles.datosPersonales.nombre}</p>
       <p><strong>Email:</strong> ${s.detalles.datosPersonales.email}</p>
       <p><strong>Teléfono:</strong> ${s.detalles.datosPersonales.telefono}</p>
       <p><strong>Dirección:</strong> ${s.detalles.datosPersonales.direccion}</p>
-      <h3 class="font-semibold mt-6 mb-2">Emprendimiento</h3>
+      <h3 class="font-semibold mt-6 mb-2 text-[#374151]">Emprendimiento</h3>
       <p><strong>Nombre:</strong> ${s.detalles.emprendimiento}</p>
       <p><strong>Requerimientos:</strong> ${s.detalles.requerimientos}</p>
     `;
@@ -47,7 +47,7 @@ const Perfil = () => {
       showCancelButton: true,
       cancelButtonText: "Cerrar",
       icon: "info",
-      confirmButtonColor: "#3b82f6",
+      confirmButtonColor: "#3b82f6", // azul de Tailwind para botones
     });
   };
 
@@ -88,7 +88,7 @@ const Perfil = () => {
                   id="buscarSolicitante"
                   type="text"
                   placeholder="Buscar..."
-                  className="w-full p-3 pl-10 pr-4 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-300"
+                  className="w-full p-3 pl-10 pr-4 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3b82f6] transition duration-300"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                 />

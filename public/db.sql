@@ -79,6 +79,18 @@ CREATE TABLE fondo (
   Saldo VARCHAR (100)
 );
 
+CREATE TABLE credito (
+  aprobacion_id SERIAL PRIMARY KEY,
+  cedula_credito VARCHAR (20) NOT NULL,
+  referencia VARCHAR (5) NOT null,
+  monto_euros VARCHAR NOT NULL,
+  monto_bs VARCHAR NOT NULL,
+  diez_euros VARCHAR NOT null,
+  fecha_desde VARCHAR (15) NOT NULL,
+  fecha_hasta VARCHAR (15) NOT null,
+  FOREIGN KEY (cedula_credito) REFERENCES aprobacion(cedula_aprobacion)
+);
+
 
 -- Insertar datos en la tabla persona
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES

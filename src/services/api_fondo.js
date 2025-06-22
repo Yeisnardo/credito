@@ -1,22 +1,22 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // Ajusta si es necesario
+  baseURL: 'http://localhost:5000', // Asegúrate de que sea la URL correcta
 });
 
-// Obtener todas las aprobaciones
-const getAprobaciones = async () => {
-  const response = await api.get('/api/aprobacion');
+// Crear un nuevo fondo
+const createFondo = async (fondo) => {
+  const response = await api.post('/api/fondos', fondo);
   return response.data;
 };
 
-// Crear una nueva aprobación
-const enviarAprobacion = async (data) => {
-  const response = await api.post('/api/aprobacion', data);
+// Obtener todos los fondos
+const getFondos = async () => {
+  const response = await api.get('/api/fondos');
   return response.data;
 };
 
 export default {
-  getAprobaciones,
-  enviarAprobacion,
+  createFondo,
+  getFondos,
 };

@@ -48,7 +48,7 @@ const Usuario = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   // Funciones CRUD con Swal
-  const handleCreateUser  = async () => {
+  const handleCreateUser = async () => {
     const result = await Swal.fire({
       title: 'Agregar Nuevo Usuario',
       html: `
@@ -72,7 +72,6 @@ const Usuario = () => {
         const clave = document.getElementById('clave').value.trim();
         const rol = document.getElementById('rol').value.trim();
 
-        // Validación de cédula: solo números, entre 6 y 8 caracteres
         const cedulaRegex = /^\d{6,8}$/;
         if (!cedula_usuario) {
           Swal.showValidationMessage('Por favor, ingrese la cédula de identidad.');
@@ -129,7 +128,7 @@ const Usuario = () => {
     }
   };
 
-  const handleEditUser  = async (user) => {
+  const handleEditUser = async (user) => {
     const result = await Swal.fire({
       title: 'Editar Usuario',
       html: `
@@ -179,7 +178,7 @@ const Usuario = () => {
     }
   };
 
-  const handleDeleteUser  = (cedula_usuario) => {
+  const handleDeleteUser = (cedula_usuario) => {
     Swal.fire({
       title: "¿Estás seguro?",
       text: `¿Deseas eliminar al usuario ${cedula_usuario}?`,
@@ -228,7 +227,7 @@ const Usuario = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
+    <div className="flex min-h-screen" style={{ backgroundColor: "#F9FAFB" , fontFamily: 'Arial, sans-serif' }}>
       {menuOpen && <Menu />}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? "ml-64" : "ml-0"}`}>
         <Header toggleMenu={toggleMenu} />
@@ -237,17 +236,17 @@ const Usuario = () => {
           {/* Encabezado y botón */}
           <div className="flex items-center justify-between mb-8 mt-10">
             <div className="flex items-center space-x-4">
-              <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
-                <i className="bx bx-user text-3xl text-gray-700"></i>
+              <div className="bg-[#D1D5DB] p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300">
+                <i className="bx bx-user text-3xl text-[#374151]"></i>
               </div>
-              <h1 className="text-3xl font-semibold text-gray-800">Gestión de Usuarios</h1>
+              <h1 className="text-3xl font-semibold text-[#374151]">Gestión de Usuarios</h1>
             </div>
             <button
-              className="bg-gray-800 hover:bg-gray-900 text-white px-6 py-3 rounded-full shadow-md transform hover:scale-105 transition duration-300"
-              onClick={handleCreateUser }
+              className="bg-[#374151] hover:bg-[#111827] text-white px-6 py-3 rounded-full shadow-md transform hover:scale-105 transition duration-300"
+              onClick={handleCreateUser}
             >
               <i className="bx bx-plus text-xl"></i>
-              <span>Nuevo Usuario</span>
+              <span className="ml-2">Nuevo Usuario</span>
             </button>
           </div>
 
@@ -257,7 +256,7 @@ const Usuario = () => {
               <input
                 type="text"
                 placeholder="Buscar..."
-                className="w-full p-4 pl-12 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-300"
+                className="w-full p-4 pl-12 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F2937] transition duration-300"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -279,10 +278,10 @@ const Usuario = () => {
             </div>
           </div>
 
-          {/* Tabla moderna */}
+          {/* Tabla */}
           <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 bg-white max-w-7xl mx-auto mb-12 transition-shadow duration-300 hover:shadow-xl">
             <table className="min-w-full divide-y divide-gray-200 rounded-xl">
-              <thead className="bg-gray-100 rounded-t-xl">
+              <thead className="bg-[#F9FAFB] rounded-t-xl">
                 <tr>
                   {[
                     { label: "C.I", key: "cedula_usuario" },
@@ -315,8 +314,8 @@ const Usuario = () => {
                         <span
                           className={`px-3 py-1 rounded-full text-sm font-semibold ${
                             item.estatus === "Activo"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
+                              ? "bg-green-100 text-[#166534]"
+                              : "bg-red-100 text-[#991B1B]"
                           }`}
                         >
                           {item.estatus}
@@ -324,15 +323,15 @@ const Usuario = () => {
                       </td>
                       <td className="px-4 py-3 flex justify-center space-x-3">
                         <button
-                          className="text-blue-500 hover:text-blue-700 transition-transform transform hover:scale-105"
-                          onClick={() => handleEditUser (item)}
+                          className="text-blue-500 hover:text-[#1F2937] transition-transform transform hover:scale-105"
+                          onClick={() => handleEditUser(item)}
                           aria-label="Editar"
                         >
                           <i className="bx bx-edit-alt text-xl"></i>
                         </button>
                         <button
-                          className="text-red-500 hover:text-red-700 transition-transform transform hover:scale-105"
-                          onClick={() => handleDeleteUser (item.cedula_usuario)}
+                          className="text-red-500 hover:text-[#991B1B] transition-transform transform hover:scale-105"
+                          onClick={() => handleDeleteUser(item.cedula_usuario)}
                           aria-label="Eliminar"
                         >
                           <i className="bx bx-trash text-xl"></i>
@@ -340,8 +339,8 @@ const Usuario = () => {
                         <button
                           className={`px-4 py-2 rounded-full font-semibold transition transform hover:scale-105 ${
                             item.estatus === "Activo"
-                              ? "bg-red-500 hover:bg-red-600 text-white"
-                              : "bg-green-500 hover:bg-green-600 text-white"
+                              ? "bg-[#EF4444] hover:bg-[#DC2626] text-white"
+                              : "bg-[#22C55E] hover:bg-[#16A34A] text-white"
                           }`}
                           onClick={() => handleToggleEstatus(item)}
                         >
@@ -363,7 +362,7 @@ const Usuario = () => {
         </div>
 
         {/* Pie de página */}
-        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-600 text-sm rounded-t-xl shadow-inner">
+        <footer className="mt-auto p-4" style={{ backgroundColor: "#F9FAFB" , borderTop: "1px solid #D1D5DB" , color: "#4B5563" , fontSize: "0.875rem" , borderRadius: "0px 0px 8px 8px", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06)" }}>
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>

@@ -7,7 +7,7 @@ import Menu from "../components/Menu";
 const Cuotas = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
-  const [user, setUser ] = useState(null);
+  const [user, setUser] = useState(null);
 
   // Estado de cuotas con campo 'cayo'
   const [cuotas, setCuotas] = useState([
@@ -33,7 +33,7 @@ const Cuotas = () => {
       try {
         const response = await api.getUsers();
         if (response.length > 0) {
-          setUser (response[0]);
+          setUser(response[0]);
         }
       } catch (error) {
         console.error("Error al obtener los usuarios:", error);
@@ -92,7 +92,7 @@ const Cuotas = () => {
     .reduce((acc, c) => acc + c.monto, 0);
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-[#F9FAFB] font-sans overflow-hidden">
       {menuOpen && <Menu />}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
@@ -105,37 +105,37 @@ const Cuotas = () => {
         <div className="p-8 pt-24 w-full mx-auto">
           {/* Encabezado */}
           <div className="flex items-center mb-8">
-            <div className="bg-gray-200 p-4 rounded-full shadow-lg text-gray-700 flex items-center justify-center">
+            <div className="bg-[#D1D5DB] p-4 rounded-full shadow-lg text-gray-700 flex items-center justify-center">
               <i className="bx bx-wallet text-3xl"></i>
             </div>
-            <h1 className="ml-4 text-4xl font-bold text-gray-700">
+            <h1 className="ml-4 text-4xl font-bold text-[#1F2937]">
               Mis Cuotas
             </h1>
           </div>
 
           {/* Tarjeta de cuotas */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-300 text-gray-700">
+            <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-300 text-[#374151]">
               Listado de Cuotas
             </h2>
             {/* Tabla */}
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 rounded-lg shadow-md">
-                <thead className="bg-gray-50 rounded-t-lg">
+                <thead className="bg-[#F9FAFB] rounded-t-lg">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 rounded-tl-lg">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#374151] uppercase tracking-wider border-b border-gray-200 rounded-tl-lg">
                       ID
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#374151] uppercase tracking-wider border-b border-gray-200">
                       Monto
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#374151] uppercase tracking-wider border-b border-gray-200">
                       Descripción
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#374151] uppercase tracking-wider border-b border-gray-200">
                       Pagada
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200 rounded-tr-lg">
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-[#374151] uppercase tracking-wider border-b border-gray-200 rounded-tr-lg">
                       Confirmación
                     </th>
                   </tr>
@@ -157,7 +157,7 @@ const Cuotas = () => {
                       <td className="px-4 py-3 border-b border-gray-200">
                         {!c.pagada ? (
                           <button
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-full shadow-md text-sm transition-transform hover:scale-105"
+                            className="bg-[#111827] hover:bg-[#111827]/90 text-white px-3 py-1 rounded-full shadow-md text-sm transition-transform hover:scale-105"
                             onClick={() => abrirModalPagarCuota(c)}
                           >
                             Pagar
@@ -176,7 +176,7 @@ const Cuotas = () => {
                           </span>
                         ) : (
                           <span
-                            className="px-3 py-1 text-sm font-semibold text-yellow-800 bg-yellow-100 border border-yellow-200 rounded-full shadow-sm transition cursor-pointer"
+                            className="px-3 py-1 text-sm font-semibold text-red-800 bg-red-100 border border-red-200 rounded-full shadow-sm transition cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
                               confirmarCayo(c.id);
@@ -197,7 +197,7 @@ const Cuotas = () => {
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Semanas no pagadas */}
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              <h3 className="text-xl font-semibold mb-4 text-[#374151]">
                 Semanas no pagadas
               </h3>
               {semanasNoPagadas.length === 0 ? (
@@ -205,7 +205,7 @@ const Cuotas = () => {
                   ¡Todas las semanas están pagadas!
                 </p>
               ) : (
-                <ul className="list-disc list-inside text-gray-700">
+                <ul className="list-disc list-inside text-[#374151]">
                   {semanasNoPagadas.map((s, index) => (
                     <li key={index}>
                       Semana {s.semana} - Oportunidad {s.oportunidad}
@@ -217,19 +217,18 @@ const Cuotas = () => {
 
             {/* Resumen y saldo */}
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-              <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              <h3 className="text-xl font-semibold mb-4 text-[#374151]">
                 Resumen de Cuotas
               </h3>
               <ul className="mb-4">
                 {cuotas.map((c) => (
                   <li key={c.id} className="mb-2">
                     <span className="font-semibold">{c.descripcion}:</span>{" "}
-                    Monto ${c.monto} - Estado:{" "}
-                    {c.pagada ? "Pagada" : "Pendiente"}
+                    Monto ${c.monto} - Estado: {c.pagada ? "Pagada" : "Pendiente"}
                   </li>
                 ))}
               </ul>
-              <p className="text-lg font-semibold text-gray-800">
+              <p className="text-lg font-semibold text-[#1F2937]">
                 Saldo restante:{" "}
                 <span className="text-red-600">${saldoRestante}</span>
               </p>
@@ -241,10 +240,10 @@ const Cuotas = () => {
         {mostrarModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 md:p-8 animate__animated animate__fadeIn">
-              <h3 className="text-2xl font-semibold mb-4 text-gray-700">
+              <h3 className="text-2xl font-semibold mb-4 text-[#374151]">
                 Pagar Cuota
               </h3>
-              <p className="mb-4 text-gray-600">
+              <p className="mb-4 text-[#374151]">
                 Cuota:{" "}
                 <span className="font-semibold">
                   {cuotaSeleccionada?.descripcion}
@@ -255,21 +254,21 @@ const Cuotas = () => {
                 </span>
               </p>
               <div className="mb-4">
-                <label className="block mb-1 text-gray-600">Referencia</label>
+                <label className="block mb-1 text-[#374151]">Referencia</label>
                 <input
                   type="text"
-                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1F2937]"
                   value={referencia}
                   onChange={(e) => setReferencia(e.target.value)}
                 />
               </div>
               <div className="mb-4">
-                <label className="block mb-1 text-gray-600">
+                <label className="block mb-1 text-[#374151]">
                   Fecha de Pago
                 </label>
                 <input
                   type="date"
-                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1F2937]"
                   value={fechaPago}
                   onChange={(e) => setFechaPago(e.target.value)}
                 />
@@ -282,7 +281,7 @@ const Cuotas = () => {
                   Cancelar
                 </button>
                 <button
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
+                  className="bg-[#166534] hover:bg-[#166534]/90 text-white px-4 py-2 rounded-lg transition"
                   onClick={enviarPago}
                 >
                   Pagar
@@ -293,7 +292,7 @@ const Cuotas = () => {
         )}
 
         {/* Pie de página */}
-        <footer className="mt-auto p-4 bg-gray-100 border-t border-gray-300 text-center text-gray-600 text-sm">
+        <footer className="mt-auto p-4 bg-[#F9FAFB] border-t border-gray-300 text-center text-[#4B5563] text-sm">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>

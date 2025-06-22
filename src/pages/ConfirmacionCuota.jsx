@@ -9,14 +9,23 @@ const ConfirmacionCuota = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
 
-  // Datos de ejemplo con pagos
+  // Datos de ejemplo con pagos que incluyen fecha y referencia
   const [solicitudes, setSolicitudes] = useState([
     {
       id: 1,
       solicitante: "Juan Pérez",
       contrato: null,
       estado: "Pendiente",
-      pagos: [{ id: 1, monto: 100, pagado: false, recibido: false }],
+      pagos: [
+        {
+          id: 1,
+          monto: 100,
+          pagado: false,
+          recibido: false,
+          fecha: "2024-10-01",
+          referencia: "REF-001",
+        },
+      ],
       foto: "https://via.placeholder.com/150",
       detalles: {
         emprendimiento: "Tienda en línea",
@@ -35,8 +44,22 @@ const ConfirmacionCuota = () => {
       contrato: "CONTR-1234",
       estado: "Aprobado",
       pagos: [
-        { id: 1, monto: 200, pagado: false, recibido: false },
-        { id: 2, monto: 150, pagado: false, recibido: false },
+        {
+          id: 1,
+          monto: 200,
+          pagado: false,
+          recibido: false,
+          fecha: "2024-10-02",
+          referencia: "REF-002",
+        },
+        {
+          id: 2,
+          monto: 150,
+          pagado: false,
+          recibido: false,
+          fecha: "2024-10-03",
+          referencia: "REF-003",
+        },
       ],
       foto: "https://via.placeholder.com/150",
       detalles: {
@@ -59,7 +82,7 @@ const ConfirmacionCuota = () => {
     setMenuOpen(!menuOpen);
   };
 
-  // Función corregida y ajustada para confirmar pago
+  // Función para confirmar pago
   const handleConfirmarPago = (solicitudId, pagoId) => {
     setSolicitudes((prev) =>
       prev.map((s) => {
@@ -69,12 +92,12 @@ const ConfirmacionCuota = () => {
           );
           // Mostrar mensaje de cuota recibida por 3 segundos
           Swal.fire({
-            icon: 'success',
-            title: 'Cuota recibida',
+            icon: "success",
+            title: "Cuota recibida",
             showConfirmButton: false,
             timer: 3000,
-            toast: true, // opción para que sea en modo toast
-            position: 'top-end',
+            toast: true,
+            position: "top-end",
             timerProgressBar: true,
           });
           return { ...s, pagos: pagosActualizados };
@@ -85,12 +108,14 @@ const ConfirmacionCuota = () => {
   };
 
   const handleVerDetalles = (s) => {
-    // Generar tabla HTML con pagos
+    // Generar tabla HTML con pagos incluyendo fecha y referencia
     const pagosHtml = s.pagos
       .map(
         (p) => `
         <tr>
           <td class="border px-2 py-1 text-center">$${p.monto}</td>
+          <td class="border px-2 py-1 text-center">${p.fecha || '-'}</td>
+          <td class="border px-2 py-1 text-center">${p.referencia || '-'}</td>
           <td class="border px-2 py-1 text-center">${p.pagado ? 'Sí' : 'No'}</td>
           <td class="border px-2 py-1 text-center">${p.recibido ? 'Sí' : 'No'}</td>
           <td class="border px-2 py-1 text-center">
@@ -117,6 +142,8 @@ const ConfirmacionCuota = () => {
           <thead>
             <tr>
               <th class="border px-2 py-1">Monto</th>
+              <th class="border px-2 py-1">Fecha</th>
+              <th class="border px-2 py-1">Referencia</th>
               <th class="border px-2 py-1">Pagado</th>
               <th class="border px-2 py-1">Recibido</th>
               <th class="border px-2 py-1">Acciones</th>
@@ -141,7 +168,7 @@ const ConfirmacionCuota = () => {
             const pagoId = parseInt(btn.getAttribute('data-pago'));
             handleConfirmarPago(solicitudId, pagoId);
             Swal.close();
-            // Opcional: reabrir detalles con datos actualizados
+            // Reabrir detalles con datos actualizados
             handleVerDetalles(s);
           });
         });
