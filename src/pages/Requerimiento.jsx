@@ -92,7 +92,7 @@ const Encuesta = ({ menuOpenProp }) => {
 
             const keys = [
               "carta_solicitud",
-              "postulacion_ubch",
+              "postulacion_UBCH",
               "certificado_emprender",
               "registro_municipal",
               "carta_residencia",
@@ -171,7 +171,7 @@ const Encuesta = ({ menuOpenProp }) => {
       cedula_requerimiento: cedula_emprendimiento,
       fecha: fecha,
       carta_solicitud: preguntas[0].respuesta ? "Si" : "No",
-      postulacion_ubch: preguntas[1].respuesta ? "Si" : "No",
+      postulacion_UBCH: preguntas[1].respuesta ? "Si" : "No",
       certificado_emprender: preguntas[2].respuesta ? "Si" : "No",
       registro_municipal: preguntas[3].respuesta ? "Si" : "No",
       carta_residencia: preguntas[4].respuesta ? "Si" : "No",
@@ -321,7 +321,7 @@ const Encuesta = ({ menuOpenProp }) => {
                           label: "Carta de Motivo para Solicitar Crédito",
                           key: "carta_solicitud",
                         },
-                        { label: "Postulación UBCH", key: "postulacion_ubch" },
+                        { label: "Postulación UBCH", key: "postulacion_UBCH" },
                         {
                           label: "Certificado de emprender juntos",
                           key: "certificado_emprender",

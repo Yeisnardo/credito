@@ -88,6 +88,7 @@ CREATE TABLE credito (
   diez_euros VARCHAR NOT null,
   fecha_desde VARCHAR (15) NOT NULL,
   fecha_hasta VARCHAR (15) NOT null,
+  estatus VARCHAR (40)  NOT NULL,
   FOREIGN KEY (cedula_credito) REFERENCES aprobacion(cedula_aprobacion)
 );
 

@@ -4,184 +4,221 @@ import Swal from "sweetalert2";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import { getCreditos } from "../services/api_credito"; // Asegúrate que funciona
+import { getCreditos, crearCredito } from "../services/api_credito";
 
 const Gestion = () => {
   const navigate = useNavigate();
 
-  // Estados
+  // Estados principales
   const [menuOpen, setMenuOpen] = useState(true);
   const [personasAprobadas, setPersonasAprobadas] = useState([]);
-  const [solicitudes, setSolicitudes] = useState([]); // Si tienes solicitudes en tu sistema
-  const [mostrarModalDetalles, setMostrarModalDetalles] = useState(false);
-  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
-  const [mostrarModalDepositar, setMostrarModalDepositar] = useState(false);
   const [mensajeExito, setMensajeExito] = useState("");
-  const [contadorSecuencial, setContadorSecuencial] = useState(2);
 
-  // Variables de fecha y cálculo
-  const añoActual = new Date().getFullYear().toString().slice(-2);
   const tasaEuroBCV = 104.51;
+  const [fechaDesde, setFechaDesde] = useState(new Date()); // Fecha inicio
+  const [fechaHasta, setFechaHasta] = useState(null); // Fecha fin (18 semanas después)
 
-  const [montoEuroIngresado, setMontoEuroIngresado] = useState("");
-  const [montoBsCalculado, setMontoBsCalculado] = useState(0);
-  const [montoACancelar, setMontoACancelar] = useState(0);
-  const [monto10Porciento, setMonto10Porciento] = useState(0);
-  const [montoDevolver, setMontoDevolver] = useState(0);
-  const [referenciaBancaria, setReferenciaBancaria] = useState("");
-  const [fechaPago, setFechaPago] = useState(new Date().toISOString().slice(0, 10));
-  const [fechaDesde, setFechaDesde] = useState(new Date());
-  const [fechaHasta, setFechaHasta] = useState(null);
+  const [creditoData, setCreditoData] = useState({
+    aprobacion_id: null,
+    cedula_credito: "",
+    referencia: "",
+    monto_euros: "",
+    monto_bs: "",
+    diez_euros: "",
+    fecha_desde: "",
+    fecha_hasta: "",
+    contrato: "",
+    estatus: "Pendiente",
+    detalles: {
+      emprendimiento: "",
+      requerimientos: "",
+    },
+  });
 
-  // Cargar créditos aprobados
+  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
+
+  // Cargar créditos al inicio
   useEffect(() => {
-    const fetchAprobadas = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getCreditos();
-        console.log("Datos cargados:", data); // Ver qué campos vienen
-        setPersonasAprobadas(data);
+        const dataCreditos = await getCreditos();
+        setPersonasAprobadas(dataCreditos);
       } catch (error) {
-        console.error("Error cargando personas aprobadas:", error);
+        console.error(error);
       }
     };
-    fetchAprobadas();
+    fetchData();
   }, []);
 
-  // Filtrar solicitudes aprobadas (si tienes solicitudes)
-  const solicitudesAprobadas = solicitudes.filter((s) =>
-    personasAprobadas.some((p) => p.cedula === s.cedula)
-  );
+  // Filtrar solicitudes únicas por cédula
+  const solicitudesPorCedula = personasAprobadas.reduce((acc, solicitud) => {
+    if (!acc[solicitud.cedula]) {
+      acc[solicitud.cedula] = solicitud;
+    }
+    return acc;
+  }, {});
+  const solicitudesUnicas = Object.values(solicitudesPorCedula);
 
-  // Calcular fecha hasta (18 semanas después)
-  useEffect(() => {
-    const fecha = new Date(fechaDesde);
-    fecha.setDate(fecha.getDate() + 18 * 7);
-    setFechaHasta(fecha);
-  }, [fechaDesde]);
-
-  // Funciones de interfaz
-  const toggleMenu = () => setMenuOpen(!menuOpen);
-
+  // Función para mostrar detalles con Swal
   const handleVerDetalles = (s) => {
-    setSolicitudSeleccionada(s);
-    setMostrarModalDetalles(true);
+    Swal.fire({
+      title: `Detalles de ${s.cedula}`,
+      html: `
+        <p><strong>Emprendimiento:</strong> ${s.detalles?.emprendimiento || '-'}</p>
+        <p><strong>Requerimientos:</strong> ${s.detalles?.requerimientos || '-'}</p>
+        <p><strong>Número de contrato:</strong> ${s.contrato}</p>
+        <p><strong>Estado:</strong> ${s.estatus}</p>
+        <p><strong>Montos:</strong> € ${s.monto_euros} | Bs ${s.monto_bs}</p>
+        <h3>Historial de depósitos</h3>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #ccc;font-size:0.8em;">
+          <thead>
+            <tr>
+              <th style="border:1px solid #ccc;padding:4px;">Euros</th>
+              <th style="border:1px solid #ccc;padding:4px;">Bs</th>
+              <th style="border:1px solid #ccc;padding:4px;">Fecha</th>
+              <th style="border:1px solid #ccc;padding:4px;">Referencia</th>
+              <th style="border:1px solid #ccc;padding:4px;">Estatus</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${personasAprobadas.filter(p => p.cedula === s.cedula).map((dep, index) => `
+              <tr key=${index}>
+                <td style="border:1px solid #ccc;padding:4px;">${dep.monto_euros}</td>
+                <td style="border:1px solid #ccc;padding:4px;">${dep.monto_bs}</td>
+                <td style="border:1px solid #ccc;padding:4px;">${dep.fecha_desde} / ${dep.fecha_hasta}</td>
+                <td style="border:1px solid #ccc;padding:4px;">${dep.referencia}</td>
+                <td style="border:1px solid #ccc;padding:4px;">${dep.estatus}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Cerrar',
+    });
   };
 
-  const handleCerrarModalDetalles = () => setMostrarModalDetalles(false);
+  // Función para depositar con Swal y cálculos
+  const handleDepositarSwal = async (s) => {
+    setSolicitudSeleccionada(s);
+    // Setear fechas
+    setFechaDesde(new Date());
+    const fechaH = new Date();
+    fechaH.setDate(fechaH.getDate() + 18 * 7); // 18 semanas
+    setFechaHasta(fechaH);
 
-  const handleAprobar = () => {
-    if (solicitudSeleccionada) {
-      const secuencialStr = String(contadorSecuencial).padStart(3, "0");
-      const contratoNumero = `IFEMI/CRED-${secuencialStr}/${añoActual}`;
-      setSolicitudes(prev =>
-        prev.map((s) =>
-          s.id === solicitudSeleccionada.id
-            ? {
-                ...s,
-                estado: "Aprobado",
-                contrato: contratoNumero,
-                montoDepositado: 0,
-              }
-            : s
-        )
-      );
-      setContadorSecuencial((prev) => prev + 1);
-      Swal.fire({
-        icon: "success",
-        title: "¡Solicitud aprobada!",
-        text: `Número de contrato: ${contratoNumero}`,
-        timer: 2000,
-        showConfirmButton: false,
-      });
-      handleCerrarModalDetalles();
+    // Input monto en euros
+    const { value: montoStr } = await Swal.fire({
+      title: 'Ingresa monto en euros',
+      input: 'number',
+      inputLabel: 'Monto en euros',
+      inputPlaceholder: 'Ejemplo: 100',
+      inputAttributes: {
+        min: 0,
+        step: 0.01,
+      },
+      showCancelButton: true,
+    });
+    if (montoStr === undefined) return; // Cancelado
+    const monto = parseFloat(montoStr);
+    if (isNaN(monto) || monto <= 0) {
+      Swal.fire('Monto inválido', 'Ingresa un monto válido mayor a cero.', 'error');
+      return;
+    }
+
+    // Input referencia bancaria
+    const { value: referencia } = await Swal.fire({
+      title: 'Referencia bancaria (últ 5 dígitos)',
+      input: 'text',
+      inputPlaceholder: 'Ejemplo: 12345',
+      inputAttributes: {
+        maxlength: 5,
+      },
+      showCancelButton: true,
+      inputValidator: (value) => {
+        if (!/^\d{5}$/.test(value)) {
+          return 'Debe tener exactamente 5 dígitos numéricos.';
+        }
+      },
+    });
+    if (referencia === undefined) return;
+
+    // Cálculos
+    const montoEuros = monto.toFixed(2);
+    const montoBs = (monto * tasaEuroBCV).toFixed(2);
+    const diezEuros = (monto * 0.1).toFixed(2);
+    const montoCancelarEuros = (monto / 18).toFixed(2);
+    const montoDevolverEuros = (
+      monto -
+      montoCancelarEuros -
+      (monto * 0.1)
+    ).toFixed(2);
+
+    // Confirmar depósito
+    const confirmResult = await Swal.fire({
+      title: 'Confirmar depósito',
+      html: `
+        <p>Montos a depositar:</p>
+        <ul style="list-style:none;padding:0;">
+          <li>Euros: € ${montoEuros}</li>
+          <li>Bs: Bs ${montoBs}</li>
+        </ul>
+        <p><strong>Fecha Desde:</strong> ${fechaDesde.toLocaleDateString()}</p>
+        <p><strong>Fecha Hasta (18 semanas):</strong> ${fechaHasta.toLocaleDateString()}</p>
+        <p><strong>Referencia:</strong> ${referencia}</p>
+        <p><strong>Calculos:</strong></p>
+        <ul style="list-style:none;padding:0;">
+          <li>Euros / 18: € ${montoCancelarEuros}</li>
+          <li>10% del monto: € ${(monto * 0.1).toFixed(2)}</li>
+          <li>Monto a devolver: € ${montoDevolverEuros}</li>
+        </ul>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Depositar',
+    });
+    if (confirmResult.isConfirmed) {
+      // Enviar datos
+      const depositoData = {
+        cedula_credito: s.cedula,
+        referencia,
+        monto_euros: montoEuros,
+        monto_bs: montoBs,
+        diez_euros: diezEuros,
+        fecha_desde: fechaDesde.toISOString().slice(0, 10),
+        fecha_hasta: fechaHasta ? fechaHasta.toISOString().slice(0, 10) : null,
+        estatus: creditoData.estatus,
+      };
+
+      await enviarDeposito(depositoData);
+      setMensajeExito(`Has depositado ${montoEuros} € (Bs.${montoBs})`);
     }
   };
 
-  // Modal depósito
-  const handleAbrirDeposito = (s) => {
-    setSolicitudSeleccionada(s);
-    setMontoEuroIngresado("");
-    setReferenciaBancaria("");
-    setFechaPago(new Date().toISOString().slice(0, 10));
-    setMostrarModalDepositar(true);
-  };
-
-  const handleCerrarModalDepositar = () => {
-    setMostrarModalDepositar(false);
-    setMontoEuroIngresado("");
-    setReferenciaBancaria("");
-  };
-
-  // Simula API depósito
+  // Función para enviar a la API
   const enviarDeposito = async (depositoData) => {
     try {
-      // Aquí deberías llamar a tu API real, por ejemplo:
-      // await api.createCredito(depositoData);
-      Swal.fire({ icon: "success", title: "Deposito registrado" });
+      await crearCredito(depositoData);
+      Swal.fire({ icon: "success", title: "Depósito registrado" });
     } catch (err) {
+      console.error("Error en crearCredito:", err);
       Swal.fire({ icon: "error", title: "Error", text: "Error al registrar depósito" });
     }
   };
 
-  const handleDepositar = async () => {
-    if (!solicitudSeleccionada) {
-      Swal.fire({ icon: "error", title: "Error", text: "No se ha seleccionado ninguna solicitud." });
-      return;
-    }
-
-    const monto = parseFloat(montoEuroIngresado);
-    if (isNaN(monto) || monto <= 0) {
-      Swal.fire({ icon: "error", title: "Monto inválido", text: "Ingresa un monto válido en euros mayor a cero." });
-      return;
-    }
-
-    if (!/^\d{5}$/.test(referenciaBancaria)) {
-      Swal.fire({ icon: "error", title: "Referencia inválida", text: "Ingresa los últimos 5 dígitos de la referencia bancaria." });
-      return;
-    }
-
-    const depositoData = {
-      cedula_credito: solicitudSeleccionada.cedula,
-      referencia: referenciaBancaria,
-      monto_euros: monto,
-      monto_bs: parseFloat(montoBsCalculado.toFixed(2)),
-      diez_euros: parseFloat(monto10Porciento.toFixed(2)),
-      fecha_desde: fechaDesde.toISOString().slice(0, 10),
-      fecha_hasta: fechaHasta ? fechaHasta.toISOString().slice(0, 10) : null,
-      fecha_pago: fechaPago,
-    };
-
-    await enviarDeposito(depositoData);
-    handleCerrarModalDepositar();
-    setMensajeExito(`Has depositado ${monto} € (Bs.${montoBsCalculado.toFixed(2)})`);
+  // Función para abrir la operación de depósito
+  const handleAbrirDeposito = async (s) => {
+    await handleDepositarSwal(s);
   };
 
-  const handleConfirmarDeposito = (index) => {
-    setSolicitudes((prev) =>
-      prev.map((s) => {
-        if (s.id !== solicitudSeleccionada.id) return s;
-        const nuevosDepositos = s.depositos.map((dep, i) => {
-          if (i !== index) return dep;
-          return { ...dep, confirmado: true };
-        });
-        return { ...s, depositos: nuevosDepositos };
-      })
-    );
-  };
-
-  // Render
   return (
     <div className="flex min-h-screen bg-gray-100">
       {menuOpen && <Menu />}
       <div className="flex-1 flex flex-col ml-0 md:ml-64">
-        <Header toggleMenu={toggleMenu} />
+        <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
 
         <div className="pt-20 px-8">
-          {/* Mensaje */}
+          {/* Mensaje de éxito */}
           {mensajeExito && (
-            <div className="mb-4 p-3 bg-green-200 text-green-800 rounded">
-              {mensajeExito}
-            </div>
+            <div className="mb-4 p-3 bg-green-200 text-green-800 rounded">{mensajeExito}</div>
           )}
 
           {/* Encabezado */}
@@ -190,20 +227,18 @@ const Gestion = () => {
               <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
                 <i className="bx bx-credit-card text-2xl"></i>
               </div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Gestor de Créditos
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-800">Gestor de Créditos</h1>
             </div>
           </header>
 
-          {/* Solicitudes aprobadas */}
+          {/* Listado de solicitudes */}
           <section className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Solicitudes Aprobadas para Depositar</h2>
             {personasAprobadas.length === 0 ? (
               <p>No hay solicitudes aprobadas aún.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {personasAprobadas.map((s) => (
+                {solicitudesUnicas.map((s) => (
                   <div
                     key={s.cedula}
                     className="bg-white p-4 rounded-xl shadow-lg transform transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-xl relative"
@@ -219,15 +254,6 @@ const Gestion = () => {
                     </h2>
                     <p className="mb-2">
                       <strong>Contrato:</strong> {s.contrato}
-                    </p>
-                    <p className="mb-2">
-                      <strong>Monto en Euros:</strong> {s.monto_euros}
-                    </p>
-                    <p className="mb-2">
-                      <strong>Monto en Bs:</strong> {s.monto_bs}
-                    </p>
-                    <p className="mb-2">
-                      <strong>Monto depositado:</strong> {s.montoDepositado}
                     </p>
                     {/* Botones */}
                     <div className="flex justify-end space-x-2 mt-4">
@@ -251,224 +277,6 @@ const Gestion = () => {
               </div>
             )}
           </section>
-
-          {/* Modal detalles */}
-          {mostrarModalDetalles && solicitudSeleccionada && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-              style={{
-                background: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.3))",
-              }}
-            >
-              <div className="bg-white p-6 rounded shadow-lg max-w-lg w-full relative overflow-y-auto max-h-full">
-                {/* Botón cerrar */}
-                <button
-                  className="absolute top-2 right-2 text-gray-600 text-xl"
-                  onClick={handleCerrarModalDetalles}
-                >
-                  ✖
-                </button>
-                {/* Título */}
-                <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                  <i className="bx bx-info-circle"></i>
-                  <span>Detalles de {solicitudSeleccionada.nombre_apellido}</span>
-                </h2>
-                {/* Datos */}
-                <p>
-                  <strong>Emprendimiento:</strong>{" "}
-                  {solicitudSeleccionada.detalles?.emprendimiento || "-"}
-                </p>
-                <p>
-                  <strong>Requerimientos:</strong>{" "}
-                  {solicitudSeleccionada.detalles?.requerimientos || "-"}
-                </p>
-                <p>
-                  <strong>Número de contrato:</strong>{" "}
-                  {solicitudSeleccionada.contrato}
-                </p>
-                <p>
-                  <strong>Estado:</strong>{" "}
-                  <span
-                    className={`font-semibold ${
-                      solicitudSeleccionada.estado === "Pendiente"
-                        ? "text-red-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    <i
-                      className={`bx ${
-                        solicitudSeleccionada.estado === "Pendiente"
-                          ? "bx-time"
-                          : "bx-check-circle"
-                      }`}
-                    ></i>
-                    {solicitudSeleccionada.estado}
-                  </span>
-                </p>
-                <p>
-                  <strong>Monto en Euros:</strong> {solicitudSeleccionada.monto_euros}
-                </p>
-                <p>
-                  <strong>Monto en Bs:</strong> {solicitudSeleccionada.monto_bs}
-                </p>
-
-                {/* Historial de depósitos */}
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Historial de depósitos
-                  </h3>
-                  {solicitudSeleccionada.depositos?.length === 0 ? (
-                    <p>No hay depósitos realizados aún.</p>
-                  ) : (
-                    <table className="w-full border-collapse border border-gray-300">
-                      <thead>
-                        <tr>
-                          <th className="border border-gray-300 px-2 py-1">Monto en Euros</th>
-                          <th className="border border-gray-300 px-2 py-1">Fecha</th>
-                          <th className="border border-gray-300 px-2 py-1">Referencia</th>
-                          <th className="border border-gray-300 px-2 py-1">Confirmación</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {solicitudSeleccionada.depositos?.map((dep, index) => (
-                          <tr key={index}>
-                            <td className="border border-gray-300 px-2 py-1 text-center">{dep.monto_euros}</td>
-                            <td className="border border-gray-300 px-2 py-1">{dep.fecha}</td>
-                            <td className="border border-gray-300 px-2 py-1">{dep.referenciaBancaria || "-"}</td>
-                            <td className="border border-gray-300 px-2 py-1 text-center">
-                              {dep.confirmado ? (
-                                <span className="text-green-600 font-semibold">Confirmado</span>
-                              ) : (
-                                <button
-                                  className="bg-red-400 text-white px-2 py-1 rounded text-sm"
-                                  onClick={() => handleConfirmarDeposito(index)}
-                                >
-                                  Deposito no Confirmado
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-
-                {/* Acciones */}
-                <div className="mt-4 flex justify-end space-x-2">
-                  <button
-                    className="bg-gray-300 px-4 py-2 rounded"
-                    onClick={handleCerrarModalDetalles}
-                  >
-                    Cancelar
-                  </button>
-                  {solicitudSeleccionada.estado === "Aprobado" && (
-                    <button
-                      className="bg-green-600 text-white px-4 py-2 rounded flex items-center space-x-2 hover:bg-green-700 transition"
-                      onClick={() => handleAbrirDeposito(solicitudSeleccionada)}
-                    >
-                      <i className="bx bx-dollar-circle"></i>
-                      <span>Depositar</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Modal monto en euros */}
-          {mostrarModalDepositar && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
-              style={{
-                background: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.3))",
-              }}
-            >
-              <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full relative">
-                {/* Cerrar */}
-                <button
-                  className="absolute top-2 right-2 text-gray-600 text-xl"
-                  onClick={handleCerrarModalDepositar}
-                >
-                  ✖
-                </button>
-                {/* Título */}
-                <h2 className="text-xl font-bold mb-4">Ingresa monto en euros</h2>
-                {/* Fechas */}
-                <div className="mb-4">
-                  <p>
-                    <strong>Fecha Desde:</strong> {fechaDesde.toLocaleDateString()}
-                  </p>
-                  <p>
-                    <strong>Fecha Hasta (18 semanas):</strong>{" "}
-                    {fechaHasta ? fechaHasta.toLocaleDateString() : "-"}
-                  </p>
-                </div>
-                {/* Input monto en euros */}
-                <input
-                  type="number"
-                  className="w-full p-3 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                  placeholder="Monto en euros"
-                  value={montoEuroIngresado}
-                  onChange={(e) => setMontoEuroIngresado(e.target.value)}
-                />
-                {/* Referencia bancaria */}
-                <input
-                  type="text"
-                  maxLength={5}
-                  pattern="\d{5}"
-                  className="w-full p-3 border border-gray-300 rounded mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                  placeholder="Últimos 5 dígitos referencia bancaria"
-                  value={referenciaBancaria}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "");
-                    setReferenciaBancaria(val.slice(0, 5));
-                  }}
-                />
-                {/* Cálculos */}
-                <div className="mb-4">
-                  <p>
-                    <strong>Monto en euros:</strong> € {montoEuroIngresado || "0"}
-                  </p>
-                  <p>
-                    <strong>Equivale en Bs.:</strong> Bs.{" "}
-                    {montoBsCalculado.toLocaleString("de-DE", {
-                      minimumFractionDigits: 2,
-                    })}
-                  </p>
-                  <p>
-                    <strong>Monto a cancelar (€/18):</strong> €{" "}
-                    {montoACancelar.toFixed(2)}
-                  </p>
-                  <p>
-                    <strong>10% del monto:</strong> € {monto10Porciento.toFixed(2)}
-                  </p>
-                  <p>
-                    <strong>Monto a devolver:</strong> € {montoDevolver.toFixed(2)}
-                  </p>
-                  <p>
-                    <strong>Fecha de pago:</strong> {fechaPago}
-                  </p>
-                </div>
-                {/* Botones */}
-                <div className="flex justify-end space-x-2">
-                  <button
-                    className="bg-gray-300 px-4 py-2 rounded"
-                    onClick={handleCerrarModalDepositar}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="bg-green-600 text-white px-4 py-2 rounded flex items-center space-x-2 hover:bg-green-700 transition"
-                    onClick={handleDepositar}
-                  >
-                    <i className="bx bx-dollar"></i>
-                    <span>Depositar</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

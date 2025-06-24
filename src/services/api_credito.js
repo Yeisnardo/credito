@@ -6,9 +6,15 @@ const api = axios.create({
 
 const getCreditos = async () => {
   const response = await api.get('/api/credito');
-  return response.data; // Devuelve array de objetos
+  return response.data;
+};
+
+const crearCredito = async (data) => {
+  const response = await api.post('/api/credito', data);
+  return response.data;
 };
 
 export {
-  getCreditos
+  getCreditos,
+  crearCredito
 };
