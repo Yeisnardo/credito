@@ -1,4 +1,4 @@
-// models/clase_credito.js
+// src/models/clase_credito.js
 const { query } = require("../config/db");
 
 class Credito {
@@ -37,7 +37,6 @@ class Credito {
       estatus,
     } = data;
 
-    // Asegurar que los datos sean cadenas (si ya vienen así, no hace falta convertir)
     const montoEurosStr = monto_euros.toString();
     const montoBsStr = monto_bs.toString();
     const diezEurosStr = diez_euros.toString();
@@ -66,10 +65,33 @@ class Credito {
       estatus,
     ]);
 
-    // Opcional: registrar en fondo (según lógica)
-    // ...
-
     return result.rows[0];
+  }
+
+  // Nueva función para obtener créditos por cédula
+  static async getCreditosPorCedula(cedula_credito) {
+    const resultado = await query(
+      `
+    SELECT *
+    FROM credito
+    WHERE cedula_credito = $1;
+  `,
+      [cedula_credito]
+    );
+    return resultado.rows;
+  }
+
+  static async actualizarEstatus(cedula_credito, nuevoEstatus) {
+    const resultado = await query(
+      `
+      UPDATE credito
+      SET estatus = $1
+      WHERE cedula_credito = $2
+      RETURNING *;
+      `,
+      [nuevoEstatus, cedula_credito]
+    );
+    return resultado.rows[0];
   }
 }
 

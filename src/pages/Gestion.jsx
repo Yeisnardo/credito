@@ -61,41 +61,47 @@ const Gestion = () => {
 
   // Función para mostrar detalles con Swal
   const handleVerDetalles = (s) => {
-    Swal.fire({
-      title: `Detalles de ${s.cedula}`,
-      html: `
-        <p><strong>Emprendimiento:</strong> ${s.detalles?.emprendimiento || '-'}</p>
-        <p><strong>Requerimientos:</strong> ${s.detalles?.requerimientos || '-'}</p>
-        <p><strong>Número de contrato:</strong> ${s.contrato}</p>
-        <p><strong>Estado:</strong> ${s.estatus}</p>
-        <p><strong>Montos:</strong> € ${s.monto_euros} | Bs ${s.monto_bs}</p>
-        <h3>Historial de depósitos</h3>
-        <table style="width:100%;border-collapse:collapse;border:1px solid #ccc;font-size:0.8em;">
-          <thead>
-            <tr>
-              <th style="border:1px solid #ccc;padding:4px;">Euros</th>
-              <th style="border:1px solid #ccc;padding:4px;">Bs</th>
-              <th style="border:1px solid #ccc;padding:4px;">Fecha</th>
-              <th style="border:1px solid #ccc;padding:4px;">Referencia</th>
-              <th style="border:1px solid #ccc;padding:4px;">Estatus</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${personasAprobadas.filter(p => p.cedula === s.cedula).map((dep, index) => `
-              <tr key=${index}>
-                <td style="border:1px solid #ccc;padding:4px;">${dep.monto_euros}</td>
-                <td style="border:1px solid #ccc;padding:4px;">${dep.monto_bs}</td>
-                <td style="border:1px solid #ccc;padding:4px;">${dep.fecha_desde} / ${dep.fecha_hasta}</td>
-                <td style="border:1px solid #ccc;padding:4px;">${dep.referencia}</td>
-                <td style="border:1px solid #ccc;padding:4px;">${dep.estatus}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      `,
-      showCancelButton: true,
-      confirmButtonText: 'Cerrar',
-    });
-  };
+  Swal.fire({
+    title: `${s.nombre_apellido}`,
+    html: `
+      <div class="font-sans text-sm text-gray-800 space-y-4">
+        <div>
+          <p class="mb-2"><strong>Número de contrato:</strong> ${s.contrato}</p>
+          <p class="mb-2"><strong>Estado:</strong> ${s.estatus}</p>
+        </div>
+        <h3 class="font-semibold text-lg mb-3 border-b border-gray-300 pb-2">Historial de depósitos</h3>
+        <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+          <table class="min-w-full divide-y divide-gray-200 table-auto">
+            <thead class="bg-gray-100 text-gray-700 uppercase text-xs font-semibold">
+              <tr>
+                <th class="px-4 py-2 border-b border-gray-200">Euros</th>
+                <th class="px-4 py-2 border-b border-gray-200">Bs</th>
+                <th class="px-4 py-2 border-b border-gray-200">Fecha</th>
+                <th class="px-4 py-2 border-b border-gray-200">Referencia</th>
+                <th class="px-4 py-2 border-b border-gray-200">Estatus</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200 text-sm text-gray-800">
+              ${personasAprobadas.filter(p => p.cedula === s.cedula).map((dep, index) => `
+                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition">
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.monto_euros}</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.monto_bs}</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.fecha_desde} / ${dep.fecha_hasta}</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.referencia}</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.estatus}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Cerrar',
+    customClass: {
+      popup: 'max-w-4xl p-6 rounded-lg shadow-lg',
+    },
+  });
+};
 
   // Función para depositar con Swal y cálculos
   const handleDepositarSwal = async (s) => {

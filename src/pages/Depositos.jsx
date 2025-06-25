@@ -1,74 +1,136 @@
+// src/pages/Depositos.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import "../assets/css/style.css";
+
+import {
+  getCreditosPorCedula,
+  actualizarEstatusCredito,
+} from "../services/api_credito"; // API para créditos
+import { getUsuarioPorCedula } from "../services/api_usuario"; // API para usuarios
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 
 const Depositos = () => {
   const navigate = useNavigate();
+
   const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUser] = useState(null);
   const [depositos, setDepositos] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
+  const [creditosUsuario, setCreditosUsuario] = useState([]);
+  const [loadingCreditosUsuario, setLoadingCreditosUsuario] = useState(false);
+
+  const [creditosCredito, setCreditosCredito] = useState([]);
+  const [loadingCreditosCredito, setLoadingCreditosCredito] = useState(false);
+
+  const [error, setError] = useState(null);
+
+  // Función para cargar usuario
+  const fetchUsuario = async () => {
+    try {
+      const cedula = localStorage.getItem("cedula_usuario");
+      if (cedula) {
+        const usuario = await getUsuarioPorCedula(cedula);
+        if (usuario) setUser(usuario);
+      }
+    } catch (err) {
+      console.error("Error al obtener usuario:", err);
+      setError("Error al cargar usuario");
+    }
   };
 
-  // Datos ficticios
-  const usuarioFicticio = { id: 1, nombre: "Juan Pérez" };
-  const depositosFicticios = [
-    { id: 101, monto: 1500, fecha: "2023-10-01", confirmado: false },
-    { id: 102, monto: 2500, fecha: "2023-10-05", confirmado: false },
-    { id: 103, monto: 3000, fecha: "2023-10-10", confirmado: true },
-  ];
+  // Función para cargar depósitos
+  const fetchDepositos = async () => {
+    try {
+      if (user?.cedula_usuario) {
+        const deposits = await getUsuarioPorCedula(user.cedula_usuario);
+        setDepositos(deposits);
+      }
+    } catch (err) {
+      console.error("Error al cargar depósitos:", err);
+      setError("Error al cargar depósitos");
+    }
+  };
 
+  // Función para cargar créditos del usuario
+  const fetchCreditosDelUsuario = async () => {
+    try {
+      if (user?.cedula_usuario) {
+        setLoadingCreditosUsuario(true);
+        const creditos = await getCreditosPorCedula(user.cedula_usuario);
+        setCreditosUsuario(creditos);
+      }
+    } catch (err) {
+      console.error("Error al cargar créditos del usuario:", err);
+    } finally {
+      setLoadingCreditosUsuario(false);
+    }
+  };
+
+  // Función para confirmar depósito
+  const handleActualizarEstatus = async (credito, nuevoEstatus) => {
+  try {
+    await actualizarEstatusCredito(credito.cedula_credito, nuevoEstatus);
+    setCreditosUsuario((prevCreditos) =>
+      prevCreditos.map((c) =>
+        c.cedula_credito === credito.cedula_credito
+          ? { ...c, estatus: nuevoEstatus }
+          : c
+      )
+    );
+    Swal.fire(
+      "¡Actualizado!",
+      `Estatus cambiado a "${nuevoEstatus}"`,
+      "success"
+    );
+  } catch (err) {
+    console.error('Error al actualizar el crédito:', err);
+    Swal.fire(
+      "Error",
+      err.response?.data?.error || "No se pudo actualizar el estatus",
+      "error"
+    );
+  }
+};
+
+  // Cargar usuario al inicio
   useEffect(() => {
-    setUser(usuarioFicticio);
-    setTimeout(() => {
-      setDepositos(depositosFicticios);
-      setLoading(false);
-    }, 500);
+    fetchUsuario();
   }, []);
 
-  const confirmarDeposito = (depositoId) => {
-    Swal.fire({
-      title: "¿Estás seguro?",
-      text: "¿El depósito ya fue recibido?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#1F2937", // color gris oscuro
-      cancelButtonColor: "#D1D5DB", // gris claro
-      confirmButtonText: "Sí, confirmar",
-      reverseButtons: true,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        setDepositos((prev) =>
-          prev.map((dep) =>
-            dep.id === depositoId ? { ...dep, confirmado: true } : dep
-          )
-        );
-        Swal.fire(
-          "¡Confirmado!",
-          "El depósito ha sido marcado como recibido.",
-          "success"
-        );
-      }
-    });
-  };
+  // Cuando el usuario cambie, cargar depósitos y créditos
+  useEffect(() => {
+    if (user) {
+      fetchDepositos();
+      fetchCreditosDelUsuario();
+    }
+  }, [user]);
+
+  // Para cargar depósitos cuando los datos del usuario estén disponibles
+  useEffect(() => {
+    if (user?.cedula_usuario) {
+      fetchDepositos();
+    }
+  }, [user?.cedula_usuario]);
+
+  const toggleMenu = () => setMenuOpen(!menuOpen);
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
+      {/* Menú lateral */}
       {menuOpen && <Menu />}
+
+      {/* Contenido principal */}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
           menuOpen ? "ml-64" : "ml-0"
         }`}
       >
-        <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
+        {/* Header */}
+        <Header toggleMenu={toggleMenu} />
 
-        {/* Contenido principal */}
+        {/* Contenido central */}
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
           {/* Encabezado */}
           <div className="flex items-center mb-8 mt-10">
@@ -80,74 +142,93 @@ const Depositos = () => {
             </h1>
           </div>
 
-          {/* Tarjeta con lista de depósitos */}
+          {/* Estado del usuario */}
+          <div className="mb-4 p-4 border rounded shadow-inner bg-gray-50">
+            {user ? (
+              <>
+                <p>
+                  <strong>Cédula:</strong> {user.cedula_usuario}
+                </p>
+                <p>
+                  <strong>Usuario:</strong> {user.usuario}
+                </p>
+              </>
+            ) : (
+              <p className="text-red-600 font-semibold">
+                No se ha cargado el usuario todavía.
+              </p>
+            )}
+          </div>
+
+          {/* Lista de depósitos */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200 transition-shadow hover:shadow-xl">
             <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-300 text-gray-700">
               Depósitos Registrados
             </h2>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-300 h-12 w-12 animate-spin"></div>
+            {loadingCreditosUsuario ? (
+              <div className="flex justify-center py-4">
+                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-300 h-8 w-8 animate-spin"></div>
               </div>
-            ) : depositos.length === 0 ? (
-              <p className="text-gray-500 text-center">No tienes depósitos registrados.</p>
+            ) : creditosUsuario.length === 0 ? (
+              <p className="text-gray-500">
+                No hay créditos para este usuario.
+              </p>
             ) : (
-              <div className="overflow-x-auto rounded-xl shadow-md bg-gray-50">
-                <table className="min-w-full divide-y divide-gray-300 rounded-xl overflow-hidden">
-                  <thead className="bg-gray-100 border-b border-gray-200">
+              <div className="overflow-x-auto max-h-64 border border-gray-300 rounded-lg p-2 bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider rounded-tl-xl">
-                        ID
+                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                        Referencia
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                        Monto
+                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                        Monto Euros
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                        Fecha
+                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                        Monto Bs
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                        Fecha Desde
+                      </th>
+                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                        Fecha Hasta
+                      </th>
+                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
                         Estado
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider rounded-tr-xl">
-                        Confirmar
+                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                        Accion
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {depositos.map((dep) => (
-                      <tr
-                        key={dep.id}
-                        className="hover:bg-gray-50 transition-all duration-200 rounded-lg"
-                      >
-                        <td className="px-4 py-3 text-gray-700">{dep.id}</td>
-                        <td className="px-4 py-3 text-gray-700 font-semibold">
-                          ${dep.monto}
-                        </td>
-                        <td className="px-4 py-3 text-gray-700">{dep.fecha}</td>
-                        <td className="px-4 py-3">
-                          {dep.confirmado ? (
-                            <span className="px-3 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full shadow-inner border border-green-200 transition hover:bg-green-200 hover:text-green-900">
-                              Recibido
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1 text-sm font-semibold text-red-800 bg-red-100 rounded-full shadow-inner border border-red-300 transition hover:bg-red-200 hover:text-red-900">
-                              Pendiente
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          {!dep.confirmado ? (
-                            <button
-                              className="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-full shadow-md transform hover:scale-105 transition duration-300"
-                              onClick={() => confirmarDeposito(dep.id)}
-                            >
-                              Recibido
-                            </button>
-                          ) : (
-                            <span className="inline-flex items-center px-3 py-1 text-sm font-semibold text-gray-800 bg-gray-200 border border-gray-300 rounded-full shadow-inner transition hover:bg-gray-300">
-                              Confirmado
-                            </span>
-                          )}
+                  <tbody className="divide-y divide-gray-200">
+                    {creditosUsuario.map((credito) => (
+                      <tr key={credito.cedula_credito}>
+                        <td className="px-2 py-2">{credito.referencia}</td>
+                        <td className="px-2 py-2">{credito.monto_euros}</td>
+                        <td className="px-2 py-2">{credito.monto_bs}</td>
+                        <td className="px-2 py-2">{credito.fecha_desde}</td>
+                        <td className="px-2 py-2">{credito.fecha_hasta}</td>
+                        <td className="px-2 py-2">{credito.estatus}</td>
+                        <td className="px-2 py-2 space-x-2">
+                          {/* Botón para aprobar */}
+                          <button
+                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                            onClick={() =>
+                              handleActualizarEstatus(credito, "Recibido")
+                            }
+                          >
+                            Recibido
+                          </button>
+                          {/* Botón para rechazar */}
+                          <button
+                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                            onClick={() =>
+                              handleActualizarEstatus(credito, "Rechazado")
+                            }
+                          >
+                            Rechazar
+                          </button>
                         </td>
                       </tr>
                     ))}
