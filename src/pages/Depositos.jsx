@@ -167,21 +167,7 @@ const Depositos = () => {
           {/* Lista de créditos */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200 transition-shadow hover:shadow-xl">
             <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-300 text-gray-700 flex items-center space-x-3">
-              <svg
-                className="w-6 h-6 text-blue-500"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12h3m-3 4h3m-3-8h3m-4 0a9 9 0 0118 0 9 9 0 01-18 0z"
-                />
-              </svg>
-              <span>Depósitos Registrados</span>
+              <span>Historial de Depositos</span>
             </h2>
 
             {loadingCreditosUsuario ? (
