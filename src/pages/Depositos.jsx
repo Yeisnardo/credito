@@ -21,9 +21,6 @@ const Depositos = () => {
   const [creditosUsuario, setCreditosUsuario] = useState([]);
   const [loadingCreditosUsuario, setLoadingCreditosUsuario] = useState(false);
 
-  const [creditosCredito, setCreditosCredito] = useState([]);
-  const [loadingCreditosCredito, setLoadingCreditosCredito] = useState(false);
-
   const [error, setError] = useState(null);
 
   // Función para cargar usuario
@@ -68,38 +65,52 @@ const Depositos = () => {
     }
   };
 
-  // Función para confirmar depósito
-  const handleActualizarEstatus = async (credito, nuevoEstatus) => {
-  try {
-    await actualizarEstatusCredito(credito.cedula_credito, nuevoEstatus);
-    setCreditosUsuario((prevCreditos) =>
-      prevCreditos.map((c) =>
-        c.cedula_credito === credito.cedula_credito
-          ? { ...c, estatus: nuevoEstatus }
-          : c
-      )
-    );
-    Swal.fire(
-      "¡Actualizado!",
-      `Estatus cambiado a "${nuevoEstatus}"`,
-      "success"
-    );
-  } catch (err) {
-    console.error('Error al actualizar el crédito:', err);
-    Swal.fire(
-      "Error",
-      err.response?.data?.error || "No se pudo actualizar el estatus",
-      "error"
-    );
-  }
-};
+  // Función para determinar color del estatus
+  const getStatusColor = (estatus) => {
+    switch (estatus.toLowerCase()) {
+      case "recibido":
+        return "text-green-600 font-semibold";
+      case "rechazado":
+        return "text-red-600 font-semibold";
+      case "pendiente":
+        return "text-yellow-600 font-semibold";
+      default:
+        return "text-gray-600";
+    }
+  };
 
-  // Cargar usuario al inicio
+  // Función para actualizar estatus
+  const handleActualizarEstatus = async (credito, nuevoEstatus) => {
+    try {
+      await actualizarEstatusCredito(credito.cedula_credito, nuevoEstatus);
+      setCreditosUsuario((prevCreditos) =>
+        prevCreditos.map((c) =>
+          c.cedula_credito === credito.cedula_credito
+            ? { ...c, estatus: nuevoEstatus }
+            : c
+        )
+      );
+      Swal.fire(
+        "¡Actualizado!",
+        `Estatus cambiado a "${nuevoEstatus}"`,
+        "success"
+      );
+    } catch (err) {
+      console.error("Error al actualizar el crédito:", err);
+      Swal.fire(
+        "Error",
+        err.response?.data?.error || "No se pudo actualizar el estatus",
+        "error"
+      );
+    }
+  };
+
+  // Carga inicial
   useEffect(() => {
     fetchUsuario();
   }, []);
 
-  // Cuando el usuario cambie, cargar depósitos y créditos
+  // Cuando el usuario cambie, cargar datos
   useEffect(() => {
     if (user) {
       fetchDepositos();
@@ -107,18 +118,11 @@ const Depositos = () => {
     }
   }, [user]);
 
-  // Para cargar depósitos cuando los datos del usuario estén disponibles
-  useEffect(() => {
-    if (user?.cedula_usuario) {
-      fetchDepositos();
-    }
-  }, [user?.cedula_usuario]);
-
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
-      {/* Menú lateral */}
+      {/* Menú */}
       {menuOpen && <Menu />}
 
       {/* Contenido principal */}
@@ -142,7 +146,7 @@ const Depositos = () => {
             </h1>
           </div>
 
-          {/* Estado del usuario */}
+          {/* Estado usuario */}
           <div className="mb-4 p-4 border rounded shadow-inner bg-gray-50">
             {user ? (
               <>
@@ -160,72 +164,92 @@ const Depositos = () => {
             )}
           </div>
 
-          {/* Lista de depósitos */}
+          {/* Lista de créditos */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200 transition-shadow hover:shadow-xl">
-            <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-300 text-gray-700">
-              Depósitos Registrados
+            <h2 className="text-2xl font-semibold mb-4 border-b pb-2 border-gray-300 text-gray-700 flex items-center space-x-3">
+              <svg
+                className="w-6 h-6 text-blue-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12h3m-3 4h3m-3-8h3m-4 0a9 9 0 0118 0 9 9 0 01-18 0z"
+                />
+              </svg>
+              <span>Depósitos Registrados</span>
             </h2>
+
             {loadingCreditosUsuario ? (
               <div className="flex justify-center py-4">
                 <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-300 h-8 w-8 animate-spin"></div>
               </div>
             ) : creditosUsuario.length === 0 ? (
-              <p className="text-gray-500">
+              <p className="text-gray-500 text-center py-4">
                 No hay créditos para este usuario.
               </p>
             ) : (
-              <div className="overflow-x-auto max-h-64 border border-gray-300 rounded-lg p-2 bg-gray-50">
+              <div className="overflow-x-auto max-h-64 border border-gray-300 rounded-lg bg-gray-50 shadow-sm hover:shadow-md transition-shadow">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         Referencia
                       </th>
-                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         Monto Euros
                       </th>
-                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         Monto Bs
                       </th>
-                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         Fecha Desde
                       </th>
-                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         Fecha Hasta
                       </th>
-                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         Estado
                       </th>
-                      <th className="px-2 py-2 text-left text-sm font-semibold text-gray-700">
-                        Accion
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                        Acciones
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {creditosUsuario.map((credito) => (
-                      <tr key={credito.cedula_credito}>
-                        <td className="px-2 py-2">{credito.referencia}</td>
-                        <td className="px-2 py-2">{credito.monto_euros}</td>
-                        <td className="px-2 py-2">{credito.monto_bs}</td>
-                        <td className="px-2 py-2">{credito.fecha_desde}</td>
-                        <td className="px-2 py-2">{credito.fecha_hasta}</td>
-                        <td className="px-2 py-2">{credito.estatus}</td>
-                        <td className="px-2 py-2 space-x-2">
-                          {/* Botón para aprobar */}
+                      <tr
+                        key={credito.cedula_credito}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-3">{credito.referencia}</td>
+                        <td className="px-4 py-3">{credito.monto_euros}</td>
+                        <td className="px-4 py-3">{credito.monto_bs}</td>
+                        <td className="px-4 py-3">{credito.fecha_desde}</td>
+                        <td className="px-4 py-3">{credito.fecha_hasta}</td>
+                        <td
+                          className={`px-4 py-3 capitalize ${getStatusColor(
+                            credito.estatus
+                          )}`}
+                        >
+                          {credito.estatus}
+                        </td>
+                        <td className="px-4 py-3 flex space-x-2">
+                          {/* Botón para Recibido */}
                           <button
-                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                            onClick={() =>
-                              handleActualizarEstatus(credito, "Recibido")
-                            }
+                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg shadow-sm transition duration-200"
+                            onClick={() => handleActualizarEstatus(credito, "Recibido")}
                           >
                             Recibido
                           </button>
-                          {/* Botón para rechazar */}
+                          {/* Botón para Rechazado */}
                           <button
-                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                            onClick={() =>
-                              handleActualizarEstatus(credito, "Rechazado")
-                            }
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg shadow-sm transition duration-200"
+                            onClick={() => handleActualizarEstatus(credito, "Rechazado")}
                           >
                             Rechazar
                           </button>
