@@ -152,7 +152,6 @@ const Amortizacion = () => {
               <th class="border px-2 py-1">Pagado</th>
               <th class="border px-2 py-1">Recibido</th>
               <th class="border px-2 py-1">Acciones</th>
-              <th class="border px-2 py-1">Cuota + 2%</th>
             </tr>
           </thead>
           <tbody>

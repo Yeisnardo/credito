@@ -21,8 +21,8 @@ const RegistroEmprendedor = () => {
     edad: "",
     telefono: "",
     correo: "",
-    estado: "",
-    municipio: "",
+    estado: "Yaracuy",
+    municipio: "Independencia",
     direccion: "",
     tipo_persona: "Emprendedor",
 
@@ -55,12 +55,10 @@ const RegistroEmprendedor = () => {
     }
   }, [datos.estado]);
 
-  // Función para manejar cambios en los inputs
+  // Manejar cambios en los inputs
   const handleChange = (campo, valor) => {
-    // Validación específica para el campo de cédula
     if (campo === "cedula") {
-      // Solo números y longitud entre 6 y 9
-      const soloNumeros = valor.replace(/\D/g, ""); // elimina no dígitos
+      const soloNumeros = valor.replace(/\D/g, "");
       if (soloNumeros.length <= 9) {
         setDatos((prev) => ({ ...prev, [campo]: soloNumeros }));
       }
@@ -69,10 +67,10 @@ const RegistroEmprendedor = () => {
     }
   };
 
-  // Función para avanzar en el formulario
+  // Validar y avanzar en el formulario
   const handleNext = () => {
     const validations = [
-      // Validar datos personales
+      // Validaciones paso 1
       () => {
         if (
           !datos.cedula.trim() ||
@@ -92,7 +90,7 @@ const RegistroEmprendedor = () => {
         }
         return true;
       },
-      // Validar datos del consejo y emprendimiento
+      // Validaciones paso 2
       () => {
         if (
           !datos.consejo_nombre.trim() ||
@@ -112,7 +110,7 @@ const RegistroEmprendedor = () => {
         }
         return true;
       },
-      // Validar usuario y clave
+      // Validaciones paso 3
       () => {
         if (!datos.usuario.trim() || !datos.clave.trim()) {
           Swal.fire({
@@ -135,12 +133,12 @@ const RegistroEmprendedor = () => {
     }
   };
 
-  // Función para volver al paso anterior
+  // Volver al paso anterior
   const handleBack = () => {
     if (paso > 1) setPaso(paso - 1);
   };
 
-  // Función para finalizar y guardar datos
+  // Finalizar y guardar datos
   const handleFinalizar = async () => {
     try {
       // Crear Persona
@@ -251,43 +249,62 @@ const RegistroEmprendedor = () => {
           {/* Paso 1 - Datos Personales */}
           {paso === 1 && (
             <div id="paso-1" className="space-y-4">
-              <h3 className="text-xl mb-4">Datos Personales</h3>
-              {[
-                { label: "Cédula", type: "text", id: "cedula" },
-                { label: "Nombre Completo", type: "text", id: "nombre_completo" },
-                { label: "Edad", type: "number", id: "edad", min: "0" },
-                { label: "Teléfono", type: "tel", id: "telefono" },
-                { label: "Correo Electrónico", type: "email", id: "correo" },
-                { label: "Estado", type: "text", id: "estado" },
-                { label: "Municipio", type: "text", id: "municipio" },
-                { label: "Dirección Actual", type: "text", id: "direccion" },
-              ].map(({ label, type, id, min }) => (
-                <div key={id}>
-                  <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor={id}>
-                    {label}
-                  </label>
-                  <input
-                    type={type}
-                    id={id}
-                    value={datos[id]}
-                    onChange={(e) => handleChange(id, e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                    placeholder={`Ingresa tu ${label.toLowerCase()}`}
-                    min={min}
-                    required
-                  />
-                </div>
-              ))}
-              {/* Tipo de Persona */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="tipo_persona">
+              <h3 className="text-xl mb-4 font-semibold">Datos Personales</h3>
+              {/* Contenedor flexible para los campos en fila */}
+              <div className="flex flex-wrap gap-4">
+                {[
+                  { label: "Cédula de Identidad", type: "text", id: "cedula" },
+                  { label: "Nombre Completo", type: "text", id: "nombre_completo" },
+                  { label: "Edad", type: "number", id: "edad", min: "0" },
+                  { label: "Número de Teléfono", type: "tel", id: "telefono" },
+                  { label: "Correo Electrónico", type: "email", id: "correo" },
+                  { label: "Estado", type: "text", id: "estado" },
+                  { label: "Municipio", type: "text", id: "municipio" },
+                  { label: "Dirección Actual", type: "text", id: "direccion" },
+                ].map(({ label, type, id, min }) => {
+                  const isHidden = id === "estado";
+
+                  const isDireccion = id === "direccion";
+
+                  return (
+                    <div
+                      key={id}
+                      className={isDireccion ? "w-full" : "w-[300px]"}
+                      style={{ display: isHidden ? "none" : "block" }}
+                    >
+                      <label
+                        htmlFor={id}
+                        className="block mb-1 text-sm font-medium text-gray-600"
+                      >
+                        {label}
+                      </label>
+                      <input
+                        type={type}
+                        id={id}
+                        value={datos[id]}
+                        onChange={(e) => handleChange(id, e.target.value)}
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                        placeholder={`Ingresa ${label.toLowerCase()}`}
+                        min={min}
+                        required
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Campo oculto */}
+              <div style={{ display: "none" }}>
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="tipo_persona"
+                >
                   Tipo de Persona
                 </label>
                 <select
                   id="tipo_persona"
                   value={datos.tipo_persona}
                   onChange={(e) => handleChange("tipo_persona", e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="w-[300px] border border-gray-300 rounded px-3 py-2"
                 >
                   <option value="Emprendedor">Emprendedor</option>
                 </select>
@@ -295,7 +312,7 @@ const RegistroEmprendedor = () => {
               {/* Botón Siguiente */}
               <button
                 onClick={handleNext}
-                className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="w-full py-2 px-4 mt-4 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 Siguiente
               </button>
@@ -305,32 +322,45 @@ const RegistroEmprendedor = () => {
           {/* Paso 2 - Datos del Consejo y Emprendimiento */}
           {paso === 2 && (
             <div id="paso-2" className="space-y-4">
-              <h3 className="text-xl mb-4">Datos del Consejo y Emprendimiento</h3>
-              {[
-                { label: "Cédula del Emprendedor", type: "text", id: "cedula_emprendedor" },
-                { label: "Sector", type: "text", id: "sector" },
-                { label: "Consejo Nombre", type: "text", id: "consejo_nombre" },
-                { label: "Comuna", type: "text", id: "comuna" },
-                { label: "Tipo de Sector", type: "text", id: "tipo_sector" },
-                { label: "Tipo de Negocio", type: "text", id: "tipo_negocio" },
-                { label: "Nombre del Emprendimiento", type: "text", id: "nombre_emprendimiento" },
-                { label: "Dirección del Emprendimiento", type: "text", id: "direccion_emprendimiento" },
-              ].map(({ label, type, id }) => (
-                <div key={id}>
-                  <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor={id}>
-                    {label}
-                  </label>
-                  <input
-                    type={type}
-                    id={id}
-                    value={datos[id]}
-                    onChange={(e) => handleChange(id, e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                    placeholder={`Ingresa ${label.toLowerCase()}`}
-                    required
-                  />
-                </div>
-              ))}
+              <h3 className="text-xl mb-4 font-semibold">Datos del Consejo y Emprendimiento</h3>
+              {/* Contenedor flexible para colocar campos en fila */}
+              <div className="flex flex-wrap gap-4">
+                {[
+                  {
+                    label: "Cédula del Emprendedor",
+                    type: "text",
+                    id: "cedula_emprendedor",
+                    value: datos.cedula,
+                    readOnly: true,
+                  },
+                  { label: "Sector", type: "text", id: "sector" },
+                  { label: "Consejo Nombre", type: "text", id: "consejo_nombre" },
+                  { label: "Comuna", type: "text", id: "comuna" },
+                  { label: "Tipo de Sector", type: "text", id: "tipo_sector" },
+                  { label: "Tipo de Negocio", type: "text", id: "tipo_negocio" },
+                  { label: "Nombre del Emprendimiento", type: "text", id: "nombre_emprendimiento" },
+                  { label: "Dirección del Emprendimiento", type: "text", id: "direccion_emprendimiento" },
+                ].map(({ label, type, id, value, readOnly }) => (
+                  <div key={id} className="w-[250px]">
+                    <label
+                      className="block mb-1 text-sm font-medium text-gray-600"
+                      htmlFor={id}
+                    >
+                      {label}
+                    </label>
+                    <input
+                      type={type}
+                      id={id}
+                      value={value !== undefined ? value : datos[id]}
+                      onChange={(e) => handleChange(id, e.target.value)}
+                      className={`w-full border border-gray-300 rounded px-3 py-2 ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      placeholder={`Ingresa ${label.toLowerCase()}`}
+                      required
+                      readOnly={readOnly}
+                    />
+                  </div>
+                ))}
+              </div>
               {/* Botones */}
               <div className="flex justify-between mt-4">
                 <button
@@ -352,10 +382,13 @@ const RegistroEmprendedor = () => {
           {/* Paso 3 - Datos de Usuario */}
           {paso === 3 && (
             <div id="paso-3" className="space-y-4">
-              <h3 className="text-xl mb-4">Datos de Usuario</h3>
-              {/* Cédula del Usuario (readonly) */}
+              <h3 className="text-xl mb-4 font-semibold">Datos de Usuario</h3>
+              {/* Cédula del Emprendedor (solo lectura) */}
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="cedula_usuario">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="cedula_usuario"
+                >
                   Cédula del Emprendedor
                 </label>
                 <input
@@ -369,7 +402,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Usuario */}
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="usuario">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="usuario"
+                >
                   Nombre de Usuario
                 </label>
                 <input
@@ -384,7 +420,10 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Contraseña */}
               <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="clave">
+                <label
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                  htmlFor="clave"
+                >
                   Contraseña
                 </label>
                 <input
@@ -397,9 +436,12 @@ const RegistroEmprendedor = () => {
                   required
                 />
               </div>
-              {/* Estatus */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="estatus">
+              {/* Estatus (oculto) */}
+              <div style={{ display: "none" }}>
+                <label
+                  htmlFor="estatus"
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                >
                   Estatus
                 </label>
                 <select
@@ -413,9 +455,12 @@ const RegistroEmprendedor = () => {
                   <option value="Inactivo">Inactivo</option>
                 </select>
               </div>
-              {/* Rol */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="rol">
+              {/* Rol (oculto) */}
+              <div style={{ display: "none" }}>
+                <label
+                  htmlFor="rol"
+                  className="block mb-1 text-sm font-medium text-gray-600"
+                >
                   Rol
                 </label>
                 <select
@@ -423,10 +468,7 @@ const RegistroEmprendedor = () => {
                   value={datos.rol}
                   onChange={(e) => handleChange("rol", e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2"
-                  required
                 >
-                  <option value="">Selecciona un rol</option>
-                  <option value="Admin">Admin</option>
                   <option value="Emprendedor">Emprendedor</option>
                 </select>
               </div>

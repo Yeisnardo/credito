@@ -138,30 +138,34 @@ const Header = ({ toggleMenu, menuOpen }) => {
   Swal.fire({
     title: "Perfil de Usuario",
     html: `
-    <div class="max-w-xl mx-auto bg-white rounded-lg shadow-lg p-6">
-      <div class="flex flex-col items-center mb-4">
-        <h3 class="text-xl font-semibold text-gray-800 mb-1">${user?.nombre || "Nombre"}</h3>
-        <p class="text-sm text-gray-500 mb-2">${user?.tipo_usuario || "Rol"}</p>
-        <p class="text-sm text-gray-500">Edad: ${user?.edad || "N/A"}</p>
-      </div>
-      <div class="border-t border-gray-200 pt-4 mb-4 px-4">
-        <h4 class="text-md font-semibold text-gray-700 mb-2">Datos Personales</h4>
-        <div class="space-y-1 text-sm text-gray-600">
-          <p><span class="font-semibold">Email:</span> ${user?.email || "correo@ejemplo.com"}</p>
-          <p><span class="font-semibold">Teléfono:</span> ${user?.telefono || "N/A"}</p>
-          <p><span class="font-semibold">Dirección:</span> ${user?.direccion_actual || "N/A"}</p>
-          <p><span class="font-semibold">Estado:</span> ${user?.estado || "N/A"}</p>
-          <p><span class="font-semibold">Municipio:</span> ${user?.municipio || "N/A"}</p>
+      <div class="flex justify-start items-center">
+        <div class="w-auto bg-gray-50 rounded-lg p-4 font-sans text-gray-800 flex flex-col md:flex-row gap-3 max-w-3xl mx-4">
+          <!-- Sección derecha -->
+          <div class="md:w-2/3 flex flex-col space-y-4">
+            <!-- Datos Personales -->
+            <div class="bg-white rounded-lg p-4 justify-center items-center">
+              <h4 class="text-lg font-semibold mb-2 text-gray-700">Datos Personales</h4>
+              <div class="text-sm text-gray-700 space-y-1">
+                <p><span class="font-semibold">Email:</span> ${user?.email || "correo@ejemplo.com"}</p>
+                <p><span class="font-semibold">Teléfono:</span> ${user?.telefono || "N/A"}</p>
+                <p><span class="font-semibold">Dirección:</span> ${user?.direccion_actual || "N/A"}</p>
+                <p><span class="font-semibold">Estado:</span> ${user?.estado || "N/A"}</p>
+                <p><span class="font-semibold">Municipio:</span> ${user?.municipio || "N/A"}</p>
+              </div>
+            </div>
+            <!-- Emprendimiento -->
+            <div class="bg-white rounded-lg p-4 justify-center items-center">
+              <h4 class="text-lg font-semibold mb-2 text-gray-700">Emprendimiento</h4>
+              <div class="text-sm text-gray-700 space-y-1">
+                <p><span class="font-semibold">Nombre:</span> ${user?.nombre_emprendimiento || "No especificado"}</p>
+                <p><span class="font-semibold">Consejo:</span> ${user?.consejo_nombre || "No especificado"}</p>
+                <p><span class="font-semibold">Comuna:</span> ${user?.comuna || "No especificado"}</p>
+                <p><span class="font-semibold">Dirección Emprendimiento:</span> ${user?.direccion_emprendimiento || "No especificado"}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="border-t border-gray-200 pt-4 mb-4 px-4">
-        <h4 class="text-md font-semibold text-gray-700 mb-2">Emprendimiento</h4>
-        <p class="text-gray-600">Nombre: ${user?.nombre_emprendimiento || "No especificado"}</p>
-        <p class="text-gray-600">Consejo: ${user?.consejo_nombre || "No especificado"}</p>
-        <p class="text-gray-600">Comuna: ${user?.comuna || "No especificado"}</p>
-        <p class="text-gray-600">Dirección Emprendimiento: ${user?.direccion_emprendimiento || "No especificado"}</p>
-      </div>
-    </div>
     `,
     showCloseButton: true,
     focusConfirm: false,
@@ -178,7 +182,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
       title: "Editar Datos Personales",
       html: `
       <form class="w-full max-w-3xl mx-auto p-4 space-y-4">
-        <div class="flex flex-wrap gap-4">
+        <div class="flex flex-wrap gap-9">
           <div class="flex-1 min-w-[300px] w-0">
             <label for="nombre" class="block text-xs font-medium text-gray-700 mb-1">Nombre Completo</label>
             <input id="nombre" type="text" class="w-full border rounded px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-300" value="${user?.nombre || ""}">

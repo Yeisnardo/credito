@@ -193,10 +193,7 @@ const Depositos = () => {
                         Monto Bs
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                        Fecha Desde
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                        Fecha Hasta
+                        Fecha de Pago
                       </th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wide">
                         Estado
@@ -216,7 +213,6 @@ const Depositos = () => {
                         <td className="px-4 py-3">{credito.monto_euros}</td>
                         <td className="px-4 py-3">{credito.monto_bs}</td>
                         <td className="px-4 py-3">{credito.fecha_desde}</td>
-                        <td className="px-4 py-3">{credito.fecha_hasta}</td>
                         <td
                           className={`px-4 py-3 capitalize ${getStatusColor(
                             credito.estatus

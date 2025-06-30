@@ -81,31 +81,14 @@ CREATE TABLE fondo (
 
 CREATE TABLE credito (
   aprobacion_id SERIAL PRIMARY KEY,
-  cedula_credito VARCHAR (20) NOT NULL,
-  referencia VARCHAR (5) NOT null,
-  monto_euros VARCHAR NOT NULL,
-  monto_bs VARCHAR NOT NULL,
-  diez_euros VARCHAR NOT null,
-  fecha_desde VARCHAR (15) NOT NULL,
-  fecha_hasta VARCHAR (15) NOT null,
-  estatus VARCHAR (40)  NOT NULL,
-  FOREIGN KEY (cedula_credito) REFERENCES aprobacion(cedula_aprobacion)
+  cedula_credito VARCHAR(20) NOT NULL,
+  referencia VARCHAR(5) NOT NULL,
+  monto_euros VARCHAR(255) NOT NULL,
+  monto_bs VARCHAR(255) NOT NULL,
+  diez_euros VARCHAR(255) NOT NULL,
+  fecha_desde VARCHAR(15) NOT NULL,
+  fecha_hasta VARCHAR(15) NOT NULL,
+  estatus VARCHAR(40) NOT NULL,
+  cuota VARCHAR(40) NOT NULL,
+  CONSTRAINT fk_cedula FOREIGN KEY (cedula_credito) REFERENCES aprobacion(cedula_aprobacion)
 );
-
-
--- Insertar datos en la tabla persona
-INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES
-('1234567890', 'Juan Pérez', 35, '0414-1234567', 'juan.perez@example.com', 'Estado1', 'Municipio1', 'Calle 123, Casa 4', 'Emprendedor'),
-('9876543210', 'María Gómez', 28, '0424-9876543', 'maria.gomez@example.com', 'Estado2', 'Municipio2', 'Avenida 456, Apartamento 8', 'Cliente'),
-('1122334455', 'Carlos Ruiz', 40, '0412-5555555', 'carlos.ruiz@example.com', 'Estado1', 'Municipio3', 'Calle 789, Oficina 12', 'Emprendedor');
-
--- Insertar datos en la tabla emprendimientos
-INSERT INTO emprendimientos (cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, consejo_nombre, comuna, direccion_emprendimiento) VALUES
-('1234567890', 'Tecnología', 'Software', 'Soluciones TI', 'Consejo Emprendedor 1', 'Comuna1', 'Av. Innovación 100'),
-('1122334455', 'Agroindustria', 'Finca', 'AgroFuturo', 'Consejo Emprendedor 2', 'Comuna3', 'Camino Rural 45');
-
--- Insertar datos en la tabla usuario
-INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus ) VALUES
-('1234567890', 'juanp', 'pass123', 'Emprendedor', 'Activo'),
-('9876543210', 'mariag', 'pass456', 'Cliente', 'Activo'),
-('1122334455', 'carlosr', 'pass789', 'Emprendedor', 'Activo');

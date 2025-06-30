@@ -6,7 +6,6 @@ import Login from "./pages/Login";
 import RegistroEmprendedor from "./pages/RegistroEmprendedor";
 import Dashboard from "./pages/Dashboard";
 import Requerimiento from "./pages/Requerimiento";
-import Solicitud from "./pages/Solicitud";
 import Depositos from "./pages/Depositos";
 import Cuotas from "./pages/Cuotas";
 import Usuario from "./pages/Usuario";
@@ -41,7 +40,6 @@ function App() {
         <Route path="/RegistroEmprendedor" element={<RegistroEmprendedor />} />
         <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/Requerimiento" element={<Requerimiento />} />
-        <Route path="/Solicitud" element={<Solicitud />} />
         <Route path="/Depositos" element={<Depositos />} />
         <Route path="/Cuotas" element={<Cuotas />} />
         <Route path="/Usuario" element={<Usuario />} />
@@ -53,8 +51,6 @@ function App() {
         <Route path="/ConfirmacionCuota" element={<ConfirmacionCuota />} />
         <Route path="/Amortizacion" element={<Amortizacion />} />
         <Route path="/Credito" element={<Credito />} />
-
-        {/* Redirección a login si ruta no encontrada */}
       </Routes>
     </Router>
   );

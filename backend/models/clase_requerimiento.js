@@ -59,6 +59,56 @@ class Requerimiento {
     );
     return resultado.rows[0]; // Devuelve el primer resultado o undefined si no existe
   }
+
+  // Nuevo método para actualizar requerimiento
+  static async updateRequerimiento(cedula_requerimiento, data) {
+    const {
+      fecha,
+      carta_solicitud,
+      postulacion_UBCH,
+      certificado_emprender,
+      registro_municipal,
+      carta_residencia,
+      copia_cedula,
+      rif_personal,
+      fotos_emprendimiento,
+      rif_emprendimiento,
+      referencia_bancaria
+    } = data;
+
+    const resultado = await query(
+      `UPDATE requerimientos SET
+        fecha = $1,
+        carta_solicitud = $2,
+        postulacion_UBCH = $3,
+        certificado_emprender = $4,
+        registro_municipal = $5,
+        carta_residencia = $6,
+        copia_cedula = $7,
+        rif_personal = $8,
+        fotos_emprendimiento = $9,
+        rif_emprendimiento = $10,
+        referencia_bancaria = $11
+      WHERE cedula_requerimiento = $12
+      RETURNING *`,
+      [
+        fecha,
+        carta_solicitud,
+        postulacion_UBCH,
+        certificado_emprender,
+        registro_municipal,
+        carta_residencia,
+        copia_cedula,
+        rif_personal,
+        fotos_emprendimiento,
+        rif_emprendimiento,
+        referencia_bancaria,
+        cedula_requerimiento
+      ]
+    );
+
+    return resultado.rows[0]; // Devuelve el registro actualizado
+  }
 }
 
 module.exports = Requerimiento;

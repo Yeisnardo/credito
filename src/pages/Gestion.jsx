@@ -61,9 +61,9 @@ const Gestion = () => {
 
   // Función para mostrar detalles con Swal
   const handleVerDetalles = (s) => {
-  Swal.fire({
-    title: `${s.nombre_apellido}`,
-    html: `
+    Swal.fire({
+      title: `${s.nombre_apellido}`,
+      html: `
       <div class="font-sans text-sm text-gray-800 space-y-4">
         <div>
           <p class="mb-2"><strong>Número de contrato:</strong> ${s.contrato}</p>
@@ -82,26 +82,43 @@ const Gestion = () => {
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200 text-sm text-gray-800">
-              ${personasAprobadas.filter(p => p.cedula === s.cedula).map((dep, index) => `
-                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition">
-                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.monto_euros}</td>
-                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.monto_bs}</td>
-                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.fecha_desde} / ${dep.fecha_hasta}</td>
-                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.referencia}</td>
-                  <td class="px-4 py-2 border-b border-gray-200 text-center">${dep.estatus}</td>
-                </tr>`).join('')}
+              ${personasAprobadas
+                .filter((p) => p.cedula === s.cedula)
+                .map(
+                  (dep, index) => `
+                <tr class="${
+                  index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                } hover:bg-gray-100 transition">
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${
+                    dep.monto_euros
+                  }</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${
+                    dep.monto_bs
+                  }</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${
+                    dep.fecha_desde
+                  } / ${dep.fecha_hasta}</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${
+                    dep.referencia
+                  }</td>
+                  <td class="px-4 py-2 border-b border-gray-200 text-center">${
+                    dep.estatus
+                  }</td>
+                </tr>`
+                )
+                .join("")}
             </tbody>
           </table>
         </div>
       </div>
     `,
-    showCancelButton: true,
-    confirmButtonText: 'Cerrar',
-    customClass: {
-      popup: 'max-w-4xl p-6 rounded-lg shadow-lg',
-    },
-  });
-};
+      showCancelButton: true,
+      confirmButtonText: "Cerrar",
+      customClass: {
+        popup: "max-w-4xl p-6 rounded-lg shadow-lg",
+      },
+    });
+  };
 
   // Función para depositar con Swal y cálculos
   const handleDepositarSwal = async (s) => {
@@ -114,10 +131,10 @@ const Gestion = () => {
 
     // Input monto en euros
     const { value: montoStr } = await Swal.fire({
-      title: 'Ingresa monto en euros',
-      input: 'number',
-      inputLabel: 'Monto en euros',
-      inputPlaceholder: 'Ejemplo: 100',
+      title: "Ingresa monto en euros",
+      input: "number",
+      inputLabel: "Monto en euros",
+      inputPlaceholder: "Ejemplo: 100",
       inputAttributes: {
         min: 0,
         step: 0.01,
@@ -127,22 +144,26 @@ const Gestion = () => {
     if (montoStr === undefined) return; // Cancelado
     const monto = parseFloat(montoStr);
     if (isNaN(monto) || monto <= 0) {
-      Swal.fire('Monto inválido', 'Ingresa un monto válido mayor a cero.', 'error');
+      Swal.fire(
+        "Monto inválido",
+        "Ingresa un monto válido mayor a cero.",
+        "error"
+      );
       return;
     }
 
     // Input referencia bancaria
     const { value: referencia } = await Swal.fire({
-      title: 'Referencia bancaria (últ 5 dígitos)',
-      input: 'text',
-      inputPlaceholder: 'Ejemplo: 12345',
+      title: "Referencia bancaria (últ 5 dígitos)",
+      input: "text",
+      inputPlaceholder: "Ejemplo: 12345",
       inputAttributes: {
         maxlength: 5,
       },
       showCancelButton: true,
       inputValidator: (value) => {
         if (!/^\d{5}$/.test(value)) {
-          return 'Debe tener exactamente 5 dígitos numéricos.';
+          return "Debe tener exactamente 5 dígitos numéricos.";
         }
       },
     });
@@ -150,18 +171,22 @@ const Gestion = () => {
 
     // Cálculos
     const montoEuros = monto.toFixed(2);
-    const montoBs = (monto * tasaEuroBCV).toFixed(2);
-    const diezEuros = (monto * 0.1).toFixed(2);
-    const montoCancelarEuros = (monto / 18).toFixed(2);
-    const montoDevolverEuros = (
-      monto -
-      montoCancelarEuros -
-      (monto * 0.1)
-    ).toFixed(2);
+const montoBs = (monto * tasaEuroBCV).toFixed(2);
+const diezEuros = (monto * 0.1).toFixed(2);
+
+// Convertir cadenas a números antes de sumar
+const montoEurosNum = parseFloat(montoEuros);
+const diezEurosNum = parseFloat(diezEuros);
+
+// Sumar para obtener montoDevolverEuros
+const montoDevolverEuros = (montoEurosNum + diezEurosNum).toFixed(2);
+
+// Dividir montoDevolverEuros entre 18
+const montoCancelarEuros = (parseFloat(montoDevolverEuros) / 18).toFixed(2);
 
     // Confirmar depósito
     const confirmResult = await Swal.fire({
-      title: 'Confirmar depósito',
+      title: "Confirmar depósito",
       html: `
         <p>Montos a depositar:</p>
         <ul style="list-style:none;padding:0;">
@@ -179,10 +204,11 @@ const Gestion = () => {
         </ul>
       `,
       showCancelButton: true,
-      confirmButtonText: 'Depositar',
+      confirmButtonText: "Depositar",
     });
     if (confirmResult.isConfirmed) {
       // Enviar datos
+      // Dentro de handleDepositarSwal, justo antes de llamar a enviarDeposito
       const depositoData = {
         cedula_credito: s.cedula,
         referencia,
@@ -192,6 +218,7 @@ const Gestion = () => {
         fecha_desde: fechaDesde.toISOString().slice(0, 10),
         fecha_hasta: fechaHasta ? fechaHasta.toISOString().slice(0, 10) : null,
         estatus: creditoData.estatus,
+        cuota: montoDevolverEuros,
       };
 
       await enviarDeposito(depositoData);
@@ -206,7 +233,11 @@ const Gestion = () => {
       Swal.fire({ icon: "success", title: "Depósito registrado" });
     } catch (err) {
       console.error("Error en crearCredito:", err);
-      Swal.fire({ icon: "error", title: "Error", text: "Error al registrar depósito" });
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error al registrar depósito",
+      });
     }
   };
 
@@ -224,7 +255,9 @@ const Gestion = () => {
         <div className="pt-20 px-8">
           {/* Mensaje de éxito */}
           {mensajeExito && (
-            <div className="mb-4 p-3 bg-green-200 text-green-800 rounded">{mensajeExito}</div>
+            <div className="mb-4 p-3 bg-green-200 text-green-800 rounded">
+              {mensajeExito}
+            </div>
           )}
 
           {/* Encabezado */}
@@ -233,13 +266,17 @@ const Gestion = () => {
               <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
                 <i className="bx bx-credit-card text-2xl"></i>
               </div>
-              <h1 className="text-3xl font-bold text-gray-800">Gestor de Créditos</h1>
+              <h1 className="text-3xl font-bold text-gray-800">
+                Gestor de Créditos
+              </h1>
             </div>
           </header>
 
           {/* Listado de solicitudes */}
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Solicitudes Aprobadas para Depositar</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              Solicitudes Aprobadas para Depositar
+            </h2>
             {personasAprobadas.length === 0 ? (
               <p>No hay solicitudes aprobadas aún.</p>
             ) : (
@@ -256,7 +293,9 @@ const Gestion = () => {
                     {/* Datos */}
                     <h2 className="text-xl font-semibold mb-2 flex items-center space-x-2">
                       <i className="bx bx-user text-blue-500"></i>
-                      <span>{s.nombre_apellido || s.nombre_completo || s.cedula}</span>
+                      <span>
+                        {s.nombre_apellido || s.nombre_completo || s.cedula}
+                      </span>
                     </h2>
                     <p className="mb-2">
                       <strong>Contrato:</strong> {s.contrato}

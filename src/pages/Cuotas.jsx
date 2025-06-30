@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2"; // Importa SweetAlert2
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
@@ -15,6 +16,7 @@ const Cuotas = () => {
     { id: 2, monto: 200, descripcion: "Cuota 2", pagada: false, cayo: false },
   ]);
 
+  // Estado de semanas
   const [semanas, setSemanas] = useState([
     { semana: 1, oportunidad: 1, pagada: false, cuotaId: 1 },
     { semana: 2, oportunidad: 1, pagada: false, cuotaId: 2 },
@@ -22,13 +24,13 @@ const Cuotas = () => {
     { semana: 4, oportunidad: 2, pagada: false, cuotaId: null },
   ]);
 
-  const [mostrarModal, setMostrarModal] = useState(false);
+  // Estado para gestionar pago
   const [cuotaSeleccionada, setCuotaSeleccionada] = useState(null);
   const [referencia, setReferencia] = useState("");
   const [fechaPago, setFechaPago] = useState("");
 
+  // Cargar datos del usuario (simulación)
   useEffect(() => {
-    // Simulación de carga
     const fetchUserData = async () => {
       try {
         const response = await api.getUsers();
@@ -46,40 +48,86 @@ const Cuotas = () => {
     setMenuOpen(!menuOpen);
   };
 
+  // Función para abrir el proceso de pago (se dispara desde botón)
   const abrirModalPagarCuota = (cuota) => {
     setCuotaSeleccionada(cuota);
     setReferencia("");
     setFechaPago("");
-    setMostrarModal(true);
-  };
-
-  const cerrarModal = () => {
-    setMostrarModal(false);
-  };
-
-  const enviarPago = () => {
-    if (referencia && fechaPago && cuotaSeleccionada) {
-      const confirmacion = window.confirm(
-        `¿Confirma que desea marcar la cuota "${cuotaSeleccionada.descripcion}" como pagada?`
-      );
-      if (confirmacion) {
-        setCuotas((prev) =>
-          prev.map((c) =>
-            c.id === cuotaSeleccionada.id ? { ...c, pagada: true } : c
-          )
-        );
-        setSemanas((prev) =>
-          prev.map((s) =>
-            s.cuotaId === cuotaSeleccionada.id ? { ...s, pagada: true } : s
-          )
-        );
-        cerrarModal();
+    // Aquí en lugar de abrir modal, llamamos Swal
+    Swal.fire({
+      title: 'Pagar Cuota',
+      html: `
+        <p>Cuota: <strong>${cuota.descripcion}</strong></p>
+        <p>Monto: <strong>$${cuota.monto}</strong></p>
+        <div style="margin-top:10px;">
+          <label style="display:block; margin-bottom:5px;">Referencia</label>
+          <input id="ref-input" class="swal2-input" placeholder="Referencia" />
+        </div>
+        <div style="margin-top:10px;">
+          <label style="display:block; margin-bottom:5px;">Fecha de Pago</label>
+          <input id="date-input" type="date" class="swal2-input"/>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Pagar',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const ref = Swal.getPopup().querySelector('#ref-input').value;
+        const date = Swal.getPopup().querySelector('#date-input').value;
+        if (!ref || !date) {
+          Swal.showValidationMessage('Por favor ingresa referencia y fecha de pago');
+        }
+        return { referencia: ref, fechaPago: date };
       }
-    } else {
-      alert("Por favor ingresa referencia y fecha de pago");
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Procesar pago
+        setReferencia(result.value.referencia);
+        setFechaPago(result.value.fechaPago);
+        procesarPago();
+      }
+    });
+  };
+
+  const procesarPago = () => {
+    if (referencia && fechaPago && cuotaSeleccionada) {
+      Swal.fire({
+        title: '¿Confirma la acción?',
+        text: `¿Desea marcar la cuota "${cuotaSeleccionada.descripcion}" como pagada?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#166534',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, pagar',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Actualizar cuotas
+          setCuotas((prev) =>
+            prev.map((c) =>
+              c.id === cuotaSeleccionada.id ? { ...c, pagada: true } : c
+            )
+          );
+          // Actualizar semanas relacionadas
+          setSemanas((prev) =>
+            prev.map((s) =>
+              s.cuotaId === cuotaSeleccionada.id ? { ...s, pagada: true } : s
+            )
+          );
+          Swal.fire({
+            icon: 'success',
+            title: '¡Pagado!',
+            text: 'La cuota ha sido marcada como pagada.',
+            timer: 2000,
+            showConfirmButton: false,
+          });
+        }
+      });
     }
   };
 
+  // Confirmar "Cayo"
   const confirmarCayo = (id) => {
     setCuotas((prev) =>
       prev.map((c) => (c.id === id ? { ...c, cayo: true } : c))
@@ -235,61 +283,6 @@ const Cuotas = () => {
             </div>
           </div>
         </div>
-
-        {/* Modal pagar cuota */}
-        {mostrarModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 md:p-8 animate__animated animate__fadeIn">
-              <h3 className="text-2xl font-semibold mb-4 text-[#374151]">
-                Pagar Cuota
-              </h3>
-              <p className="mb-4 text-[#374151]">
-                Cuota:{" "}
-                <span className="font-semibold">
-                  {cuotaSeleccionada?.descripcion}
-                </span>{" "}
-                - Monto:{" "}
-                <span className="font-semibold">
-                  ${cuotaSeleccionada?.monto}
-                </span>
-              </p>
-              <div className="mb-4">
-                <label className="block mb-1 text-[#374151]">Referencia</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1F2937]"
-                  value={referencia}
-                  onChange={(e) => setReferencia(e.target.value)}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1 text-[#374151]">
-                  Fecha de Pago
-                </label>
-                <input
-                  type="date"
-                  className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1F2937]"
-                  value={fechaPago}
-                  onChange={(e) => setFechaPago(e.target.value)}
-                />
-              </div>
-              <div className="flex justify-end space-x-4">
-                <button
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg transition"
-                  onClick={cerrarModal}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="bg-[#166534] hover:bg-[#166534]/90 text-white px-4 py-2 rounded-lg transition"
-                  onClick={enviarPago}
-                >
-                  Pagar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-[#F9FAFB] border-t border-gray-300 text-center text-[#4B5563] text-sm">

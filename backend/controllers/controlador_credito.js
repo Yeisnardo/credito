@@ -21,6 +21,7 @@ const crearCredito = async (req, res) => {
     fecha_desde,
     fecha_hasta,
     estatus,
+    cuota, // Nuevo campo
   } = req.body;
 
   if (!estatus) {
@@ -37,6 +38,7 @@ const crearCredito = async (req, res) => {
       fecha_desde,
       fecha_hasta,
       estatus,
+      cuota, // pasado
     });
     res.status(201).json(nuevoCredito);
   } catch (err) {
@@ -45,7 +47,7 @@ const crearCredito = async (req, res) => {
   }
 };
 
-// Nueva función: obtener créditos por cédula
+// Nuevo: obtener créditos por cédula
 const getCreditosPorCedula = async (req, res) => {
   const { cedula_credito } = req.params;
 
@@ -62,6 +64,7 @@ const getCreditosPorCedula = async (req, res) => {
   }
 };
 
+// Actualizar estatus del crédito
 const actualizarEstatusCredito = async (req, res) => {
   const { cedula_credito } = req.params;
   const { estatus } = req.body;

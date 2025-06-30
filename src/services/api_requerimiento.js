@@ -16,7 +16,14 @@ const getRequerimiento = async (cedula_requerimiento) => {
   return response.data; // Puede ser null si no existe
 };
 
+// Actualizar requerimiento
+const updateRequerimiento = async (cedula_requerimiento, requerimientoData) => {
+  const response = await api.put(`/api/requerimiento/${cedula_requerimiento}`, requerimientoData);
+  return response.data;
+};
+
 export default {
   createRequerimiento,
   getRequerimiento,
+  updateRequerimiento,
 };

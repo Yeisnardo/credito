@@ -23,7 +23,27 @@ const getRequerimiento = async (req, res) => {
   }
 };
 
+
+// Nuevo método para actualizar requerimiento
+const updateRequerimiento = async (req, res) => {
+  try {
+    const cedula_requerimiento = req.params.cedula_requerimiento;
+    const data = req.body;
+    const requerimientoActualizado = await requerimientoModel.updateRequerimiento(cedula_requerimiento, data);
+    
+    if (!requerimientoActualizado) {
+      return res.status(404).json({ message: 'Requerimiento no encontrado' });
+    }
+
+    res.json(requerimientoActualizado);
+  } catch (err) {
+    console.error('Error en updateRequerimiento:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   createRequerimiento,
   getRequerimiento,
+  updateRequerimiento
 };

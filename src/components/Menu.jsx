@@ -1,7 +1,13 @@
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
 
 const Menu = ({ onClose }) => {
   const activeClassName = "bg-gray-300";
+  const [isRequerimientosOpen, setIsRequerimientosOpen] = useState(false);
+
+  const toggleRequerimientos = () => {
+    setIsRequerimientosOpen(!isRequerimientosOpen);
+  };
 
   return (
     <aside className="w-64 bg-white shadow-lg fixed top-0 left-0 z-50">
@@ -23,35 +29,47 @@ const Menu = ({ onClose }) => {
             <span>Inicio</span>
           </NavLink>
 
-          {/* Enlace Mis Requerimientos */}
-          <NavLink
-            to="/Requerimiento"
-            className={({ isActive }) =>
-              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
-                isActive ? activeClassName : ""
-              }`
-            }
-            onClick={onClose}
+          {/* Sección con submenú "Mis Requerimientos" */}
+          <button
+            onClick={toggleRequerimientos}
+            className="flex items-center w-full text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors"
           >
-            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
-            <span>Mis Requerimientos</span>
-          </NavLink>
+            <i className="bx bx-file mr-3 text-xl"></i>
+            <span>Solicitud de Credito</span>
+            <i
+              className={`bx ${
+                isRequerimientosOpen ? "bx-chevron-up" : "bx-chevron-down"
+              } ml-auto text-xl`}
+            ></i>
+          </button>
+          {isRequerimientosOpen && (
+            <div className="ml-6 flex flex-col space-y-2">
+              <NavLink
+                to="/Requerimiento"
+                className={({ isActive }) =>
+                  `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
+                    isActive ? activeClassName : ""
+                  }`
+                }
+                onClick={onClose}
+              >
+                <span>Requerimientos y solicitud</span>
+              </NavLink>
+              <NavLink
+                to="/Requerimiento"
+                className={({ isActive }) =>
+                  `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors duration-200 ${
+                    isActive ? activeClassName : ""
+                  }`
+                }
+                onClick={onClose}
+              >
+                <span>Mi Contrato</span>
+              </NavLink>
+            </div>
+          )}
 
-          {/* Enlace Gestión de Amortización */}
-          <NavLink
-            to="/solicitud"
-            className={({ isActive }) =>
-              `flex items-center text-gray-700 hover:bg-gray-200 p-2 rounded transition-colors ${
-                isActive ? activeClassName : ""
-              }`
-            }
-            onClick={onClose}
-          >
-            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
-            <span>Solicitud de Crédito</span>
-          </NavLink>
-
-          {/* Enlace Historial de Depositos */}
+          {/* Otros enlaces */}
           <NavLink
             to="/depositos"
             className={({ isActive }) =>
@@ -61,11 +79,10 @@ const Menu = ({ onClose }) => {
             }
             onClick={onClose}
           >
-            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <i className="bx bx-history mr-3 text-xl"></i>
             <span>Historial de Depositos</span>
           </NavLink>
 
-          {/* Enlace Reporte de Cuotas */}
           <NavLink
             to="/cuotas"
             className={({ isActive }) =>
@@ -75,7 +92,7 @@ const Menu = ({ onClose }) => {
             }
             onClick={onClose}
           >
-            <i className="bx bx-money-withdraw mr-3 text-xl"></i>
+            <i className="bx bx-chart mr-3 text-xl"></i>
             <span>Reporte de Cuotas</span>
           </NavLink>
 
@@ -92,7 +109,7 @@ const Menu = ({ onClose }) => {
             <i className="bx bx-user mr-3 text-xl"></i>
             <span>Gestión de Usuarios</span>
           </NavLink>
-          
+
           {/* Otros enlaces */}
           <NavLink
             to="/Perfil_emprendedores"

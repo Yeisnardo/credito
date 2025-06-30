@@ -110,16 +110,6 @@ const Perfil = () => {
                   aria-label={`Perfil de ${s.solicitante}`}
                 >
                   <div className="flex justify-center mb-5">
-                    <img
-                      src={s.foto}
-                      alt={`Foto de ${s.solicitante}`}
-                      className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-md"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src =
-                          'https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/4b8866b8-756b-4991-98de-8c479b712417.png';
-                      }}
-                    />
                   </div>
                   <h2 className="text-xl font-semibold mb-2 text-center text-gray-800">
                     {s.solicitante}

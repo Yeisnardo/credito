@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api from "../services/api_requerimiento";
-import { getUsuarioPorCedula } from '../services/api_usuario';
+import { createSolicitud, getSolicitudes } from "../services/api_solicitud";
+import { getUsuarioPorCedula } from "../services/api_usuario";
 
-const Encuesta = ({ menuOpenProp }) => {
+const CombinedComponent = () => {
   const navigate = useNavigate();
-
-  const [menuOpen, setMenuOpen] = useState(menuOpenProp ?? true);
+  const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUser ] = useState(null);
-  const setUserInParent = setUser  ?? (() => {});
-
+  const [solicitudesCredito, setSolicitudesCredito] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [cedula_emprendimiento, setCedula_emprendimiento] = useState("");
   const [fecha, setFecha] = useState(""); // yyyy-mm-dd
-  const [fechaCita, setFechaCita] = useState(""); // dd/mm/aaaa
-
+  const [motivo, setMotivo] = useState(""); // Added motivo state
   const [preguntas, setPreguntas] = useState([
     { id: 0, texto: "Carta de Motivo para Solicitar Crédito", respuesta: false },
     { id: 1, texto: "Postulación UBCH", respuesta: false },
@@ -28,137 +28,74 @@ const Encuesta = ({ menuOpenProp }) => {
     { id: 8, texto: "RIF de emprendimiento", respuesta: false },
     { id: 9, texto: "Referencia bancaria", respuesta: false },
   ]);
-
+  const [nuevoRequerimiento, setNuevoRequerimiento] = useState(""); // State for new requirement
   const [resultados, setResultados] = useState(null);
   const [mostrarResultados, setMostrarResultados] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // 1: Requerimientos, 2: Motivo, 3: Confirmación
+  const [isUpdating, setIsUpdating] = useState(false); // Estado para manejar la actualización
 
   const toggleMenu = () => setMenuOpen((prev) => !prev);
 
-  // Función para mostrar resultados
-  const handleVerResultados = async () => {
-    if (cedula_emprendimiento) {
-      try {
-        const data = await api.getRequerimiento(cedula_emprendimiento);
-        if (data) {
-          setResultados(data);
-          setMostrarResultados(true);
-        } else {
-          alert("No se encontraron resultados para esa cédula");
-        }
-      } catch (error) {
-        alert("Error al obtener resultados");
-        console.error(error);
-      }
-    } else {
-      alert("Por favor, ingresa la cédula para ver resultados");
-    }
-  };
-
-  // Cargar usuario y datos existentes al montar
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const cedula = localStorage.getItem('cedula_usuario');
+        const cedula = localStorage.getItem("cedula_usuario");
         if (cedula) {
           const usuario = await getUsuarioPorCedula(cedula);
           if (usuario) {
-            setUser (usuario);
-            setUserInParent(usuario);
+            setUser(usuario);
             setCedula_emprendimiento(usuario.cedula_usuario);
           }
         }
       } catch (error) {
-        console.error('Error al obtener usuario por cédula:', error);
+        console.error("Error al obtener usuario:", error);
       }
     };
+    fetchUserData();
+  }, []);
 
-    // Solo ejecutar si no hay un usuario en estado
-    if (!user) {
-      fetchUserData();
-    }
-  }, [user, setUser , setUserInParent]);
-
-  // Cuando cambie la cédula, buscar datos guardados y cargar respuestas
   useEffect(() => {
-    const fetchExistingData = async () => {
-      if (cedula_emprendimiento) {
-        try {
-          const data = await api.getRequerimiento(cedula_emprendimiento);
-          if (data) {
-            setCedula_emprendimiento(data.cedula_requerimiento);
-            setFecha(data.fecha);
-            const [year, month, day] = data.fecha.split("-");
-            setFechaCita(`${day}/${month}/${year}`);
-
-            const keys = [
-              "carta_solicitud",
-              "postulacion_UBCH",
-              "certificado_emprender",
-              "registro_municipal",
-              "carta_residencia",
-              "copia_cedula",
-              "rif_personal",
-              "fotos_emprendimiento",
-              "rif_emprendimiento",
-              "referencia_bancaria",
-            ];
-
-            const updatedPreguntas = preguntas.map((p, index) => {
-              const key = keys[index];
-              return {
-                ...p,
-                respuesta: data[key] === "Si",
-              };
-            });
-            setPreguntas(updatedPreguntas);
-          }
-        } catch (error) {
-          // No hay datos o error
+    if (!user || !cedula_emprendimiento) return;
+    const fetchSolicitudes = async () => {
+      setLoading(true);
+      try {
+        const data = await getSolicitudes();
+        setSolicitudesCredito(data);
+        // Verificar si hay registros guardados
+        const existing = await api.getRequerimiento(cedula_emprendimiento);
+        if (existing) {
+          setResultados(existing);
+          setMostrarResultados(true);
+          setIsUpdating(true); // Indicar que se está actualizando
+          // Cargar datos existentes en el formulario
+          setFecha(existing.fecha || "");
+          setMotivo(existing.motivo || "");
+          setPreguntas((prevPreguntas) =>
+            prevPreguntas.map((pregunta) => ({
+              ...pregunta,
+              respuesta: existing[pregunta.texto.replace(/ /g, "_").toLowerCase()] === "si",
+            }))
+          );
+        } else {
+          setIsUpdating(false); // No hay registro, es nuevo
         }
+      } catch (error) {
+        console.error("Error al obtener solicitudes:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudieron cargar las solicitudes. Intente nuevamente.",
+        });
+      } finally {
+        setLoading(false);
       }
     };
-    fetchExistingData();
-  }, [cedula_emprendimiento]);
+    fetchSolicitudes();
+  }, [user, cedula_emprendimiento]);
 
-  // Manejar cambios en las respuestas (checkbox)
-  const handleCheckboxChange = (id) => {
-    setPreguntas((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, respuesta: !p.respuesta } : p
-      )
-    );
-  };
-
-  // Manejar cambio en la fecha
-  const handleFechaChange = (e) => {
-    const dateStr = e.target.value; // "yyyy-mm-dd"
-    setFecha(dateStr);
-    if (dateStr) {
-      const [year, month, day] = dateStr.split("-");
-      setFechaCita(`${day}/${month}/${year}`);
-    } else {
-      setFechaCita("");
-    }
-  };
-
-  // Validar solo números y longitud
-  const handleCedulaChange = (e) => {
-    const value = e.target.value;
-    // Solo números y entre 6 y 8 caracteres
-    if (/^\d*$/.test(value) && value.length <= 8) {
-      setCedula_emprendimiento(value);
-    }
-  };
-
-  // Guardar respuestas
-  const handleSubmitEncuesta = async (e) => {
-    e.preventDefault();
-
-    if (
-      !cedula_emprendimiento ||
-      cedula_emprendimiento.length < 6 ||
-      cedula_emprendimiento.length > 8
-    ) {
+  const handleSubmit = async () => {
+    // Validaciones
+    if (!cedula_emprendimiento || cedula_emprendimiento.length < 6 || cedula_emprendimiento.length > 8) {
       alert("La cédula debe tener entre 6 y 8 dígitos numéricos");
       return;
     }
@@ -166,210 +103,391 @@ const Encuesta = ({ menuOpenProp }) => {
       alert("Por favor, selecciona la fecha");
       return;
     }
+    if (!motivo.trim()) {
+      alert("Por favor, ingrese el motivo de la solicitud");
+      return;
+    }
 
+    // Datos para guardar
     const requerimientoData = {
       cedula_requerimiento: cedula_emprendimiento,
       fecha: fecha,
-      carta_solicitud: preguntas[0].respuesta ? "Si" : "No",
-      postulacion_UBCH: preguntas[1].respuesta ? "Si" : "No",
-      certificado_emprender: preguntas[2].respuesta ? "Si" : "No",
-      registro_municipal: preguntas[3].respuesta ? "Si" : "No",
-      carta_residencia: preguntas[4].respuesta ? "Si" : "No",
-      copia_cedula: preguntas[5].respuesta ? "Si" : "No",
-      rif_personal: preguntas[6].respuesta ? "Si" : "No",
-      fotos_emprendimiento: preguntas[7].respuesta ? "Si" : "No",
-      rif_emprendimiento: preguntas[8].respuesta ? "Si" : "No",
-      referencia_bancaria: preguntas[9].respuesta ? "Si" : "No",
+      motivo: motivo,
+      carta_solicitud: preguntas[0].respuesta ? "si" : "no",
+      postulacion_UBCH: preguntas[1].respuesta ? "si" : "no",
+      certificado_emprender: preguntas[2].respuesta ? "si" : "no",
+      registro_municipal: preguntas[3].respuesta ? "si" : "no",
+      carta_residencia: preguntas[4].respuesta ? "si" : "no",
+      copia_cedula: preguntas[5].respuesta ? "si" : "no",
+      rif_personal: preguntas[6].respuesta ? "si" : "no",
+      fotos_emprendimiento: preguntas[7].respuesta ? "si" : "no",
+      rif_emprendimiento: preguntas[8].respuesta ? "si" : "no",
+      referencia_bancaria: preguntas[9].respuesta ? "si" : "no",
     };
 
     try {
-      const existing = await api.getRequerimiento(cedula_emprendimiento);
-      if (existing) {
+      if (isUpdating) {
         await api.updateRequerimiento(cedula_emprendimiento, requerimientoData);
       } else {
         await api.createRequerimiento(requerimientoData);
       }
-      alert("Datos guardados correctamente");
+
+      // Crear solicitud
+      const nuevaSolicitud = {
+        cedula_solicitud: cedula_emprendimiento,
+        motivo: motivo,
+        estatus: "Pendiente",
+      };
+      await createSolicitud(nuevaSolicitud);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Solicitud Enviada',
+        text: 'Su solicitud ha sido enviada correctamente.',
+      });
+      handleNewRequest(); // Resetea formulario
     } catch (error) {
-      console.error("Error al guardar requerimiento:", error);
-      alert("Hubo un problema al guardar los datos");
+      console.error("Error al guardar los datos:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Hubo un problema al guardar los datos. Intente nuevamente.",
+      });
     }
   };
 
+  const handleUpdateRequirements = () => {
+    // Mostrar formulario en Swal para actualizar requerimientos
+    const requirementsForm = `
+      <div style="text-align: left; max-height: 400px; overflow-y: auto;">
+        ${preguntas.map((pregunta, index) => `
+          <div style="margin-bottom: 10px;">
+            <input 
+              type="checkbox" 
+              id="req-${pregunta.id}" 
+              ${pregunta.respuesta ? 'checked' : ''}
+              style="margin-right: 10px;"
+            >
+            <label for="req-${pregunta.id}">${pregunta.texto}</label>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    Swal.fire({
+      title: 'Actualizar Requerimientos',
+      html: requirementsForm,
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Confirmar actualización',
+      cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const updatedPreguntas = [...preguntas].map((pregunta, index) => ({
+          ...pregunta,
+          respuesta: checkboxes[index].checked,
+        }));
+        return updatedPreguntas;
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed && result.value) {
+        try {
+          const updatedPreguntas = result.value;
+          const requerimientoData = {
+            cedula_requerimiento: cedula_emprendimiento,
+            fecha: fecha,
+            motivo: motivo,
+            carta_solicitud: updatedPreguntas[0].respuesta ? "si" : "no",
+            postulacion_UBCH: updatedPreguntas[1].respuesta ? "si" : "no",
+            certificado_emprender: updatedPreguntas[2].respuesta ? "si" : "no",
+            registro_municipal: updatedPreguntas[3].respuesta ? "si" : "no",
+            carta_residencia: updatedPreguntas[4].respuesta ? "si" : "no",
+            copia_cedula: updatedPreguntas[5].respuesta ? "si" : "no",
+            rif_personal: updatedPreguntas[6].respuesta ? "si" : "no",
+            fotos_emprendimiento: updatedPreguntas[7].respuesta ? "si" : "no",
+            rif_emprendimiento: updatedPreguntas[8].respuesta ? "si" : "no",
+            referencia_bancaria: updatedPreguntas[9].respuesta ? "si" : "no",
+          };
+          await api.updateRequerimiento(cedula_emprendimiento, requerimientoData);
+          setPreguntas(updatedPreguntas);
+          Swal.fire('Actualizado!', 'Los requerimientos han sido actualizados correctamente.', 'success');
+        } catch (error) {
+          console.error("Error al actualizar:", error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error al actualizar. Intente nuevamente.',
+          });
+        }
+      }
+    });
+  };
+
+  const handleVerResultados = async () => {
+    if (!cedula_emprendimiento) {
+      Swal.fire({
+        icon: "warning",
+        title: "Cédula no proporcionada",
+        text: "Por favor, ingrese su cédula para ver los resultados.",
+      });
+      return;
+    }
+    try {
+      const resultadosData = await api.getRequerimiento(cedula_emprendimiento);
+      if (resultadosData) {
+        setResultados(resultadosData);
+        setMostrarResultados(true);
+      } else {
+        Swal.fire({
+          icon: "info",
+          title: "Sin resultados",
+          text: "No se encontraron resultados para la cédula proporcionada.",
+        });
+        setMostrarResultados(false);
+      }
+    } catch (error) {
+      console.error("Error al obtener resultados:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Hubo un problema al obtener los resultados. Intente nuevamente.",
+      });
+    }
+  };
+
+  const handleCheckboxChange = (id) => {
+    setPreguntas((prevPreguntas) =>
+      prevPreguntas.map((pregunta) =>
+        pregunta.id === id ? { ...pregunta, respuesta: !pregunta.respuesta } : pregunta
+      )
+    );
+  };
+
+  const handlePreviousStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
+  const handleNextStep = () => {
+    setCurrentStep(currentStep + 1);
+  };
+
+  const handleNewRequest = () => {
+    setMotivo("");
+    setFecha("");
+    setPreguntas(preguntas.map(p => ({ ...p, respuesta: false })));
+    setCurrentStep(1);
+    setMostrarResultados(false);
+    setIsUpdating(false);
+  };
+
+  const handleShowRequirements = () => {
+    const requirementsText = preguntas.map((pregunta) => {
+      return `${pregunta.texto}: ${resultados[pregunta.texto.replace(/ /g, "_").toLowerCase()] ? "si" : "no"}`;
+    }).join("\n");
+    Swal.fire({
+      title: 'Requerimientos Actuales',
+      text: requirementsText,
+      icon: 'info',
+      confirmButtonText: 'Cerrar'
+    });
+  };
+
+  const handleAddRequirement = () => {
+    if (!nuevoRequerimiento.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Requerimiento vacío',
+        text: 'Por favor, ingrese un requerimiento.',
+      });
+      return;
+    }
+    const newRequirement = {
+      id: preguntas.length,
+      texto: nuevoRequerimiento,
+      respuesta: true,
+    };
+    setPreguntas((prevPreguntas) => [...prevPreguntas, newRequirement]);
+    setNuevoRequerimiento("");
+  };
+
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans mt-9">
+    <div className="flex min-h-screen bg-gray-100 font-sans">
       {menuOpen && <Menu />}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
         <Header toggleMenu={toggleMenu} />
 
-        {/* Encabezado con botón para resultados */}
         <header className="flex items-center justify-between mb-4 mt-9 px-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-            Requerimientos Obligatorios
-          </h1>
-          <div className="flex space-x-4">
-            {/* Botón para ver resultados */}
-            <button
-              onClick={handleVerResultados}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded"
-            >
-              Ver Resultados
-            </button>
+          <div className="flex items-center justify-between mb-8 mt-10">
+            <div className="flex items-center space-x-3">
+              <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
+                <i className="bx bx-home text-3xl text-gray-700"></i>
+              </div>
+              <h1 className="text-3xl font-semibold text-gray-800">Solicitud de Crédito</h1>
+            </div>
           </div>
         </header>
 
-        {/* Sección principal */}
         <section>
           <div className="max-w-4xl mx-auto px-4">
-            {!mostrarResultados ? (
-              <form
-                className="bg-white p-8 rounded-xl shadow-lg space-y-8"
-                onSubmit={handleSubmitEncuesta}
-                aria-live="polite"
-              >
-                {/* Datos personales */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <label
-                      htmlFor="cedula_requerimiento"
-                      className="block mb-2 text-sm font-medium text-gray-700"
-                    >
-                      Cédula de Identidad *
-                    </label>
-                    <input
-                      type="text"
-                      id="cedula_requerimiento"
-                      value={cedula_emprendimiento}
-                      onChange={handleCedulaChange}
-                      className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
-                      required
-                      placeholder="6-8 dígitos numéricos"
-                    />
-                  </div>
+            {/* Mostrar el formulario si no hay registros */}
+            {mostrarResultados ? (
+              <div className="bg-white p-8 rounded-xl shadow-lg space-y-8">
+                <h2 className="text-2xl font-bold mb-6">Resultados de Solicitud</h2>
+                <div>
+                  <p><strong>Cédula:</strong> {resultados.cedula_requerimiento}</p>
+                  <p><strong>Fecha:</strong> {resultados.fecha}</p>
+                  <h3 className="text-lg font-semibold mt-4">Requerimientos:</h3>
+                  <ul className="list-disc list-inside mt-2">
+                    {preguntas.map((pregunta) => (
+                      <li key={pregunta.id}>
+                        <strong>{pregunta.texto}:</strong> {resultados[pregunta.texto.replace(/ /g, "_").toLowerCase()] ? "Sí" : "No"}
+                      </li>
+                    ))}
+                  </ul>
+                  <p><strong>Motivo:</strong> {resultados.motivo}</p>
                 </div>
-
-                {/* Fecha cita */}
-                <div className="mb-6">
-                  <label
-                    htmlFor="fecha"
-                    className="block mb-2 text-sm font-medium text-gray-700"
+                <div className="flex space-x-4 justify-end mt-6">
+                  {/* Botón para mostrar requerimientos en Swal */}
+                  <button
+                    onClick={handleShowRequirements}
+                    className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
                   >
-                    Fecha para traer los requerimientos (dd/mm/aaaa) *
-                  </label>
-                  <input
-                    type="date"
-                    id="fecha"
-                    value={fecha}
-                    onChange={handleFechaChange}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                  {fechaCita && (
-                    <p className="mt-2 text-gray-600">
-                      Fecha seleccionada: {fechaCita}
-                    </p>
-                  )}
+                    Ver Requerimientos
+                  </button>
+                  
+                  {/* Botón para continuar */}
+                  <button
+                    onClick={handleUpdateRequirements}
+                    className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                  >
+                    Actualizar Requerimientos
+                  </button>
                 </div>
-
-                {/* Preguntas */}
-                {preguntas.map((pregunta) => (
-                  <div
-                    key={pregunta.id}
-                    className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                  >
-                    <input
-                      type="checkbox"
-                      id={`pregunta-${pregunta.id}`}
-                      checked={pregunta.respuesta}
-                      onChange={() => handleCheckboxChange(pregunta.id)}
-                      className="h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <label
-                      htmlFor={`pregunta-${pregunta.id}`}
-                      className="ml-4 text-lg font-medium cursor-pointer text-gray-800"
-                    >
-                      {pregunta.texto}
-                    </label>
-                  </div>
-                ))}
-
-                <button
-                  type="submit"
-                  className="w-full py-3 mt-8 px-6 rounded-lg font-semibold text-white transition-colors duration-300 bg-blue-600 hover:bg-blue-700"
-                >
-                  Guardar Respuestas
-                </button>
-              </form>
-            ) : (
-              // Mostrar resultados
-              <div className="bg-white p-8 rounded-xl shadow-lg space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Resultados</h2>
-                {resultados ? (
-                  <div className="space-y-2">
-                    <p>
-                      <strong>Cédula:</strong> {resultados.cedula_requerimiento}
-                    </p>
-                    <p>
-                      <strong>Fecha:</strong> {resultados.fecha}
-                    </p>
-                    <h3 className="text-xl font-semibold mt-4 mb-2">
-                      Respuestas:
-                    </h3>
-                    <ul className="list-disc list-inside">
-                      {[
-                        {
-                          label: "Carta de Motivo para Solicitar Crédito",
-                          key: "carta_solicitud",
-                        },
-                        { label: "Postulación UBCH", key: "postulacion_UBCH" },
-                        {
-                          label: "Certificado de emprender juntos",
-                          key: "certificado_emprender",
-                        },
-                        {
-                          label: "Registro Municipal",
-                          key: "registro_municipal",
-                        },
-                        {
-                          label: "Carta de residencia",
-                          key: "carta_residencia",
-                        },
-                        { label: "Copia de cédula", key: "copia_cedula" },
-                        { label: "RIF personal", key: "rif_personal" },
-                        {
-                          label: "Fotos del emprendimiento",
-                          key: "fotos_emprendimiento",
-                        },
-                        {
-                          label: "RIF de emprendimiento",
-                          key: "rif_emprendimiento",
-                        },
-                        {
-                          label: "Referencia bancaria",
-                          key: "referencia_bancaria",
-                        },
-                      ].map((item) => (
-                        <li key={item.key}>
-                          <strong>{item.label}:</strong> {resultados[item.key]}
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      onClick={() => setMostrarResultados(false)}
-                      className="mt-4 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded"
-                    >
-                      Volver
-                    </button>
-                  </div>
-                ) : (
-                  <p>No hay resultados para mostrar.</p>
-                )}
               </div>
+            ) : (
+              <>
+                {/* Renderizar el formulario paso a paso */}
+                {currentStep === 1 && (
+                  <div className="bg-white p-8 rounded-xl shadow-lg space-y-8">
+                    <h2 className="text-2xl font-bold mb-6">1. Requerimientos Obligatorios</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <label className="block mb-2 text-sm font-medium text-gray-700">
+                          Cédula de Identidad *
+                        </label>
+                        <input
+                          type="text"
+                          value={cedula_emprendimiento}
+                          onChange={(e) => setCedula_emprendimiento(e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                          required
+                          placeholder="6-8 dígitos numéricos"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mb-6">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Fecha para traer los requerimientos (dd/mm/aaaa) *
+                      </label>
+                      <input
+                        type="date"
+                        value={fecha}
+                        onChange={(e) => setFecha(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      {preguntas.map((pregunta) => (
+                        <div key={pregunta.id} className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                          <input
+                            type="checkbox"
+                            checked={pregunta.respuesta}
+                            onChange={() => handleCheckboxChange(pregunta.id)}
+                            className="h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <label className="ml-4 text-lg font-medium cursor-pointer text-gray-800">
+                            {pregunta.texto}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Formulario para agregar nuevo requerimiento */}
+                    <div className="mb-6">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Agregar nuevo requerimiento
+                      </label>
+                      <input
+                        type="text"
+                        value={nuevoRequerimiento}
+                        onChange={(e) => setNuevoRequerimiento(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded lg"
+                        placeholder="Ingrese el nuevo requerimiento"
+                      />
+                      <button
+                        onClick={handleAddRequirement}
+                        className="mt-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                      >
+                        Agregar Requerimiento
+                      </button>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleNextStep}
+                        className="py-3 px-6 rounded-lg font-semibold text-white transition-colors duration-300 bg-blue-600 hover:bg-blue-700"
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2: Motivo */}
+                {currentStep === 2 && (
+                  <div className="bg-white p-8 rounded-xl shadow-lg space-y-8">
+                    <h2 className="text-2xl font-bold mb-6">2. Motivo de la Solicitud</h2>
+                    
+                    <div className="mb-6">
+                      <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Explique el motivo de su solicitud *
+                      </label>
+                      <textarea
+                        value={motivo}
+                        onChange={(e) => setMotivo(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg h-32"
+                        placeholder="Describa el motivo de su solicitud de crédito..."
+                        required
+                      ></textarea>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <button
+                        onClick={handlePreviousStep}
+                        className="py-3 px-6 rounded-lg font-semibold text-gray-700 transition-colors duration-300 bg-gray-200 hover:bg-gray-300">
+                        Atrás
+                      </button>
+                      <button
+                        onClick={handleSubmit}
+                        className="py-3 px-6 rounded-lg font-semibold text-white transition-colors duration-300 bg-blue-600 hover:bg-blue-700"
+                      >
+                        Enviar Solicitud
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
 
-        {/* Pie de página */}
         <footer className="mt-auto py-6 border-t border-gray-200 text-center text-gray-500 text-sm">
           © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
@@ -378,4 +496,4 @@ const Encuesta = ({ menuOpenProp }) => {
   );
 };
 
-export default Encuesta;
+export default CombinedComponent;
