@@ -3,11 +3,18 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 
 // Importación de páginas
 import Login from "./pages/Login";
-import RegistroEmprendedor from "./pages/RegistroEmprendedor";
 import Dashboard from "./pages/Dashboard";
+
+
+
+//Emprededor
+import RegistroEmprendedor from "./pages/RegistroEmprendedor";
 import Requerimiento from "./pages/Requerimiento";
+import Contrato from "./pages/Contrato";
 import Depositos from "./pages/Depositos";
 import Cuotas from "./pages/Cuotas";
+
+//Administracion IFEMI
 import Usuario from "./pages/Usuario";
 import Perfil_emprendedores from "./pages/Perfil_emprendedores";
 import Emprendimiento from "./pages/Emprendimiento";
@@ -17,6 +24,8 @@ import Fondo from "./pages/Fondo";
 import ConfirmacionCuota from "./pages/ConfirmacionCuota";
 import Amortizacion from "./pages/Amortizacion";
 import Credito from "./pages/Credito";
+import Requerimientos from "./pages/Requerimientos";
+
 
 // Importación de componentes adicionales
 import Header from './components/Header';
@@ -40,6 +49,7 @@ function App() {
         <Route path="/RegistroEmprendedor" element={<RegistroEmprendedor />} />
         <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/Requerimiento" element={<Requerimiento />} />
+        <Route path="/Contrato" element={<Contrato />} />
         <Route path="/Depositos" element={<Depositos />} />
         <Route path="/Cuotas" element={<Cuotas />} />
         <Route path="/Usuario" element={<Usuario />} />
@@ -51,6 +61,7 @@ function App() {
         <Route path="/ConfirmacionCuota" element={<ConfirmacionCuota />} />
         <Route path="/Amortizacion" element={<Amortizacion />} />
         <Route path="/Credito" element={<Credito />} />
+        <Route path="/Requerimientos" element={<Requerimientos />} />
       </Routes>
     </Router>
   );

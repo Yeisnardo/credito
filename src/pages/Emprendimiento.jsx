@@ -6,42 +6,41 @@ import Menu from "../components/Menu";
 import api from "../services/api_clasificacion";
 
 // Componente para mostrar cada sector
-const SectorCard = ({ sector, negocios, onRegistrarNegocio }) => (
-  <div className="bg-white p-4 rounded-xl shadow-lg transform transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-xl">
-    <h2 className="text-xl font-semibold mb-2 text-center">{sector.sector}</h2>
-    <div className="flex justify-end space-x-2 mt-4">
-      <button
-        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
-        onClick={() => onRegistrarNegocio(sector.sector)}
-      >
-        Registrar Negocio
-      </button>
+const SectorCard = ({ sector, negocios, onRegistrarNegocio, onVerDetalles }) => (
+  <div className="bg-white rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 p-6 flex flex-col justify-between">
+    <div>
+      <h2 className="text-2xl font-bold mb-3 text-center text-indigo-600">{sector}</h2>
+      <div className="flex justify-center space-x-3 mb-4">
+        <button
+          className="bg-gray-600 text-white px-4 py-2 rounded-lg shadow hover:bg-gray-700 transition"
+          onClick={() => onVerDetalles(sector, negocios)}
+        >
+          Ver Detalles
+        </button>
+      </div>
     </div>
-    <h3 className="mt-4 font-semibold">Negocios Asociados:</h3>
-    {negocios && negocios.length === 0 ? (
-      <p className="text-gray-600">No hay negocios registrados.</p>
-    ) : (
-      <ul className="list-disc list-inside mt-2">
-        {negocios && negocios.map((negocio, index) => (
-          <li key={index} className="text-gray-700">{negocio}</li>
-        ))}
-      </ul>
-    )}
   </div>
 );
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(true);
-  const [sectores, setSectores] = useState([]); // Estado para los sectores
-  const [nuevoSector, setNuevoSector] = useState(""); // Nuevo sector
-  const [nuevoNegocio, setNuevoNegocio] = useState(""); // Nuevo negocio
+  const [sectores, setSectores] = useState({}); // clave=sector, valor= array de negocios
+  const [nuevoSector, setNuevoSector] = useState("");
+  const [nuevoNegocio, setNuevoNegocio] = useState("");
 
-  // Cargar sectores desde API
+  // Cargar y agrupar sectores desde API
   useEffect(() => {
     const fetchSectores = async () => {
       try {
         const data = await api.getClasificaciones();
-        setSectores(data.map(item => ({ sector: item.sector, negocios: item.negocio ? [item.negocio] : [] })));
+        const agrupados = data.reduce((acc, item) => {
+          if (item.sector) {
+            if (!acc[item.sector]) acc[item.sector] = [];
+            if (item.negocio) acc[item.sector].push(item.negocio);
+          }
+          return acc;
+        }, {});
+        setSectores(agrupados);
       } catch (err) {
         Swal.fire("Error", "No se pudieron cargar los sectores: " + err.message, "error");
       }
@@ -49,19 +48,23 @@ const App = () => {
     fetchSectores();
   }, []);
 
-  // Registrar sector y negocio en API y estado local
+  // Agregar nuevo sector y negocio
   const handleRegistrarSector = async () => {
     const sectorTrimmed = nuevoSector.trim();
     const negocioTrimmed = nuevoNegocio.trim();
-    
-    if (sectorTrimmed === "") {
-      Swal.fire("Error", "Ingrese un sector válido.", "error");
-      return;
+
+    if (!sectorTrimmed) {
+      return Swal.fire("Error", "Ingrese un sector válido.", "error");
     }
-    
+
     try {
       await api.createClasificacion({ sector: sectorTrimmed, negocio: negocioTrimmed });
-      setSectores(prev => [...prev, { sector: sectorTrimmed, negocios: [negocioTrimmed] }]);
+      setSectores(prev => {
+        const nuevos = { ...prev };
+        if (!nuevos[sectorTrimmed]) nuevos[sectorTrimmed] = [];
+        if (negocioTrimmed) nuevos[sectorTrimmed].push(negocioTrimmed);
+        return nuevos;
+      });
       Swal.fire("¡Listo!", `Sector "${sectorTrimmed}" y negocio "${negocioTrimmed}" registrados.`, "success");
       setNuevoSector("");
       setNuevoNegocio("");
@@ -70,108 +73,146 @@ const App = () => {
     }
   };
 
-  // Registrar negocio en el sector seleccionado
+  // Registrar negocio en sector
   const handleRegistrarNegocio = (sector) => {
     Swal.fire({
       title: `Registrar Negocio en ${sector}`,
-      input: 'text',
-      inputPlaceholder: 'Ingrese el nombre del negocio',
+      input: "text",
+      inputPlaceholder: "Nombre del negocio",
       showCancelButton: true,
-      confirmButtonText: 'Registrar',
+      confirmButtonText: "Registrar",
       preConfirm: (negocio) => {
         if (!negocio) {
-          Swal.showValidationMessage('Por favor ingrese un nombre de negocio');
+          Swal.showValidationMessage("Por favor ingrese un nombre válido");
         }
         return negocio;
-      }
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const negocioTrimmed = result.value.trim();
-        if (negocioTrimmed) {
-          const updatedSectores = sectores.map(s => {
-            if (s.sector === sector) {
-              return { ...s, negocios: [...s.negocios, negocioTrimmed] };
-            }
-            return s;
-          });
-          setSectores(updatedSectores);
-          Swal.fire("¡Listo!", `Negocio "${negocioTrimmed}" registrado en ${sector}.`, "success");
-        }
+      },
+    }).then(({ value, isConfirmed }) => {
+      if (isConfirmed && value) {
+        const negocioTrimmed = value.trim();
+        setSectores(prev => {
+          const nuevos = { ...prev };
+          nuevos[sector] = [...nuevos[sector], negocioTrimmed];
+          return nuevos;
+        });
+        Swal.fire("¡Listo!", `Negocio "${negocioTrimmed}" agregado en ${sector}.`, "success");
       }
     });
   };
 
+  // Ver detalles del sector
+  const handleVerDetalles = (sector, negocios) => {
+  Swal.fire({
+    title: `Detalles de ${sector}`,
+    html: `
+      <p><strong>Sector:</strong> ${sector}</p>
+      <p><strong>Negocios:</strong></p>
+      <ul style="text-align: left; margin: 0 auto; list-style: disc inside;">
+        ${negocios.length > 0 ? negocios.map(n => `<li>${n}</li>`).join("") : "<li>No hay negocios registrados</li>"}
+      </ul>
+      <div class="mt-4 flex justify-center">
+        <button
+          class="bg-blue-500 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-600 transition"
+          onclick="window.dispatchEvent(new CustomEvent('registrarNegocio', {detail: '${sector}'}))"
+        >
+          Registrar Negocio
+        </button>
+      </div>
+    `,
+    showConfirmButton: false,
+  });
+  
+  // Escuchar evento para manejar el clic del botón
+  const handleRegisterClick = (e) => {
+    if (e.type === 'registrarNegocio') {
+      const sector = e.detail;
+      handleRegistrarNegocio(sector);
+    }
+  };
+
+  window.addEventListener('registrarNegocio', handleRegisterClick);
+
+  // Limpieza del evento después de que se cierre
+  Swal.getPopup().addEventListener('close', () => {
+    window.removeEventListener('registrarNegocio', handleRegisterClick);
+  });
+};
+
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans">
+    <div className="flex min-h-screen bg-gray-50 font-sans mt-11">
+      {/* Menú lateral */}
       {menuOpen && <Menu />}
+      {/* Contenedor principal */}
       <div className={`flex-1 flex flex-col ${menuOpen ? "ml-0 md:ml-64" : ""}`}>
         {/* Header */}
         <Header toggleMenu={() => setMenuOpen(!menuOpen)} />
 
-        {/* Contenido principal */}
-        <div className="pt-20 px-8 overflow-y-auto flex-1">
+        {/* Contenido */}
+        <main className="flex-1 p-8 overflow-y-auto">
           {/* Encabezado */}
           <header className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
-                <i className="bx bx-home text-2xl"></i>
+            {/* Encabezado */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-3">
+              <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
+                <i className="bx bx-cog text-3xl text-gray-700"></i>
               </div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Gestor de Clasificación de Emprendimiento
-              </h1>
+              <h1 className="text-3xl font-semibold text-gray-800">Configuracion de Clasificacion de Empredimiento</h1>
             </div>
+          </div>
           </header>
 
-          {/* Barra de búsqueda y creación de sector */}
-          <div className="mb-6 max-w-4xl mx-auto flex items-center space-x-4">
-            {/* Crear nuevo sector */}
-            <input
-              type="text"
-              placeholder="Nuevo sector"
-              className="border border-gray-300 rounded px-3 py-2"
-              value={nuevoSector}
-              onChange={(e) => setNuevoSector(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Nuevo negocio"
-              className="border border-gray-300 rounded px-3 py-2"
-              value={nuevoNegocio}
-              onChange={(e) => setNuevoNegocio(e.target.value)}
-            />
+          {/* Formulario de ingreso */}
+          <section className="mb-8 bg-white p-6 rounded-xl shadow-lg space-y-4 max-w-4xl mx-auto">
+            <h2 className="text-2xl font-semibold text-indigo-600 mb-4">Agregar Sector y Negocio</h2>
+            <div className="flex flex-col md:flex-row gap-4">
+              <input
+                type="text"
+                placeholder="Nuevo sector"
+                className="border border-gray-300 rounded px-4 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                value={nuevoSector}
+                onChange={(e) => setNuevoSector(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Nuevo negocio"
+                className="border border-gray-300 rounded px-4 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                value={nuevoNegocio}
+                onChange={(e) => setNuevoNegocio(e.target.value)}
+              />
+            </div>
             <button
-              className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-full shadow-lg transition"
+              className="mt-4 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg font-semibold transition w-full md:w-auto"
               onClick={handleRegistrarSector}
             >
-              + Nuevo sector y negocio
+              + Agregar Sector y Negocio
             </button>
-          </div>
+          </section>
 
-          {/* Mostrar sectores registrados */}
-          <div className="mb-4 max-w-4xl mx-auto">
-            <h3 className="font-semibold mb-2">Sectores Registrados:</h3>
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {sectores.length === 0 ? (
-                <p className="col-span-full text-center text-gray-500">
-                  No se encontraron sectores registrados.
-                </p>
+          {/* Mostrar sectores */}
+          <section className="max-w-7xl mx-auto px-4">
+            <h3 className="text-2xl font-semibold mb-6 text-center text-gray-700">Sectores Registrados</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {Object.keys(sectores).length === 0 ? (
+                <p className="col-span-full text-center text-gray-400 italic">No hay sectores registrados</p>
               ) : (
-                sectores.map((sector, index) => (
+                Object.entries(sectores).map(([sector, negocios], index) => (
                   <SectorCard
                     key={index}
                     sector={sector}
-                    negocios={sector.negocios}
+                    negocios={negocios}
                     onRegistrarNegocio={handleRegistrarNegocio}
+                    onVerDetalles={handleVerDetalles}
                   />
                 ))
               )}
-            </section>
-          </div>
-        </div>
+            </div>
+          </section>
+        </main>
 
         {/* Pie de página */}
-        <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+        <footer className="bg-gray-100 text-gray-600 p-4 text-center border-t border-gray-300 mt-auto">
+          &copy; {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
         </footer>
       </div>
     </div>

@@ -7,6 +7,7 @@ import miImagen from "../assets/imagenes/logo_ifemi.jpg";
 import personaService from "../services/api_persona";
 import emprendimientoService from "../services/api_emprendimiento";
 import usuarioService from "../services/api_usuario";
+import clasificacionService from "../services/api_clasificacion"; // Importa tu API de clasificación
 
 import "../assets/css/style.css";
 
@@ -25,7 +26,6 @@ const RegistroEmprendedor = () => {
     municipio: "Independencia",
     direccion: "",
     tipo_persona: "Emprendedor",
-
     // Consejo Comunitario
     cedula_emprendedor: "",
     sector: "",
@@ -35,7 +35,6 @@ const RegistroEmprendedor = () => {
     tipo_negocio: "",
     nombre_emprendimiento: "",
     direccion_emprendimiento: "",
-
     // Usuario
     cedula_usuario: "",
     usuario: "",
@@ -44,18 +43,52 @@ const RegistroEmprendedor = () => {
     rol: "Emprendedor",
   });
 
+  // Estado para clasificaciones (sectores y negocios)
+  const [clasificaciones, setClasificaciones] = useState([]);
+  const [sectores, setSectores] = useState([]); // Para mostrar en select
+  const [sectorSeleccionado, setSectorSeleccionado] = useState("");
+  const [negocioSeleccionado, setNegocioSeleccionado] = useState("");
+
+  // Para cargar municipios
   const [municipios, setMunicipios] = useState([]);
 
-  // Actualiza municipios al cambiar estado
   useEffect(() => {
+    // Cargar clasificaciones desde API
+    const fetchClasificaciones = async () => {
+      try {
+        const data = await clasificacionService.getClasificaciones();
+        setClasificaciones(data);
+
+        // Extraer sectores únicos
+        const sectoresUnicos = [
+          ...new Set(data.map((item) => item.sector))
+        ];
+        setSectores(sectoresUnicos);
+      } catch (error) {
+        console.error("Error cargando clasificaciones:", error);
+      }
+    };
+
+    fetchClasificaciones();
+
+    // Cargar municipios
     if (datos.estado) {
       const estadoActual = locationData.find((e) => e.estado === datos.estado);
-      setMunicipios(estadoActual ? estadoActual.municipios : []);
-      setDatos((prev) => ({ ...prev, municipio: "" }));
+      if (estadoActual) {
+        setMunicipios(estadoActual.municipios);
+        if (
+          datos.estado === "Yaracuy" &&
+          (!datos.municipio || datos.municipio === "")
+        ) {
+          setDatos((prev) => ({ ...prev, municipio: "Independencia" }));
+        }
+      } else {
+        setMunicipios([]);
+        setDatos((prev) => ({ ...prev, municipio: "" }));
+      }
     }
   }, [datos.estado]);
 
-  // Manejar cambios en los inputs
   const handleChange = (campo, valor) => {
     if (campo === "cedula") {
       const soloNumeros = valor.replace(/\D/g, "");
@@ -67,10 +100,9 @@ const RegistroEmprendedor = () => {
     }
   };
 
-  // Validar y avanzar en el formulario
   const handleNext = () => {
     const validations = [
-      // Validaciones paso 1
+      // Validación paso 1
       () => {
         if (
           !datos.cedula.trim() ||
@@ -90,27 +122,19 @@ const RegistroEmprendedor = () => {
         }
         return true;
       },
-      // Validaciones paso 2
+      // Validación paso 2: sector y negocio
       () => {
-        if (
-          !datos.consejo_nombre.trim() ||
-          !datos.comuna.trim() ||
-          !datos.sector.trim() ||
-          !datos.tipo_sector.trim() ||
-          !datos.tipo_negocio.trim() ||
-          !datos.nombre_emprendimiento.trim() ||
-          !datos.direccion_emprendimiento.trim()
-        ) {
+        if (!sectorSeleccionado || !negocioSeleccionado) {
           Swal.fire({
             icon: "error",
             title: "Campos incompletos",
-            text: "Por favor, ingresa toda la información requerida.",
+            text: "Por favor, selecciona sector y negocio.",
           });
           return false;
         }
         return true;
       },
-      // Validaciones paso 3
+      // Validación paso 3
       () => {
         if (!datos.usuario.trim() || !datos.clave.trim()) {
           Swal.fire({
@@ -133,15 +157,12 @@ const RegistroEmprendedor = () => {
     }
   };
 
-  // Volver al paso anterior
   const handleBack = () => {
     if (paso > 1) setPaso(paso - 1);
   };
 
-  // Finalizar y guardar datos
   const handleFinalizar = async () => {
     try {
-      // Crear Persona
       const personaData = {
         cedula: datos.cedula,
         nombre_completo: datos.nombre_completo,
@@ -155,7 +176,6 @@ const RegistroEmprendedor = () => {
       };
       await personaService.createPersona(personaData);
 
-      // Crear Usuario
       const usuarioData = {
         cedula_usuario: datos.cedula,
         usuario: datos.usuario,
@@ -165,11 +185,10 @@ const RegistroEmprendedor = () => {
       };
       await usuarioService.createUsuario(usuarioData);
 
-      // Crear Emprendimiento
       const emprendimientoData = {
         cedula_emprendedor: datos.cedula,
-        tipo_sector: datos.tipo_sector,
-        tipo_negocio: datos.tipo_negocio,
+        tipo_sector: sectorSeleccionado,
+        tipo_negocio: negocioSeleccionado,
         nombre_emprendimiento: datos.nombre_emprendimiento,
         consejo_nombre: datos.consejo_nombre,
         comuna: datos.comuna,
@@ -195,20 +214,17 @@ const RegistroEmprendedor = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Lado izquierdo con imagen (solo en md y superior) */}
+      {/* Logo Izquierda */}
       <div className="w-1/2 hidden md:flex items-center justify-center p-4 bg-logoLoginEfimi">
         <img src={miImagen} alt="Logo" className="max-w-full h-auto" />
       </div>
-
       {/* Formulario paso a paso */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-2xl">
-          {/* Título */}
           <h2 className="mb-6 text-2xl font-bold text-center text-gray-700">
             Registro de Emprendedor
           </h2>
-
-          {/* Indicadores de pasos */}
+          {/* Indicadores */}
           <div className="flex justify-center mb-4 space-x-3">
             {[1, 2, 3].map((n) => (
               <button
@@ -246,70 +262,49 @@ const RegistroEmprendedor = () => {
             ))}
           </div>
 
-          {/* Paso 1 - Datos Personales */}
+          {/* Paso 1: Datos Personales */}
           {paso === 1 && (
             <div id="paso-1" className="space-y-4">
-              <h3 className="text-xl mb-4 font-semibold">Datos Personales</h3>
-              {/* Contenedor flexible para los campos en fila */}
+              {/* ... Tus inputs ... */}
+              {/* (Mantén tus inputs de datos personales aquí) */}
+              {/* Solo reemplaza o añade los inputs necesarios */}
+              {/* Ejemplo: */}
               <div className="flex flex-wrap gap-4">
                 {[
                   { label: "Cédula de Identidad", type: "text", id: "cedula" },
-                  { label: "Nombre Completo", type: "text", id: "nombre_completo" },
+                  {
+                    label: "Nombre Completo",
+                    type: "text",
+                    id: "nombre_completo",
+                  },
                   { label: "Edad", type: "number", id: "edad", min: "0" },
                   { label: "Número de Teléfono", type: "tel", id: "telefono" },
                   { label: "Correo Electrónico", type: "email", id: "correo" },
-                  { label: "Estado", type: "text", id: "estado" },
-                  { label: "Municipio", type: "text", id: "municipio" },
                   { label: "Dirección Actual", type: "text", id: "direccion" },
-                ].map(({ label, type, id, min }) => {
-                  const isHidden = id === "estado";
-
-                  const isDireccion = id === "direccion";
-
-                  return (
-                    <div
-                      key={id}
-                      className={isDireccion ? "w-full" : "w-[300px]"}
-                      style={{ display: isHidden ? "none" : "block" }}
+                ].map(({ label, type, id, min }) => (
+                  <div
+                    key={id}
+                    className={id === "estado" ? "w-full" : "w-[300px]"}
+                  >
+                    <label
+                      htmlFor={id}
+                      className="block mb-1 text-sm font-medium text-gray-600"
                     >
-                      <label
-                        htmlFor={id}
-                        className="block mb-1 text-sm font-medium text-gray-600"
-                      >
-                        {label}
-                      </label>
-                      <input
-                        type={type}
-                        id={id}
-                        value={datos[id]}
-                        onChange={(e) => handleChange(id, e.target.value)}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
-                        placeholder={`Ingresa ${label.toLowerCase()}`}
-                        min={min}
-                        required
-                      />
-                    </div>
-                  );
-                })}
+                      {label}
+                    </label>
+                    <input
+                      type={type}
+                      id={id}
+                      value={datos[id]}
+                      onChange={(e) => handleChange(id, e.target.value)}
+                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      placeholder={`Ingresa ${label.toLowerCase()}`}
+                      min={min}
+                      required
+                    />
+                  </div>
+                ))}
               </div>
-              {/* Campo oculto */}
-              <div style={{ display: "none" }}>
-                <label
-                  className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="tipo_persona"
-                >
-                  Tipo de Persona
-                </label>
-                <select
-                  id="tipo_persona"
-                  value={datos.tipo_persona}
-                  onChange={(e) => handleChange("tipo_persona", e.target.value)}
-                  className="w-[300px] border border-gray-300 rounded px-3 py-2"
-                >
-                  <option value="Emprendedor">Emprendedor</option>
-                </select>
-              </div>
-              {/* Botón Siguiente */}
               <button
                 onClick={handleNext}
                 className="w-full py-2 px-4 mt-4 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -319,47 +314,115 @@ const RegistroEmprendedor = () => {
             </div>
           )}
 
-          {/* Paso 2 - Datos del Consejo y Emprendimiento */}
+          {/* Paso 2: Sector y Negocio + Datos del Consejo */}
           {paso === 2 && (
             <div id="paso-2" className="space-y-4">
-              <h3 className="text-xl mb-4 font-semibold">Datos del Consejo y Emprendimiento</h3>
-              {/* Contenedor flexible para colocar campos en fila */}
+              <h3 className="text-xl mb-4 font-semibold">
+                Datos del Consejo y Emprendimiento
+              </h3>
+              {/* Campos */}
               <div className="flex flex-wrap gap-4">
-                {[
-                  {
-                    label: "Cédula del Emprendedor",
-                    type: "text",
-                    id: "cedula_emprendedor",
-                    value: datos.cedula,
-                    readOnly: true,
-                  },
-                  { label: "Sector", type: "text", id: "sector" },
-                  { label: "Consejo Nombre", type: "text", id: "consejo_nombre" },
-                  { label: "Comuna", type: "text", id: "comuna" },
-                  { label: "Tipo de Sector", type: "text", id: "tipo_sector" },
-                  { label: "Tipo de Negocio", type: "text", id: "tipo_negocio" },
-                  { label: "Nombre del Emprendimiento", type: "text", id: "nombre_emprendimiento" },
-                  { label: "Dirección del Emprendimiento", type: "text", id: "direccion_emprendimiento" },
-                ].map(({ label, type, id, value, readOnly }) => (
-                  <div key={id} className="w-[250px]">
-                    <label
-                      className="block mb-1 text-sm font-medium text-gray-600"
-                      htmlFor={id}
-                    >
-                      {label}
-                    </label>
-                    <input
-                      type={type}
-                      id={id}
-                      value={value !== undefined ? value : datos[id]}
-                      onChange={(e) => handleChange(id, e.target.value)}
-                      className={`w-full border border-gray-300 rounded px-3 py-2 ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                      placeholder={`Ingresa ${label.toLowerCase()}`}
-                      required
-                      readOnly={readOnly}
-                    />
-                  </div>
-                ))}
+                {/* Cédula del Emprendedor (solo lectura) */}
+                <div className="w-[510px]">
+                  <label
+                    className="block mb-1 text-sm font-medium text-gray-600"
+                    htmlFor="cedula_emprendedor"
+                  >
+                    Cédula del Emprendedor
+                  </label>
+                  <input
+                    type="text"
+                    id="cedula_emprendedor"
+                    value={datos.cedula}
+                    readOnly
+                    className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
+                  />
+                </div>
+
+
+                {/* Tipo de Sector (select) */}
+                <div className="w-[250px]">
+                  <label
+                    className="block mb-1 text-sm font-medium text-gray-600"
+                    htmlFor="sector"
+                  >
+                    Sector
+                  </label>
+                  <select
+                    id="tipo_sector"
+                    value={sectorSeleccionado}
+                    onChange={(e) => {
+                      setSectorSeleccionado(e.target.value);
+                      setNegocioSeleccionado(""); // Limpia el negocio
+                    }}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                  >
+                    <option value="">Seleccione un sector</option>
+                    {sectores.map((sec) => (
+                      <option key={sec} value={sec}>{sec}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tipo de Negocio (dependiente del sector) */}
+                <div className="w-[250px]">
+                  <label
+                    className="block mb-1 text-sm font-medium text-gray-600"
+                    htmlFor="tipo_negocio"
+                  >
+                    Tipo de Negocio
+                  </label>
+                  <select
+                    id="tipo_negocio"
+                    value={datos.tipo_negocio}
+                    onChange={(e) =>
+                      handleChange("tipo_negocio", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                  >
+                    <option value="">Seleccione tipo de negocio</option>
+                    {sectorSeleccionado &&
+                      // Filtra clasificaciones por sector y mapea negocios
+                      clasificaciones
+                        .filter((c) => c.sector === sectorSeleccionado)
+                        .map((c) => (
+                          <option key={c.negocio} value={c.negocio}>{c.negocio}</option>
+                        ))}
+                  </select>
+                </div>
+
+                {/* Otros inputs del paso 2 */}
+                <div className="w-[250px]">
+                  <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="nombre_emprendimiento">
+                    Nombre del Emprendimiento
+                  </label>
+                  <input
+                    type="text"
+                    id="nombre_emprendimiento"
+                    value={datos.nombre_emprendimiento}
+                    onChange={(e) =>
+                      handleChange("nombre_emprendimiento", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="Ingresa el nombre del emprendimiento"
+                  />
+                </div>
+                {/* Dirección del Emprendimiento */}
+                <div className="w-[250px]">
+                  <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="direccion_emprendimiento">
+                    Dirección del Emprendimiento
+                  </label>
+                  <input
+                    type="text"
+                    id="direccion_emprendimiento"
+                    value={datos.direccion_emprendimiento}
+                    onChange={(e) =>
+                      handleChange("direccion_emprendimiento", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="Ingresa la dirección del emprendimiento"
+                  />
+                </div>
               </div>
               {/* Botones */}
               <div className="flex justify-between mt-4">
@@ -379,11 +442,11 @@ const RegistroEmprendedor = () => {
             </div>
           )}
 
-          {/* Paso 3 - Datos de Usuario */}
+          {/* Paso 3: Datos de Usuario */}
           {paso === 3 && (
             <div id="paso-3" className="space-y-4">
               <h3 className="text-xl mb-4 font-semibold">Datos de Usuario</h3>
-              {/* Cédula del Emprendedor (solo lectura) */}
+              {/* Cédula del Emprendedor */}
               <div>
                 <label
                   className="block mb-1 text-sm font-medium text-gray-600"
@@ -436,7 +499,7 @@ const RegistroEmprendedor = () => {
                   required
                 />
               </div>
-              {/* Estatus (oculto) */}
+              {/* Ocultos */}
               <div style={{ display: "none" }}>
                 <label
                   htmlFor="estatus"
@@ -450,12 +513,10 @@ const RegistroEmprendedor = () => {
                   onChange={(e) => handleChange("estatus", e.target.value)}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                 >
-                  <option value="">Selecciona un estatus</option>
                   <option value="Activo">Activo</option>
                   <option value="Inactivo">Inactivo</option>
                 </select>
               </div>
-              {/* Rol (oculto) */}
               <div style={{ display: "none" }}>
                 <label
                   htmlFor="rol"
