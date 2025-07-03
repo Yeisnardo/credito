@@ -7,7 +7,7 @@ import miImagen from "../assets/imagenes/logo_ifemi.jpg";
 import personaService from "../services/api_persona";
 import emprendimientoService from "../services/api_emprendimiento";
 import usuarioService from "../services/api_usuario";
-import clasificacionService from "../services/api_clasificacion"; // Importa tu API de clasificación
+import clasificacionService from "../services/api_clasificacion";
 
 import "../assets/css/style.css";
 
@@ -28,7 +28,6 @@ const RegistroEmprendedor = () => {
     tipo_persona: "Emprendedor",
     // Consejo Comunitario
     cedula_emprendedor: "",
-    sector: "",
     consejo_nombre: "",
     comuna: "",
     tipo_sector: "",
@@ -43,35 +42,26 @@ const RegistroEmprendedor = () => {
     rol: "Emprendedor",
   });
 
-  // Estado para clasificaciones (sectores y negocios)
   const [clasificaciones, setClasificaciones] = useState([]);
-  const [sectores, setSectores] = useState([]); // Para mostrar en select
+  const [sectores, setSectores] = useState([]);
   const [sectorSeleccionado, setSectorSeleccionado] = useState("");
   const [negocioSeleccionado, setNegocioSeleccionado] = useState("");
 
-  // Para cargar municipios
   const [municipios, setMunicipios] = useState([]);
 
   useEffect(() => {
-    // Cargar clasificaciones desde API
     const fetchClasificaciones = async () => {
       try {
         const data = await clasificacionService.getClasificaciones();
         setClasificaciones(data);
-
-        // Extraer sectores únicos
-        const sectoresUnicos = [
-          ...new Set(data.map((item) => item.sector))
-        ];
+        const sectoresUnicos = [...new Set(data.map((item) => item.sector))];
         setSectores(sectoresUnicos);
       } catch (error) {
         console.error("Error cargando clasificaciones:", error);
       }
     };
-
     fetchClasificaciones();
 
-    // Cargar municipios
     if (datos.estado) {
       const estadoActual = locationData.find((e) => e.estado === datos.estado);
       if (estadoActual) {
@@ -93,7 +83,12 @@ const RegistroEmprendedor = () => {
     if (campo === "cedula") {
       const soloNumeros = valor.replace(/\D/g, "");
       if (soloNumeros.length <= 9) {
-        setDatos((prev) => ({ ...prev, [campo]: soloNumeros }));
+        setDatos((prev) => ({
+          ...prev,
+          [campo]: soloNumeros,
+          cedula_emprendedor: soloNumeros,
+          cedula_usuario: soloNumeros,
+        }));
       }
     } else {
       setDatos((prev) => ({ ...prev, [campo]: valor }));
@@ -102,7 +97,7 @@ const RegistroEmprendedor = () => {
 
   const handleNext = () => {
     const validations = [
-      // Validación paso 1
+      // Paso 1: Datos Personales
       () => {
         if (
           !datos.cedula.trim() ||
@@ -122,19 +117,24 @@ const RegistroEmprendedor = () => {
         }
         return true;
       },
-      // Validación paso 2: sector y negocio
+      // Paso 2: Sector, Negocio, Consejo y Comuna
       () => {
-        if (!sectorSeleccionado || !negocioSeleccionado) {
+        if (
+          !sectorSeleccionado ||
+          !negocioSeleccionado ||
+          !datos.consejo_nombre.trim() ||
+          !datos.comuna.trim()
+        ) {
           Swal.fire({
             icon: "error",
             title: "Campos incompletos",
-            text: "Por favor, selecciona sector y negocio.",
+            text: "Por favor, completa todos los campos del paso 2, incluyendo consejo y comuna.",
           });
           return false;
         }
         return true;
       },
-      // Validación paso 3
+      // Paso 3: Datos Usuario
       () => {
         if (!datos.usuario.trim() || !datos.clave.trim()) {
           Swal.fire({
@@ -262,13 +262,9 @@ const RegistroEmprendedor = () => {
             ))}
           </div>
 
-          {/* Paso 1: Datos Personales */}
+          {/* Paso 1 */}
           {paso === 1 && (
             <div id="paso-1" className="space-y-4">
-              {/* ... Tus inputs ... */}
-              {/* (Mantén tus inputs de datos personales aquí) */}
-              {/* Solo reemplaza o añade los inputs necesarios */}
-              {/* Ejemplo: */}
               <div className="flex flex-wrap gap-4">
                 {[
                   { label: "Cédula de Identidad", type: "text", id: "cedula" },
@@ -314,7 +310,7 @@ const RegistroEmprendedor = () => {
             </div>
           )}
 
-          {/* Paso 2: Sector y Negocio + Datos del Consejo */}
+          {/* Paso 2 */}
           {paso === 2 && (
             <div id="paso-2" className="space-y-4">
               <h3 className="text-xl mb-4 font-semibold">
@@ -339,12 +335,11 @@ const RegistroEmprendedor = () => {
                   />
                 </div>
 
-
-                {/* Tipo de Sector (select) */}
+                {/* Sector */}
                 <div className="w-[250px]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="sector"
+                    htmlFor="tipo_sector"
                   >
                     Sector
                   </label>
@@ -353,18 +348,20 @@ const RegistroEmprendedor = () => {
                     value={sectorSeleccionado}
                     onChange={(e) => {
                       setSectorSeleccionado(e.target.value);
-                      setNegocioSeleccionado(""); // Limpia el negocio
+                      setNegocioSeleccionado("");
                     }}
                     className="w-full border border-gray-300 rounded px-3 py-2"
                   >
                     <option value="">Seleccione un sector</option>
                     {sectores.map((sec) => (
-                      <option key={sec} value={sec}>{sec}</option>
+                      <option key={sec} value={sec}>
+                        {sec}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Tipo de Negocio (dependiente del sector) */}
+                {/* Tipo de Negocio */}
                 <div className="w-[250px]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
@@ -374,26 +371,31 @@ const RegistroEmprendedor = () => {
                   </label>
                   <select
                     id="tipo_negocio"
-                    value={datos.tipo_negocio}
-                    onChange={(e) =>
-                      handleChange("tipo_negocio", e.target.value)
-                    }
+                    value={negocioSeleccionado}
+                    onChange={(e) => {
+                      setNegocioSeleccionado(e.target.value);
+                      handleChange("tipo_negocio", e.target.value);
+                    }}
                     className="w-full border border-gray-300 rounded px-3 py-2"
                   >
                     <option value="">Seleccione tipo de negocio</option>
                     {sectorSeleccionado &&
-                      // Filtra clasificaciones por sector y mapea negocios
                       clasificaciones
                         .filter((c) => c.sector === sectorSeleccionado)
                         .map((c) => (
-                          <option key={c.negocio} value={c.negocio}>{c.negocio}</option>
+                          <option key={c.negocio} value={c.negocio}>
+                            {c.negocio}
+                          </option>
                         ))}
                   </select>
                 </div>
 
-                {/* Otros inputs del paso 2 */}
+                {/* Nombre del Emprendimiento */}
                 <div className="w-[250px]">
-                  <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="nombre_emprendimiento">
+                  <label
+                    className="block mb-1 text-sm font-medium text-gray-600"
+                    htmlFor="nombre_emprendimiento"
+                  >
                     Nombre del Emprendimiento
                   </label>
                   <input
@@ -409,7 +411,10 @@ const RegistroEmprendedor = () => {
                 </div>
                 {/* Dirección del Emprendimiento */}
                 <div className="w-[250px]">
-                  <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="direccion_emprendimiento">
+                  <label
+                    className="block mb-1 text-sm font-medium text-gray-600"
+                    htmlFor="direccion_emprendimiento"
+                  >
                     Dirección del Emprendimiento
                   </label>
                   <input
@@ -421,6 +426,43 @@ const RegistroEmprendedor = () => {
                     }
                     className="w-full border border-gray-300 rounded px-3 py-2"
                     placeholder="Ingresa la dirección del emprendimiento"
+                  />
+                </div>
+                {/* Consejo Nombre */}
+                <div className="w-[250px]">
+                  <label
+                    className="block mb-1 text-sm font-medium text-gray-600"
+                    htmlFor="consejo_nombre"
+                  >
+                    Nombre del Consejo Comunitario
+                  </label>
+                  <input
+                    type="text"
+                    id="consejo_nombre"
+                    value={datos.consejo_nombre}
+                    onChange={(e) =>
+                      handleChange("consejo_nombre", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="Ingresa el nombre del consejo"
+                  />
+                </div>
+
+                {/* Comuna */}
+                <div className="w-[250px]">
+                  <label
+                    className="block mb-1 text-sm font-medium text-gray-600"
+                    htmlFor="comuna"
+                  >
+                    Comuna
+                  </label>
+                  <input
+                    type="text"
+                    id="comuna"
+                    value={datos.comuna}
+                    onChange={(e) => handleChange("comuna", e.target.value)}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="Ingresa la comuna"
                   />
                 </div>
               </div>
@@ -442,7 +484,7 @@ const RegistroEmprendedor = () => {
             </div>
           )}
 
-          {/* Paso 3: Datos de Usuario */}
+          {/* Paso 3 */}
           {paso === 3 && (
             <div id="paso-3" className="space-y-4">
               <h3 className="text-xl mb-4 font-semibold">Datos de Usuario</h3>

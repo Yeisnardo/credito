@@ -54,8 +54,7 @@ CREATE TABLE usuario (
     CREATE TABLE requerimiento_emprendedor (
         id_req SERIAL PRIMARY KEY,
         cedula_requerimiento VARCHAR (20) NOT NULL,
-        opt_requerimiento VARCHAR (100) NOT NULL,
-        cedula_usuario VARCHAR (15) NOT NULL,
+        opt_requerimiento VARCHAR (1000000),
         CONSTRAINT fk_persona FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos),
         CONSTRAINT fk_requerimiento FOREIGN KEY (cedula_requerimiento) REFERENCES persona(cedula)
     );

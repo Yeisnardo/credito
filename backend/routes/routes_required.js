@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const personaController = require('../controllers/controlador_persona');
+const requerimientoController = require('../controllers/controlador_required');
 
-router.get('/', personaController.getPersonas);
-router.get('/:cedula', personaController.getUnaPersona);
-router.post('/', personaController.createPersona);
-router.put('/:cedula', personaController.updatePersona);
-router.delete('/:cedula', personaController.deletePersona);
+router.get('/', requerimientoController.getRequerimientos);
+router.get('/:id_req', requerimientoController.getRequerimientoById);
+router.post('/', requerimientoController.createRequerimiento);
+router.put('/:id_req', requerimientoController.updateRequerimiento);
+router.delete('/:id_req', requerimientoController.deleteRequerimiento);
 
 module.exports = router;

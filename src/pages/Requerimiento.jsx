@@ -1,21 +1,23 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import { getUsuarioPorCedula } from "../services/api_usuario";
-import api, {getRequerimientos , updateRequerimiento, createRequerimientoEmprendedor} from '../services/api_required';
 
-const Dashboard = ({ setUser }) => {
+// Servicios
+import { getRequerimientos } from "../services/api_requerimientos";
+import { createRequerimientoEmprendedor, getRequerimientoById } from "../services/api_required";
+import { getUsuarioPorCedula } from "../services/api_usuario";
+
+const Dashboard = ({ setUser  }) => {
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUserState] = useState(null);
   const [requerimientos, setRequerimientos] = useState([]);
-
   const [selectedRequerimientos, setSelectedRequerimientos] = useState([]);
-
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     nombre: "",
@@ -24,17 +26,13 @@ const Dashboard = ({ setUser }) => {
     direccion: "",
     motivo: "",
   });
-
   const [mostrarResultado, setMostrarResultado] = useState(false);
-  const [resultado, setResultado] = useState(null); // {motivo, estatus}
+  const [resultado, setResultado] = useState({ motivo: "", estatus: "" });
   const [registros, setRegistros] = useState([]);
 
-  // Función para alternar el menú lateral
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
+  // Funciones
+  const toggleMenu = () => setMenuOpen(!menuOpen);
 
-  // Navegar a la siguiente etapa del formulario
   const handleNext = () => {
     if (step === 1 && selectedRequerimientos.length === 0) {
       alert("Por favor, selecciona al menos un requerimiento para continuar.");
@@ -43,17 +41,15 @@ const Dashboard = ({ setUser }) => {
     if (step < 2) setStep(step + 1);
   };
 
-  // Volver a la etapa anterior
   const handleBack = () => {
     if (step > 1) setStep(step - 1);
   };
 
-  // Manejar cambios en los inputs del formulario
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Cargar usuario al montar
+  // Cargar usuario
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -62,7 +58,7 @@ const Dashboard = ({ setUser }) => {
           const usuario = await getUsuarioPorCedula(cedula);
           if (usuario) {
             setUserState(usuario);
-            if (setUser) setUser(usuario);
+            if (setUser ) setUser (usuario);
           }
         }
       } catch (error) {
@@ -70,9 +66,9 @@ const Dashboard = ({ setUser }) => {
       }
     };
     if (!user) fetchUserData();
-  }, [setUser, user]);
+  }, [setUser , user]);
 
-  // Función para cargar requerimientos
+  // Cargar requerimientos
   const fetchRequerimientos = async () => {
     try {
       const data = await getRequerimientos();
@@ -86,48 +82,69 @@ const Dashboard = ({ setUser }) => {
     fetchRequerimientos();
   }, []);
 
-  // Manejar selección de requerimientos
-  const handleRequerimientoSelect = (id_requerimientos) => {
-    if (selectedRequerimientos.includes(id_requerimientos)) {
+  const handleRequerimientoSelect = (req) => {
+    const exists = selectedRequerimientos.some(
+      (r) => r.id_requerimientos === req.id_requerimientos
+    );
+    if (exists) {
       setSelectedRequerimientos((prev) =>
-        prev.filter((req) => req !== id_requerimientos)
+        prev.filter((r) => r.id_requerimientos !== req.id_requerimientos)
       );
     } else {
-      setSelectedRequerimientos((prev) => [...prev, id_requerimientos]);
+      setSelectedRequerimientos((prev) => [
+        ...prev,
+        {
+          id_requerimientos: req.id_requerimientos,
+          nombre: req.nombre_requerimiento,
+        },
+      ]);
     }
   };
 
-  // Enviar formulario
-  const handleEnviar = () => {
+  const handleEnviar = async () => {
     if (selectedRequerimientos.length === 0) {
       alert("Debes seleccionar al menos un requerimiento.");
       return;
     }
+
+    const cedulaUsuario =
+      user?.cedula_usuario || localStorage.getItem("cedula_usuario");
+
+    const requerimientosConOptRequerimiento = selectedRequerimientos
+      .filter((r) => r.id_requerimientos != null)
+      .map((r) => ({
+        id_requerimientos: r.id_requerimientos,
+        cedula_requerimiento: cedulaUsuario,
+        opt_requerimiento: r.id_requerimientos,
+      }));
+
     const dataToSend = {
       ...formData,
-      requerimientos: selectedRequerimientos,
+      requerimientos: requerimientosConOptRequerimiento,
       estatus: "Pendiente",
+      cedula_requerimiento: cedulaUsuario,
     };
-    setRegistros([...registros, dataToSend]);
-    setResultado({ motivo: dataToSend.motivo, estatus: dataToSend.estatus });
-    setMostrarResultado(true);
+
+    try {
+      await createRequerimientoEmprendedor(dataToSend);
+      Swal.fire(
+        "¡Enviado!",
+        "Tu requerimiento ha sido registrado correctamente.",
+        "success"
+      );
+      setRegistros((prev) => [...prev, dataToSend]);
+      setResultado({ motivo: dataToSend.motivo, estatus: dataToSend.estatus });
+      setMostrarResultado(true);
+    } catch (error) {
+      console.error("Error al enviar requerimiento:", error);
+      Swal.fire(
+        "Error",
+        "Hubo un problema al enviar tu requerimiento. Inténtalo nuevamente.",
+        "error"
+      );
+    }
   };
 
-  // Volver al formulario para editar
-  const handleVolverFormulario = () => {
-    setMostrarResultado(false);
-    setStep(1);
-    setFormData({
-      nombre: "",
-      email: "",
-      telefono: "",
-      direccion: "",
-      motivo: "",
-    });
-    setSelectedRequerimientos([]);
-  };
-
-  // Agregar o editar motivo desde vista de resultados
   const handleAgregarMotivo = () => {
     Swal.fire({
       title: "Añadir Nuevo Motivo",
@@ -143,14 +160,39 @@ const Dashboard = ({ setUser }) => {
     });
   };
 
-  // Actualizar requerimientos
-  const handleActualizarRequerimientos = () => {
-    fetchRequerimientos();
+  const handleActualizarRequerimientos = async () => {
+    await fetchRequerimientos();
     Swal.fire(
       "Requerimientos Actualizados",
       "Se recargaron los requerimientos.",
       "success"
     );
+  };
+
+  const requerimientosSeleccionados = requerimientos.filter((req) =>
+    selectedRequerimientos.some(
+      (r) => r.id_requerimientos === req.id_requerimientos
+    )
+  );
+
+  // NUEVO: Función para ver detalles del requerimiento usando API
+  const handleVerRequerimiento = async (id_requerimientos) => {
+    try {
+      const requerimiento = await getRequerimientoById(id_requerimientos);
+      Swal.fire({
+        title: 'Detalle del Requerimiento',
+        html: `
+          <p><strong>ID:</strong> ${requerimiento.id_requerimientos}</p>
+          <p><strong>Nombre:</strong> ${requerimiento.nombre_requerimiento}</p>
+          <p><strong>Descripción:</strong> ${requerimiento.descripcion || 'No disponible'}</p>
+        `,
+        icon: 'info',
+        width: 600,
+        confirmButtonColor: '#4F46E5'
+      });
+    } catch (error) {
+      Swal.fire('Error', 'No se pudo obtener el requerimiento.', 'error');
+    }
   };
 
   return (
@@ -162,6 +204,7 @@ const Dashboard = ({ setUser }) => {
         }`}
       >
         <Header toggleMenu={toggleMenu} />
+
         <main className="flex-1 p-8 bg-gray-50 overflow-y-auto">
           {/* Encabezado */}
           <div className="flex items-center justify-between mb-8 mt-11">
@@ -175,22 +218,34 @@ const Dashboard = ({ setUser }) => {
             </div>
           </div>
 
-          {/* Vista condicional */}
+          {/* Mostrar formulario o resultado */}
           {!mostrarResultado ? (
             <section className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-2">
-              {/* Formulario */}
+              {/* Título */}
               <h2 className="text-xl font-semibold mb-6 text-gray-700 flex items-center space-x-2">
                 <i className="bx bx-edit-alt text-2xl"></i>
                 <span>Formulario de Solicitud</span>
               </h2>
 
+              {/* Paso 1: Requerimientos */}
               {step === 1 && (
                 <div className="mb-6 animate-fadeIn">
-                  <h3 className="mb-4 text-xl font-semibold text-gray-700 flex items-center space-x-2">
-                    <span>Requerimientos disponibles</span>
-                  </h3>
+                  {/* Cédula y Título */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-gray-700 flex items-center space-x-2">
+                      <span>Requerimientos disponibles</span>
+                    </h3>
+                    <input
+                      type="text"
+                      value={user?.cedula_usuario || "Cargando..."}
+                      disabled
+                      className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-300 shadow-sm cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Lista de requerimientos */}
                   {requerimientos.length > 0 ? (
-                    <ul className="space-y-4">
+                    <ul className="space-y-4 max-h-64 overflow-y-auto">
                       {requerimientos.map((req) => (
                         <li
                           key={req.id_requerimientos}
@@ -205,28 +260,30 @@ const Dashboard = ({ setUser }) => {
                               <input
                                 type="checkbox"
                                 id={`req-${req.id_requerimientos}`}
-                                checked={selectedRequerimientos.includes(
-                                  req.id_requerimientos
+                                checked={selectedRequerimientos.some(
+                                  (r) =>
+                                    r.id_requerimientos ===
+                                    req.id_requerimientos
                                 )}
-                                onChange={() =>
-                                  handleRequerimientoSelect(
-                                    req.id_requerimientos
-                                  )
-                                }
+                                onChange={() => handleRequerimientoSelect(req)}
                                 className="absolute opacity-0 w-0 h-0"
+                                value={req.id_requerimientos}
                               />
-                              {/* Caja visual */}
                               <div
-                                className={`w-6 h-6 flex items-center justify-center border-2 border-gray-300 rounded transition ${
-                                  selectedRequerimientos.includes(
-                                    req.id_requerimientos
+                                className={`w-6 h-6 flex items-center justify-center border-2 rounded transition ${
+                                  selectedRequerimientos.some(
+                                    (r) =>
+                                      r.id_requerimientos ===
+                                      req.id_requerimientos
                                   )
                                     ? "bg-blue-600 border-blue-600"
-                                    : "bg-white"
+                                    : "bg-white border-gray-300"
                                 }`}
                               >
-                                {selectedRequerimientos.includes(
-                                  req.id_requerimientos
+                                {selectedRequerimientos.some(
+                                  (r) =>
+                                    r.id_requerimientos ===
+                                    req.id_requerimientos
                                 ) && (
                                   <svg
                                     className="w-4 h-4 text-white"
@@ -244,9 +301,17 @@ const Dashboard = ({ setUser }) => {
                                 )}
                               </div>
                             </div>
+                            {/* Nombre */}
                             <span className="ml-3 text-gray-800 font-medium">
                               {req.nombre_requerimiento}
                             </span>
+                            {/* Botón para ver detalles */}
+                            <button
+                              className="ml-2 bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition"
+                              onClick={() => handleVerRequerimiento(req.id_requerimientos)}
+                            >
+                              Ver detalles
+                            </button>
                           </label>
                         </li>
                       ))}
@@ -268,12 +333,13 @@ const Dashboard = ({ setUser }) => {
                 </div>
               )}
 
+              {/* Paso 2: Motivo */}
               {step === 2 && (
                 <div className="space-y-4 animate-fadeIn">
                   {/* Motivo */}
                   <div className="mb-4 flex items-center justify-between">
                     <label className="block mb-1 text-gray-600 font-medium">
-                      Motivo de la solicitud de crédito
+                      Motivo de la solicitud
                     </label>
                   </div>
                   <textarea
@@ -281,7 +347,7 @@ const Dashboard = ({ setUser }) => {
                     value={formData.motivo}
                     onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition h-32 resize-none"
-                    placeholder="Escribe aquí el motivo de tu solicitud..."
+                    placeholder="Escribe aquí..."
                   />
 
                   {/* Botones */}
@@ -303,23 +369,22 @@ const Dashboard = ({ setUser }) => {
               )}
             </section>
           ) : (
-            // Vista de resultados
+            // Resultado
             <section className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-7 overflow-hidden">
-              {/* Encabezado con botones */}
+              {/* Encabezado */}
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold mb-2 text-gray-700 flex items-center space-x-2">
                   <i className="bx bx-check-circle text-2xl"></i>
                   <span>Resultado de la Solicitud</span>
                 </h2>
+                {/* Acciones */}
                 <div className="flex space-x-2">
-                  {/* Botón Actualizar Requerimientos */}
                   <button
                     className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition flex items-center"
                     onClick={handleActualizarRequerimientos}
                   >
                     <i className="bx bx-refresh mr-2"></i> Actualizar Reqs
                   </button>
-                  {/* Botón Añadir Motivo */}
                   <button
                     className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition flex items-center"
                     onClick={handleAgregarMotivo}
@@ -329,7 +394,27 @@ const Dashboard = ({ setUser }) => {
                 </div>
               </div>
 
-              {/* Tabla Resultado */}
+              {/* Requerimientos seleccionados */}
+              {requerimientosSeleccionados.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-lg font-semibold mb-2">
+                    Requerimientos Seleccionados:
+                  </h4>
+                  <ul className="space-y-2 max-h-40 overflow-y-auto">
+                    {requerimientosSeleccionados.map((req) => (
+                      <li
+                        key={req.id_requerimientos}
+                        className="flex items-center px-2 py-1 rounded-lg bg-gray-50"
+                      >
+                        <span className="text-green-500 mr-2">✔️</span>
+                        <span>{req.nombre}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Tabla con motivo y estatus */}
               <div className="overflow-x-auto mb-6">
                 <table className="w-full min-w-max table-auto border-collapse border border-gray-300 rounded-lg shadow-md">
                   <thead className="bg-gray-100">
@@ -362,7 +447,7 @@ const Dashboard = ({ setUser }) => {
                 </table>
               </div>
 
-              {/* Lista de requerimientos */}
+              {/* Lista de requerimientos en pantalla */}
               <h3 className="text-lg font-semibold mb-2">Requerimientos:</h3>
               <ul className="space-y-2 max-h-60 overflow-y-auto pr-2">
                 {requerimientos.map((req) => (
@@ -370,18 +455,14 @@ const Dashboard = ({ setUser }) => {
                     key={req.id_requerimientos}
                     className="flex items-center px-2 py-1 rounded-lg hover:bg-gray-100 transition"
                   >
-                    {selectedRequerimientos.includes(req.id_requerimientos) ? (
-                      <span
-                        className="text-green-500 text-xl mr-3"
-                        title="Seleccionado"
-                      >
+                    {selectedRequerimientos.some(
+                      (r) => r.id_requerimientos === req.id_requerimientos
+                    ) ? (
+                      <span className="text-green-500 text-xl mr-3" title="Seleccionado">
                         ✔️
                       </span>
                     ) : (
-                      <span
-                        className="text-red-500 text-xl mr-3"
-                        title="No seleccionado"
-                      >
+                      <span className="text-red-500 text-xl mr-3" title="No seleccionado">
                         ❌
                       </span>
                     )}
