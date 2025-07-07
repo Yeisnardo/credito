@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 // Importación de páginas
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 
@@ -9,7 +10,7 @@ import Dashboard from "./pages/Dashboard";
 
 //Emprededor
 import RegistroEmprendedor from "./pages/RegistroEmprendedor";
-import Requerimiento from "./pages/Requerimiento";
+import Requeri_solicit from "./pages/Requeri_solicit";
 import Contrato from "./pages/Contrato";
 import Depositos from "./pages/Depositos";
 import Cuotas from "./pages/Cuotas";
@@ -45,10 +46,11 @@ function App() {
     <Router>
       <Routes>
         {/* Rutas públicas */}
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Index />} />
+        <Route path="/Login" element={<Login />} />
         <Route path="/RegistroEmprendedor" element={<RegistroEmprendedor />} />
         <Route path="/Dashboard" element={<Dashboard />} />
-        <Route path="/Requerimiento" element={<Requerimiento />} />
+        <Route path="/Requeri_solicit" element={<Requeri_solicit />} />
         <Route path="/Contrato" element={<Contrato />} />
         <Route path="/Depositos" element={<Depositos />} />
         <Route path="/Cuotas" element={<Cuotas />} />

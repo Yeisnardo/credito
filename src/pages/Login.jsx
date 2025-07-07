@@ -1,119 +1,121 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import axios from 'axios';
-import miImagen from '../assets/imagenes/logo_ifemi.jpg';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import axios from "axios";
+import miImagen from "../assets/imagenes/logo_ifemi.jpg";
 
 const Login = ({ setUser }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validaciones básicas
     if (!username || !password) {
       Swal.fire({
-        icon: 'error',
-        title: 'Campos incompletos',
-        text: 'Por favor, completa todos los campos.',
+        icon: "error",
+        title: "Campos incompletos",
+        text: "Por favor, completa todos los campos.",
       });
       return;
     }
     if (username.length < 5) {
       Swal.fire({
-        icon: 'error',
-        title: 'Nombre de usuario inválido',
-        text: 'El nombre de usuario debe tener al menos 5 caracteres.',
+        icon: "error",
+        title: "Nombre de usuario inválido",
+        text: "El nombre de usuario debe tener al menos 5 caracteres.",
       });
       return;
     }
     if (password.length < 6) {
       Swal.fire({
-        icon: 'error',
-        title: 'Contraseña inválida',
-        text: 'La contraseña debe tener al menos 6 caracteres.',
+        icon: "error",
+        title: "Contraseña inválida",
+        text: "La contraseña debe tener al menos 6 caracteres.",
       });
       return;
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/usuarios/login', {
-        usuario: username,
-        clave: password,
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/usuarios/login",
+        {
+          usuario: username,
+          clave: password,
+        }
+      );
 
-      const user = response.data.user; // Asegúrate que backend devuelve así
+      const user = response.data.user;
 
-      // Guardar en localStorage
-      localStorage.setItem('cedula_usuario', user.cedula_usuario);
-      localStorage.setItem('usuario', JSON.stringify(user));
-      localStorage.setItem('estatus', user.estatus);
+      localStorage.setItem("cedula_usuario", user.cedula_usuario);
+      localStorage.setItem("usuario", JSON.stringify(user));
+      localStorage.setItem("estatus", user.estatus);
 
-      // Actualizar estado en componente superior
       if (setUser) setUser(user);
 
       Swal.fire({
-        icon: 'success',
-        title: '¡Bienvenido!',
-        text: response.data.message || 'Inicio de sesión exitoso',
+        icon: "success",
+        title: "¡Bienvenido!",
+        text: response.data.message || "Inicio de sesión exitoso",
         timer: 1500,
         showConfirmButton: false,
       }).then(() => {
-        navigate('/dashboard');
+        navigate("/dashboard");
       });
     } catch (error) {
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.response?.data?.error || 'Error al iniciar sesión',
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.error || "Error al iniciar sesión",
       });
     }
   };
 
   const handleRegisterRedirect = () => {
-    navigate('/RegistroEmprendedor');
+    navigate("/RegistroEmprendedor");
   };
 
   return (
-    <div className="flex min-h-screen font-sans bg-gray-50">
-      {/* Lado izquierdo con la imagen */}
-      <div className="hidden md:flex w-1/2 items-center justify-center p-4 bg-logoLoginEfimi rounded-l-lg shadow-lg">
-        <div className="relative rounded-lg overflow-hidden w-max h-max">
-          <div className="absolute inset-0 rounded-lg bg-gradient-to-tr from-purple-400 via-pink-500 to-red-500 opacity-50"></div>
+    <div className="flex min-h-screen font-serif bg-gray-50 overflow-hidden">
+      {/* Panel izquierdo con logo */}
+      <aside className="hidden md:flex w-1/2 items-center justify-center p-4 bg-gray-100 rounded-l-lg shadow-lg">
+        <div className="relative w-max h-max rounded-lg overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-900 via-blue-700 to-blue-500 opacity-50 rounded-lg"></div>
           <img
             src={miImagen}
-            alt="Logo Efemi"
+            alt="Logo Institucional"
             className="max-w-xs max-h-xs object-cover relative z-10 rounded-lg shadow-lg"
           />
         </div>
-      </div>
+      </aside>
 
-      {/* Formulario */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="mb-8 text-3xl font-bold text-center text-gray-700">Iniciar Sesión</h2>
+      {/* Área de inicio de sesión */}
+      <main className="flex-1 flex items-center justify-center p-8 bg-gray-200">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 ">
+          <h2 className="mb-8 text-4xl font-serif text-center text-gray-800 tracking-wide">
+            Inicio de Sesion
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Usuario */}
             <div>
               <label
                 htmlFor="username"
-                className="block mb-2 text-sm font-medium text-gray-600"
+                className="block mb-2 text-sm font-serif text-gray-700"
               >
-                Nombre de Usuario
+                Usuario
               </label>
-              <div className="flex items-center border border-gray-300 rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-blue-400 transition duration-300">
-                <span className="p-2 text-gray-400">
-                  <i className="bx bxs-user"></i>
-                </span>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                  <i className="bx bxs-user text-xl"></i>
+                </div>
                 <input
                   type="text"
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-transparent outline-none px-3 py-2 rounded-r-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0"
-                  placeholder="Tu nombre de usuario"
+                  placeholder="Ingrese su usuario"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent transition duration-200 bg-gray-50 hover:bg-gray-100 placeholder-gray-400 text-gray-700 text-lg"
                 />
               </div>
             </div>
@@ -122,37 +124,37 @@ const Login = ({ setUser }) => {
             <div>
               <label
                 htmlFor="password"
-                className="block mb-2 text-sm font-medium text-gray-600"
+                className="block mb-2 text-sm font-semibold text-gray-700"
               >
                 Contraseña
               </label>
-              <div className="flex items-center border border-gray-300 rounded-lg bg-gray-50 focus-within:ring-2 focus-within:ring-blue-400 transition duration-300">
-                <span className="p-2 text-gray-400">
-                  <i className="bx bxs-lock"></i>
-                </span>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                  <i className="bx bxs-lock text-xl"></i>
+                </div>
                 <input
                   type="password"
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent outline-none px-3 py-2 rounded-r-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-0"
-                  placeholder="Tu contraseña"
+                  placeholder="Ingrese su contraseña"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent transition duration-200 bg-gray-50 hover:bg-gray-100 placeholder-gray-400 text-gray-700 text-lg"
                 />
               </div>
             </div>
 
-            {/* Botón */}
+            {/* Botón de ingreso */}
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-[#07142A] text-white font-semibold rounded-lg shadow hover:scale-105 transform transition duration-300 hover:shadow-xl"
+              className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
             >
-              Iniciar Sesión
+              Ingresar
             </button>
           </form>
 
-          {/* Enlace a registro */}
+          {/* Enlace para registrarse */}
           <p className="mt-6 text-center text-sm text-gray-600">
-            ¿No tienes cuenta?{' '}
+            ¿No tienes cuenta?{" "}
             <button
               onClick={handleRegisterRedirect}
               className="text-blue-600 hover:underline font-medium focus:outline-none"
@@ -161,7 +163,7 @@ const Login = ({ setUser }) => {
             </button>
           </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

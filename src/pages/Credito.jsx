@@ -74,7 +74,7 @@ const Credito = ({ menuOpenProp, setUser: setUserInParent }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans">
+    <div className="flex min-h-screen bg-gray-100 font-serif">
       {/* Menú condicional */}
       {menuOpen && <Menu />}
 
@@ -170,7 +170,7 @@ const Credito = ({ menuOpenProp, setUser: setUserInParent }) => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 text-center text-gray-500 bg-gray-100 border-t border-gray-300">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

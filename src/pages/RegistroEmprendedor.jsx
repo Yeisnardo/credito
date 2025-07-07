@@ -16,7 +16,6 @@ const RegistroEmprendedor = () => {
   const navigate = useNavigate();
 
   const [datos, setDatos] = useState({
-    // Datos Persona
     cedula: "",
     nombre_completo: "",
     edad: "",
@@ -26,7 +25,6 @@ const RegistroEmprendedor = () => {
     municipio: "Independencia",
     direccion: "",
     tipo_persona: "Emprendedor",
-    // Consejo Comunitario
     cedula_emprendedor: "",
     consejo_nombre: "",
     comuna: "",
@@ -34,7 +32,6 @@ const RegistroEmprendedor = () => {
     tipo_negocio: "",
     nombre_emprendimiento: "",
     direccion_emprendimiento: "",
-    // Usuario
     cedula_usuario: "",
     usuario: "",
     clave: "",
@@ -49,6 +46,7 @@ const RegistroEmprendedor = () => {
 
   const [municipios, setMunicipios] = useState([]);
 
+  // Cargar clasificaciones y gestionar municipios
   useEffect(() => {
     const fetchClasificaciones = async () => {
       try {
@@ -97,7 +95,6 @@ const RegistroEmprendedor = () => {
 
   const handleNext = () => {
     const validations = [
-      // Paso 1: Datos Personales
       () => {
         if (
           !datos.cedula.trim() ||
@@ -117,7 +114,6 @@ const RegistroEmprendedor = () => {
         }
         return true;
       },
-      // Paso 2: Sector, Negocio, Consejo y Comuna
       () => {
         if (
           !sectorSeleccionado ||
@@ -134,7 +130,6 @@ const RegistroEmprendedor = () => {
         }
         return true;
       },
-      // Paso 3: Datos Usuario
       () => {
         if (!datos.usuario.trim() || !datos.clave.trim()) {
           Swal.fire({
@@ -213,18 +208,28 @@ const RegistroEmprendedor = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Logo Izquierda */}
-      <div className="w-1/2 hidden md:flex items-center justify-center p-4 bg-logoLoginEfimi">
-        <img src={miImagen} alt="Logo" className="max-w-full h-auto" />
-      </div>
+    <div className="flex min-h-screen bg-gray-50 font-serif">
+      {/* Logo izquierda */}
+      <aside className="hidden md:flex w-1/2 items-center justify-center p-4 bg-gray-100 rounded-l-lg shadow-lg">
+        <div className="relative w-max h-max rounded-lg overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-900 via-blue-700 to-blue-500 opacity-50 rounded-lg"></div>
+          <img
+            src={miImagen}
+            alt="Logo Institucional"
+            className="max-w-xs max-h-xs object-cover relative z-10 rounded-lg shadow-lg"
+          />
+        </div>
+      </aside>
+
       {/* Formulario paso a paso */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-2xl">
-          <h2 className="mb-6 text-2xl font-bold text-center text-gray-700">
+      <div className="flex-1 flex items-center justify-center p-8 bg-gray-200">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 transform transition-transform hover:scale-105 hover:shadow-3xl duration-300">
+          {/* Título */}
+          <h2 className="mb-6 text-2xl font-serif text-center text-[#1A2C5B] tracking-wide">
             Registro de Emprendedor
           </h2>
-          {/* Indicadores */}
+
+          {/* Indicadores paso */}
           <div className="flex justify-center mb-4 space-x-3">
             {[1, 2, 3].map((n) => (
               <button
@@ -238,7 +243,7 @@ const RegistroEmprendedor = () => {
                   }
                 }}
                 className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer ${
-                  paso === n ? "bg-blue-500 scale-125" : "bg-gray-400"
+                  paso === n ? "bg-[#1A2C5B] scale-125" : "bg-gray-400"
                 }`}
               >
                 {n < paso ? (
@@ -265,6 +270,7 @@ const RegistroEmprendedor = () => {
           {/* Paso 1 */}
           {paso === 1 && (
             <div id="paso-1" className="space-y-4">
+              {/* Campos paso 1 */}
               <div className="flex flex-wrap gap-4">
                 {[
                   { label: "Cédula de Identidad", type: "text", id: "cedula" },
@@ -278,10 +284,7 @@ const RegistroEmprendedor = () => {
                   { label: "Correo Electrónico", type: "email", id: "correo" },
                   { label: "Dirección Actual", type: "text", id: "direccion" },
                 ].map(({ label, type, id, min }) => (
-                  <div
-                    key={id}
-                    className={id === "estado" ? "w-full" : "w-[300px]"}
-                  >
+                  <div key={id} className="w-full md:w-[45%]">
                     <label
                       htmlFor={id}
                       className="block mb-1 text-sm font-medium text-gray-600"
@@ -293,7 +296,7 @@ const RegistroEmprendedor = () => {
                       id={id}
                       value={datos[id]}
                       onChange={(e) => handleChange(id, e.target.value)}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
+                      className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                       placeholder={`Ingresa ${label.toLowerCase()}`}
                       min={min}
                       required
@@ -301,30 +304,40 @@ const RegistroEmprendedor = () => {
                   </div>
                 ))}
               </div>
+              {/* Botón Siguiente */}
               <button
                 onClick={handleNext}
-                className="w-full py-2 px-4 mt-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
               >
                 Siguiente
               </button>
+              {/* Regresar al login */}
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => navigate("/")}
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Regresar al login
+                </button>
+              </div>
             </div>
           )}
 
           {/* Paso 2 */}
           {paso === 2 && (
             <div id="paso-2" className="space-y-4">
-              <h3 className="text-xl mb-4 font-semibold">
+              <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
                 Datos del Consejo y Emprendimiento
               </h3>
-              {/* Campos */}
+              {/* Campos paso 2 */}
               <div className="flex flex-wrap gap-4">
-                {/* Cédula del Emprendedor (solo lectura) */}
-                <div className="w-[510px]">
+                {/* Cédula del Emprendedor */}
+                <div className="w-[180%]" style={{ display: "none" }}>
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="cedula_emprendedor"
                   >
-                    Cédula del Emprendedor
+                    Cédula de Identidad
                   </label>
                   <input
                     type="text"
@@ -334,14 +347,13 @@ const RegistroEmprendedor = () => {
                     className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
                   />
                 </div>
-
                 {/* Sector */}
-                <div className="w-[250px]">
+                <div className="w-[45%]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="tipo_sector"
                   >
-                    Sector
+                    Tipo de Secto
                   </label>
                   <select
                     id="tipo_sector"
@@ -350,7 +362,7 @@ const RegistroEmprendedor = () => {
                       setSectorSeleccionado(e.target.value);
                       setNegocioSeleccionado("");
                     }}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                   >
                     <option value="">Seleccione un sector</option>
                     {sectores.map((sec) => (
@@ -360,9 +372,8 @@ const RegistroEmprendedor = () => {
                     ))}
                   </select>
                 </div>
-
                 {/* Tipo de Negocio */}
-                <div className="w-[250px]">
+                <div className="w-[45%]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="tipo_negocio"
@@ -376,7 +387,7 @@ const RegistroEmprendedor = () => {
                       setNegocioSeleccionado(e.target.value);
                       handleChange("tipo_negocio", e.target.value);
                     }}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                   >
                     <option value="">Seleccione tipo de negocio</option>
                     {sectorSeleccionado &&
@@ -389,9 +400,8 @@ const RegistroEmprendedor = () => {
                         ))}
                   </select>
                 </div>
-
                 {/* Nombre del Emprendimiento */}
-                <div className="w-[250px]">
+                <div className="w-[180%]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="nombre_emprendimiento"
@@ -405,12 +415,12 @@ const RegistroEmprendedor = () => {
                     onChange={(e) =>
                       handleChange("nombre_emprendimiento", e.target.value)
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                     placeholder="Ingresa el nombre del emprendimiento"
                   />
                 </div>
                 {/* Dirección del Emprendimiento */}
-                <div className="w-[250px]">
+                <div className="w-[200%]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="direccion_emprendimiento"
@@ -424,17 +434,17 @@ const RegistroEmprendedor = () => {
                     onChange={(e) =>
                       handleChange("direccion_emprendimiento", e.target.value)
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                     placeholder="Ingresa la dirección del emprendimiento"
                   />
                 </div>
                 {/* Consejo Nombre */}
-                <div className="w-[250px]">
+                <div className="w-[45%]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="consejo_nombre"
                   >
-                    Nombre del Consejo Comunitario
+                    Nombre del Consejo Comunal
                   </label>
                   <input
                     type="text"
@@ -443,40 +453,40 @@ const RegistroEmprendedor = () => {
                     onChange={(e) =>
                       handleChange("consejo_nombre", e.target.value)
                     }
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                     placeholder="Ingresa el nombre del consejo"
                   />
                 </div>
-
                 {/* Comuna */}
-                <div className="w-[250px]">
+                <div className="w-[45%]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="comuna"
                   >
-                    Comuna
+                    Nombre de la Comuna
                   </label>
+                  <br />
                   <input
                     type="text"
                     id="comuna"
                     value={datos.comuna}
                     onChange={(e) => handleChange("comuna", e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                     placeholder="Ingresa la comuna"
                   />
                 </div>
               </div>
-              {/* Botones */}
+              {/* Botones paso */}
               <div className="flex justify-between mt-4">
                 <button
                   onClick={handleBack}
-                  className="py-2 px-4 bg-gray-400 text-white rounded hover:bg-gray-500"
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
                 >
                   Anterior
                 </button>
                 <button
                   onClick={handleNext}
-                  className="py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
                 >
                   Siguiente
                 </button>
@@ -487,7 +497,9 @@ const RegistroEmprendedor = () => {
           {/* Paso 3 */}
           {paso === 3 && (
             <div id="paso-3" className="space-y-4">
-              <h3 className="text-xl mb-4 font-semibold">Datos de Usuario</h3>
+              <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
+                Datos de Usuario
+              </h3>
               {/* Cédula del Emprendedor */}
               <div>
                 <label
@@ -501,7 +513,7 @@ const RegistroEmprendedor = () => {
                   id="cedula_usuario"
                   value={datos.cedula}
                   readOnly
-                  className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
+                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
                   placeholder="Cédula del emprendedor"
                 />
               </div>
@@ -518,9 +530,8 @@ const RegistroEmprendedor = () => {
                   id="usuario"
                   value={datos.usuario}
                   onChange={(e) => handleChange("usuario", e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                   placeholder="Nombre de usuario"
-                  required
                 />
               </div>
               {/* Contraseña */}
@@ -536,9 +547,8 @@ const RegistroEmprendedor = () => {
                   id="clave"
                   value={datos.clave}
                   onChange={(e) => handleChange("clave", e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                   placeholder="Contraseña"
-                  required
                 />
               </div>
               {/* Ocultos */}
@@ -553,7 +563,7 @@ const RegistroEmprendedor = () => {
                   id="estatus"
                   value={datos.estatus}
                   onChange={(e) => handleChange("estatus", e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                 >
                   <option value="Activo">Activo</option>
                   <option value="Inactivo">Inactivo</option>
@@ -570,7 +580,7 @@ const RegistroEmprendedor = () => {
                   id="rol"
                   value={datos.rol}
                   onChange={(e) => handleChange("rol", e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
+                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                 >
                   <option value="Emprendedor">Emprendedor</option>
                 </select>
@@ -579,13 +589,13 @@ const RegistroEmprendedor = () => {
               <div className="flex justify-between mt-4">
                 <button
                   onClick={handleBack}
-                  className="py-2 px-4 bg-gray-400 text-white rounded hover:bg-gray-500"
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
                 >
                   Anterior
                 </button>
                 <button
                   onClick={handleFinalizar}
-                  className="py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700"
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
                 >
                   Finalizar
                 </button>

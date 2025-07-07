@@ -152,7 +152,7 @@ const Solicitud = () => {
     {/* Google Material Icons CDN */}
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-    <div className="flex min-h-screen bg-gray-50 font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-gray-50 font-serif overflow-hidden">
       {menuOpen && <Menu />}
       <div
         className={`flex-1 flex flex-col w-full transition-all duration-300 ${menuOpen ? "ml-64" : "ml-0"}`}
@@ -251,7 +251,7 @@ const Solicitud = () => {
 
         {/* Footer */}
         <footer className="mt-auto p-4 bg-gray-200 border-t border-gray-300 text-center text-gray-600 text-sm rounded-t-lg shadow-inner">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

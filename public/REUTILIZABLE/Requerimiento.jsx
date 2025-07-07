@@ -312,7 +312,7 @@ const CombinedComponent = () => {
   const resultadosBooleanos = getResultadosBooleanos();
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans">
+    <div className="flex min-h-screen bg-gray-100 font-serif">
       {menuOpen && <Menu />}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
@@ -524,7 +524,7 @@ const CombinedComponent = () => {
         </section>
 
         <footer className="mt-auto py-6 border-t border-gray-200 text-center text-gray-500 text-sm">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

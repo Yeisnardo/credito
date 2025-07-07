@@ -64,7 +64,7 @@ const Gestion = () => {
     Swal.fire({
       title: `${s.nombre_apellido}`,
       html: `
-      <div class="font-sans text-sm text-gray-800 space-y-4">
+      <div class="font-serif text-sm text-gray-800 space-y-4">
         <div>
           <p class="mb-2"><strong>Número de contrato:</strong> ${s.contrato}</p>
           <p class="mb-2"><strong>Estado:</strong> ${s.estatus}</p>
@@ -261,16 +261,14 @@ const montoCancelarEuros = (parseFloat(montoDevolverEuros) / 18).toFixed(2);
           )}
 
           {/* Encabezado */}
-          <header className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
-                <i className="bx bx-credit-card text-2xl"></i>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
+                <i className="bx bx-credit-card text-3xl text-gray-700"></i>
               </div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Gestor de Créditos
-              </h1>
+              <h1 className="text-3xl font-semibold text-gray-800">Asignacion de Contrato</h1>
             </div>
-          </header>
+          </div>
 
           {/* Listado de solicitudes */}
           <section className="mb-8">

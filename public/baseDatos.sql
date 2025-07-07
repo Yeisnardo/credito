@@ -48,7 +48,7 @@ CREATE TABLE usuario (
     --TABLAS DE REQUEIMIENTOS
     CREATE TABLE requerimientos (
         id_requerimientos SERIAL PRIMARY KEY,
-        nombre_requerimiento VARCHAR (100) NOT NULL
+        nombre_requerimiento VARCHAR (100)
     );
 
     CREATE TABLE requerimiento_emprendedor (

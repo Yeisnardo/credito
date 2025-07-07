@@ -327,16 +327,14 @@ const Aprobacion = () => {
           )}
 
           {/* Encabezado */}
-          <header className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-2">
-              <div className="bg-blue-500 p-3 rounded-full shadow-lg text-white">
-                <i className="bx bx-check-circle text-2xl"></i>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
+                <i className="bx bx-check-circle text-3xl text-gray-700"></i>
               </div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                Aprobación de Solicitud de Crédito
-              </h1>
+              <h1 className="text-3xl font-semibold text-gray-800">Revision y Aprobacion</h1>
             </div>
-          </header>
+          </div>
 
           {/* Buscador */}
           <div className="mb-6 max-w-4xl mx-auto flex flex-col items-start space-y-2">

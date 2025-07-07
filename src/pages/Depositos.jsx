@@ -121,7 +121,7 @@ const Depositos = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-gray-100 font-serif overflow-hidden">
       {/* Menú */}
       {menuOpen && <Menu />}
 
@@ -137,13 +137,13 @@ const Depositos = () => {
         {/* Contenido central */}
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
           {/* Encabezado */}
-          <div className="flex items-center mb-8 mt-10">
-            <div className="bg-gray-200 p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out">
-              <i className="bx bx-wallet text-3xl text-gray-700"></i>
+          <div className="flex items-center justify-between mb-8 mt-12">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
+                <i className="bx bx-money-withdraw text-3xl text-gray-700"></i>
+              </div>
+              <h1 className="text-3xl font-semibold text-gray-800">Mis Depositos</h1>
             </div>
-            <h1 className="ml-4 text-3xl font-semibold text-gray-800 tracking-wide">
-              Mis Depósitos
-            </h1>
           </div>
 
           {/* Estado usuario */}
@@ -247,7 +247,7 @@ const Depositos = () => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-600 text-sm rounded-t-xl shadow-inner">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

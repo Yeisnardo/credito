@@ -3,10 +3,10 @@ const { query } = require('../config/db');
 class Solicitud {
   // Validar campos obligatorios, incluyendo estatus si es obligatorio al crear
   static validarSolicitud(solicitud) {
-    const { cedula_solicitud, motivo, estatus } = solicitud;
-    if (!cedula_solicitud || !motivo) {
-      throw new Error('Campos obligatorios incompletos');
-    }
+    //const { cedula_solicitud, motivo} = solicitud;
+    //if (!cedula_solicitud || !motivo) {
+      //throw new Error('Campos obligatorios incompletos');
+    //}
     // Si estatus es obligatorio en creación, descomenta la siguiente línea
     // if (!estatus) throw new Error('El estatus es obligatorio');
   }

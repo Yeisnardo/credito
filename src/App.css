@@ -8,3 +8,28 @@
 .animate-fade-in {
   animation: fade-in 0.3s ease-out forwards;
 }
+
+
+/* Estilo para las ventanas Swal personalizadas */
+.swal2-popup.custom {
+  border-radius: 8px !important;
+  padding: 20px !important;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Estilo para inputs en Swal */
+.swal2-input {
+  border: 1px solid #d1d5db; /* gris claro */
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.swal2-input:focus {
+  border-color: #3b82f6; /* azul */
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}

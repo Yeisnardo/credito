@@ -140,7 +140,7 @@ const Cuotas = () => {
     .reduce((acc, c) => acc + c.monto, 0);
 
   return (
-    <div className="flex min-h-screen bg-[#F9FAFB] font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-[#F9FAFB] font-serif overflow-hidden">
       {menuOpen && <Menu />}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
@@ -152,13 +152,13 @@ const Cuotas = () => {
         {/* Contenido principal */}
         <div className="p-8 pt-24 w-full mx-auto">
           {/* Encabezado */}
-          <div className="flex items-center mb-8">
-            <div className="bg-[#D1D5DB] p-4 rounded-full shadow-lg text-gray-700 flex items-center justify-center">
-              <i className="bx bx-wallet text-3xl"></i>
+          <div className="flex items-center justify-between mb-8 ">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
+                <i className="bx bx-folder-open text-3xl text-gray-700"></i>
+              </div>
+              <h1 className="text-3xl font-semibold text-gray-800">Reporte de Cuota</h1>
             </div>
-            <h1 className="ml-4 text-4xl font-bold text-[#1F2937]">
-              Mis Cuotas
-            </h1>
           </div>
 
           {/* Tarjeta de cuotas */}
@@ -286,7 +286,7 @@ const Cuotas = () => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-[#F9FAFB] border-t border-gray-300 text-center text-[#4B5563] text-sm">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

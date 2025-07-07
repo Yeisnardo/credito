@@ -110,7 +110,7 @@ const Requerimientos = ({ setUser }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans">
+    <div className="flex min-h-screen bg-gray-100 font-serif">
       {menuOpen && <Menu />}
       <div className={`flex-1 flex flex-col transition-margin duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
         <Header toggleMenu={toggleMenu} />
@@ -227,7 +227,7 @@ const Requerimientos = ({ setUser }) => {
         </main>
 
         <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

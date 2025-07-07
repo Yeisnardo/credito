@@ -139,7 +139,7 @@ const App = () => {
 };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 font-sans mt-11">
+    <div className="flex min-h-screen bg-gray-50 font-serif mt-11">
       {/* Menú lateral */}
       {menuOpen && <Menu />}
       {/* Contenedor principal */}
@@ -212,7 +212,7 @@ const App = () => {
 
         {/* Pie de página */}
         <footer className="bg-gray-100 text-gray-600 p-4 text-center border-t border-gray-300 mt-auto">
-          &copy; {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          &copy; {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

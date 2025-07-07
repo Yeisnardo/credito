@@ -56,7 +56,7 @@ const Perfil = () => {
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-gray-100 font-serif overflow-hidden">
       {menuOpen && <Menu />}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
@@ -142,7 +142,7 @@ const Perfil = () => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-gray-600 text-sm rounded-t-xl shadow-inner select-none">
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

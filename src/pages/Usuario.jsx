@@ -363,7 +363,7 @@ const Usuario = () => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4" style={{ backgroundColor: "#F9FAFB" , borderTop: "1px solid #D1D5DB" , color: "#4B5563" , fontSize: "0.875rem" , borderRadius: "0px 0px 8px 8px", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06)" }}>
-          © {new Date().getFullYear()} TuEmpresa. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>
