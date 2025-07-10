@@ -196,7 +196,7 @@ const RegistroEmprendedor = () => {
         title: "Registro completo",
         text: "Todos los datos han sido registrados.",
       });
-      navigate("/");
+      navigate("/Login");
     } catch (error) {
       console.error("Error en registro:", error);
       Swal.fire({

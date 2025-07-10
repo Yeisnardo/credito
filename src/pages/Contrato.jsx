@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import api, { getUsuarioPorCedula } from "../services/api_usuario";
+// import api, { getUsuarioPorCedula } from "../services/api_usuario"; // Ya no es necesario en esta versión
 
 const Contrato = ({ setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUserState] = useState(null);
-  const [data, setData] = useState([]); // Estado para los datos de la DataTable
+  const [contratos, setContratos] = useState([]); // Contratos del usuario
+  const [loading, setLoading] = useState(true);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -18,49 +19,50 @@ const Contrato = ({ setUser }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const cedula = localStorage.getItem("cedula_usuario");
-        if (cedula) {
-          const usuario = await getUsuarioPorCedula(cedula);
-          if (usuario) {
-            setUserState(usuario);
-            if (setUser) setUser(usuario);
-          }
-        }
+        // Datos ficticios del usuario
+        const usuarioFicticio = {
+          id: 1,
+          nombre: "Juan Pérez",
+          email: "juan.perez@example.com",
+          cedula: "1234567890",
+        };
+        setUserState(usuarioFicticio);
+        if (setUser) setUser(usuarioFicticio);
+
+        // Datos ficticios de contratos
+        const contratosFicticios = [
+          {
+            id: "C-1001",
+            nombre: "Contrato de Arrendamiento",
+            email: "arrendador@example.com",
+            estado: "Activo",
+          },
+          {
+            id: "C-1002",
+            nombre: "Contrato de Servicios",
+            email: "servicios@example.com",
+            estado: "Pendiente",
+          },
+          {
+            id: "C-1003",
+            nombre: "Contrato de Compra",
+            email: "comprador@example.com",
+            estado: "Finalizado",
+          },
+        ];
+
+        // Simular retraso
+        setTimeout(() => {
+          setContratos(contratosFicticios);
+          setLoading(false);
+        }, 1000);
       } catch (error) {
-        console.error("Error al obtener usuario por cédula:", error);
+        console.error("Error al obtener datos:", error);
+        setLoading(false);
       }
     };
     if (!user) fetchUserData();
   }, [setUser, user]);
-
-  // Ejemplo de datos para la DataTable
-  useEffect(() => {
-    // Aquí puedes reemplazar esto con una llamada a tu API para obtener datos reales
-    const fetchData = async () => {
-      const mockData = [
-        {
-          id: 1,
-          nombre: "Juan Pérez",
-          email: "juan@example.com",
-          estado: "Activo",
-        },
-        {
-          id: 2,
-          nombre: "María Gómez",
-          email: "maria@example.com",
-          estado: "Inactivo",
-        },
-        {
-          id: 3,
-          nombre: "Carlos López",
-          email: "carlos@example.com",
-          estado: "Activo",
-        },
-      ];
-      setData(mockData);
-    };
-    fetchData();
-  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-serif">
@@ -83,67 +85,61 @@ const Contrato = ({ setUser }) => {
                 <i className="bx bx-file text-3xl text-gray-700"></i>
               </div>
               <h1 className="text-3xl font-semibold text-gray-800">
-                Gestion de Contrato
+                Mis Contratos
               </h1>
             </div>
           </div>
 
-          {/* Aquí añadimos la DataTable */}
+          {/* Lista de Contratos del Usuario */}
           <section className="bg-white p-8 rounded-2xl shadow-lg border border-gray-200 overflow-x-auto mb-12">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b border-gray-300 pb-2">
-              Lista de Contrato
+              Lista de Contratos
             </h2>
-            <table className="min-w-full text-left divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    N° Contrato
-                  </th>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    Estatus del Depostito
-                  </th>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
-                    Estado
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {data.length > 0 ? (
-                  data.map((item, index) => (
+            {loading ? (
+              <p className="text-center text-gray-500">Cargando...</p>
+            ) : contratos.length > 0 ? (
+              <table className="min-w-full text-left divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
+                      N° Contrato
+                    </th>
+                    <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
+                      Estatus del Depósito
+                    </th>
+                    <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
+                      Email
+                    </th>
+                    <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
+                      Estado
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {contratos.map((contrato, index) => (
                     <tr
-                      key={item.id}
+                      key={contrato.id}
                       className={`transition-all duration-200 hover:bg-gray-100 ${
                         index % 2 === 0 ? "bg-white" : "bg-gray-50"
                       }`}
                     >
-                      <td className="px-4 py-3 text-gray-800">{item.id}</td>
-                      <td className="px-4 py-3 text-gray-800">{item.nombre}</td>
-                      <td className="px-4 py-3 text-gray-800">{item.email}</td>
-                      <td className="px-4 py-3 text-gray-800">{item.estado}</td>
+                      <td className="px-4 py-3 text-gray-800">{contrato.id}</td>
+                      <td className="px-4 py-3 text-gray-800">{contrato.nombre}</td>
+                      <td className="px-4 py-3 text-gray-800">{contrato.email}</td>
+                      <td className="px-4 py-3 text-gray-800">{contrato.estado}</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="4"
-                      className="px-4 py-4 text-center text-gray-400 italic"
-                    >
-                      No hay datos disponibles
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-center text-gray-500">No hay contratos disponibles</p>
+            )}
           </section>
         </main>
 
         {/* Pie */}
         <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos
-          reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
     </div>

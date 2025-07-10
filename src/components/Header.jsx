@@ -98,7 +98,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
       if (result.isConfirmed) {
         localStorage.removeItem('cedula_usuario');
         Swal.fire("¡Sesión cerrada!", "", "success");
-        navigate('/');
+        navigate('/Login');
       }
     });
   };
