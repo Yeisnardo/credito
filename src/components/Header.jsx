@@ -437,7 +437,7 @@ const handleCambiarUsuario = async () => {
           >
             <i className="bx bxs-user" style={{ fontSize: "24px" }}></i>
             <span className="ml-2 hidden sm:inline truncate">
-              {user?.nombre || "Nombre"} - {user?.tipo_usuario || "Rol"}
+              {user?.nombre_completo || "Nombre"} - {user?.rol || "Rol"}
             </span>
           </button>
 

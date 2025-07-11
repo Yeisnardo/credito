@@ -2,15 +2,15 @@
 
 -- Tabla de persona
 CREATE TABLE persona (
-  cedula VARCHAR(20) NOT NULL PRIMARY KEY,  
-  nombre_completo VARCHAR(100) NOT NULL,
-  edad INTEGER NOT NULL,
-  telefono VARCHAR(20) NOT NULL,
-  email VARCHAR(100) NOT NULL,
-  estado VARCHAR(50) NOT NULL,
-  municipio VARCHAR(50) NOT NULL,
-  direccion_actual VARCHAR(255) NOT NULL, 
-  tipo_persona VARCHAR(20) NOT NULL
+  cedula VARCHAR(20) PRIMARY KEY,  
+  nombre_completo VARCHAR(100),
+  edad INTEGER,
+  telefono VARCHAR(20),
+  email VARCHAR(100),
+  estado VARCHAR(50),
+  municipio VARCHAR(50),
+  direccion_actual VARCHAR(255), 
+  tipo_persona VARCHAR(20)
 );
 
 -- Tabla de emprendimientos
@@ -25,6 +25,13 @@ CREATE TABLE emprendimientos (
   CONSTRAINT fk_emprendimiento_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
+-- Cuenta Bancaria
+CREATE TABLE cuenta (
+  cedula_titular VARCHAR (20) NOT NULL PRIMARY KEY,
+  nombre_completo VARCHAR (20) NOT NULL,
+  numero_cuentaVARCHAR (20) NOT NULL
+)
+
 -- Tabla de usuario
 CREATE TABLE usuario (
   cedula_usuario VARCHAR(20) NOT NULL PRIMARY KEY,
@@ -37,28 +44,27 @@ CREATE TABLE usuario (
 
 --TABLA DE REQUERIMIENTOS Y SOLICITUD
 
-    --TABLA DE SOLICITUD
-    CREATE TABLE solicitud (
-    cedula_solicitud VARCHAR(20) PRIMARY KEY,
-    motivo VARCHAR (1000) NOT NULL,
-    estatus VARCHAR (20),
-    CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_solicitud) REFERENCES persona(cedula) ON DELETE CASCADE
-    );
+--TABLAS DE REQUEIMIENTOS
+CREATE TABLE requerimientos (
+    id_requerimientos SERIAL PRIMARY KEY,
+    nombre_requerimiento VARCHAR (100)
+);
 
-    --TABLAS DE REQUEIMIENTOS
-    CREATE TABLE requerimientos (
-        id_requerimientos SERIAL PRIMARY KEY,
-        nombre_requerimiento VARCHAR (100)
-    );
+CREATE TABLE requerimiento_emprendedor (
+    id_req SERIAL PRIMARY KEY,
+    cedula_emprendedor VARCHAR (20) NOT NULL,
+    opt_requerimiento VARCHAR (1000000),
+    CONSTRAINT fk_persona FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos),
+    CONSTRAINT fk_requerimiento FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula)
+);
 
-    CREATE TABLE requerimiento_emprendedor (
-        id_req SERIAL PRIMARY KEY,
-        cedula_requerimiento VARCHAR (20) NOT NULL,
-        opt_requerimiento VARCHAR (1000000),
-        CONSTRAINT fk_persona FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos),
-        CONSTRAINT fk_requerimiento FOREIGN KEY (cedula_requerimiento) REFERENCES persona(cedula)
-    );
-
+--TABLA DE SOLICITUD
+CREATE TABLE solicitud (
+  cedula_emprendedor VARCHAR(20) PRIMARY KEY,
+  motivo VARCHAR (1000) NOT NULL,
+  estatus VARCHAR (20),
+  CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
+);
 
 --TABLA DE CLASIFICACION
 CREATE TABLE clasificacion (

@@ -7,7 +7,10 @@ import Swal from "sweetalert2";
 
 import { getUsuarioPorCedula } from "../services/api_usuario";
 import { getRequerimientos } from "../services/api_requerimientos";
-import { createRequerimientoEmprendedor, getRequerimientoEmprendedor } from "../services/api_requerimiento_emprendedor";
+import {
+  createRequerimientoEmprendedor,
+  getRequerimientoEmprendedor,
+} from "../services/api_requerimiento_emprendedor";
 import { createSolicitud } from "../services/api_solicitud"; // Corrige si el nombre es diferente
 
 const RequireSolicit = ({ setUser }) => {
@@ -121,7 +124,10 @@ const RequireSolicit = ({ setUser }) => {
   const handleVolver = () => {
     setResultado(null);
     setMotivo("");
-    setFormData({ cedula_requerimiento: user?.cedula_usuario || "", opt_requerimiento: [] });
+    setFormData({
+      cedula_requerimiento: user?.cedula_usuario || "",
+      opt_requerimiento: [],
+    });
     setStep(1);
   };
 
@@ -142,7 +148,9 @@ const RequireSolicit = ({ setUser }) => {
               <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
                 <i className="bx bx-file text-3xl text-gray-700"></i>
               </div>
-              <h1 className="text-3xl font-semibold text-gray-800">Solicitud de Credito</h1>
+              <h1 className="text-3xl font-semibold text-gray-800">
+                Solicitud de Credito
+              </h1>
             </div>
           </div>
 
@@ -150,15 +158,19 @@ const RequireSolicit = ({ setUser }) => {
           {resultado ? (
             // Si hay resultados, mostrar los detalles
             <div className="mt-8 p-4 bg-white rounded shadow border border-gray-200">
-              <h3 className="text-xl font-semibold mb-4">Detalles del Requerimiento y Solicitud</h3>
+              <h3 className="text-xl font-semibold mb-4">
+                Detalles del Requerimiento y Solicitud
+              </h3>
               <p>
                 <strong>ID Requerimiento:</strong> {resultado.id_req}
               </p>
               <p>
-                <strong>Cédula Requerimiento:</strong> {resultado.cedula_requerimiento}
+                <strong>Cédula Requerimiento:</strong>{" "}
+                {resultado.cedula_requerimiento}
               </p>
               <p>
-                <strong>Requisitos Seleccionados:</strong> {resultado.opt_requerimiento.join(", ")}
+                <strong>Requisitos Seleccionados:</strong>{" "}
+                {resultado.opt_requerimiento.join(", ")}
               </p>
               <p>
                 <strong>Motivo:</strong> {motivo}
@@ -181,7 +193,9 @@ const RequireSolicit = ({ setUser }) => {
               {requerimientos.length > 0 ? (
                 <section className="max-w-xl mx-auto bg-white rounded-xl shadow-md p-6 border border-gray-200 mt-1 ease-in-out border-t-4 border-[#0F3C5B]">
                   <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b border-gray-300 pb-2">
-                    {step === 1 ? "Seleccione los Requisitos" : "Motivo de Solicitud de Crédito"}
+                    {step === 1
+                      ? "Seleccione los Requisitos"
+                      : "Motivo de Solicitud de Crédito"}
                   </h2>
                   <form
                     className="space-y-4"
@@ -203,18 +217,20 @@ const RequireSolicit = ({ setUser }) => {
                           >
                             Por favor, indique los requisitos que posee.
                           </label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto rounded-xl p-4">
                             {requerimientos.map((req) => (
                               <div
                                 key={req.id_requerimientos}
-                                className="flex items-center p-3 bg-white rounded-xl shadow-sm hover:bg-gray-100 transition cursor-pointer"
+                                className="flex items-center mb-2" // Añadido flex y alineación
                               >
                                 <input
                                   type="checkbox"
                                   id={`requerimiento-${req.id_requerimientos}`}
                                   name="opt_requerimiento"
                                   value={req.id_requerimientos}
-                                  checked={formData.opt_requerimiento.includes(req.id_requerimientos)}
+                                  checked={formData.opt_requerimiento.includes(
+                                    req.id_requerimientos
+                                  )}
                                   onChange={handleInputChange}
                                   className="h-6 w-6 border-2 border-gray-300 rounded-md transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400"
                                 />
@@ -281,7 +297,9 @@ const RequireSolicit = ({ setUser }) => {
                 </section>
               ) : (
                 <div className="text-center p-4 bg-gray-100 rounded-lg border border-gray-300">
-                  <p className="text-gray-600 mb-4">No hay requerimientos disponibles.</p>
+                  <p className="text-gray-600 mb-4">
+                    No hay requerimientos disponibles.
+                  </p>
                 </div>
               )}
             </>
@@ -290,7 +308,8 @@ const RequireSolicit = ({ setUser }) => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-gray-100 border-t border-gray-300 text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos
+          reservados.
         </footer>
       </div>
     </div>

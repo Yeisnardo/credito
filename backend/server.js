@@ -1,42 +1,37 @@
 const express = require('express');
 const cors = require('cors');
 
-const usuarioRoutes = require('./routes/routes_usuario');
-const emprendimientoRoutes = require('./routes/routes_emprendimiento');
-const personaRoutes = require('./routes/routes_persona');
-const perfilRoutes = require('./routes/routes_perfil');
-const requerimiento_emprendedorRoutes = require('./routes/routes_requerimiento_emprendedor');
-const solicitudRoutes = require('./routes/routes_solicitud');
-const clasificacionRoutes = require('./routes/routes_clasificacion');
-const aprobacionRoutes = require('./routes/routes_aprobacion');
-const fondoRoutes = require('./routes/routes_fondo');
-const creditosRoutes = require('./routes/routes_credito');
-const requerimientosRoutes = require('./routes/routes_requerimientos');
+// Importamos todos los archivos consolidados
+const personaAPI = require('./controllers/persona');
+const usuarioAPI = require('./controllers/usuario');
+const fondoAPI = require('./controllers/fondo');
+const requerimientoAPI = require('./controllers/empredimiento');
 
 const app = express();
 
+// Middlewares básicos
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
-app.use('/api/usuarios', usuarioRoutes);
-app.use('/api/emprendimientos', emprendimientoRoutes);
-app.use('/api/persona', personaRoutes);
-app.use('/api/perfiles', perfilRoutes);
-app.use('/api/requerimiento_emprendedor', requerimiento_emprendedorRoutes);
-app.use('/api/solicitudes', solicitudRoutes);
-app.use('/api/clasificacion', clasificacionRoutes);
-app.use('/api/aprobacion', aprobacionRoutes);
-app.use('/api/fondos', fondoRoutes);
-app.use('/api/credito', creditosRoutes);
-app.use('/api/requerimientos', requerimientosRoutes);
+// Rutas consolidadas
+app.use('/api/personas', personaAPI);
+app.use('/api/usuarios', usuarioAPI);
+app.use('/api/fondos', fondoAPI);
+app.use('/api/requerimientos', requerimientoAPI);
 
-// Middleware para manejo de errores
+// Middleware de errores
 app.use((err, req, res, next) => {
-  console.error(err);
+  console.error(err.stack);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
+// Iniciar servidor
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Servidor en puerto ${PORT}`);
+  console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
+  console.log('🔍 Endpoints disponibles:');
+  console.log('   /api/personas');
+  console.log('   /api/usuarios');
+  console.log('   /api/fondos');
+  console.log('   /api/requerimientos');
 });
