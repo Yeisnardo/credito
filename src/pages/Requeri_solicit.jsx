@@ -20,7 +20,7 @@ const RequireSolicit = ({ setUser }) => {
   const [requerimientos, setRequerimientos] = useState([]);
 
   const [formData, setFormData] = useState({
-    cedula_requerimiento: "",
+    cedula_emprendedor: "",
     opt_requerimiento: [],
   });
 
@@ -46,7 +46,7 @@ const RequireSolicit = ({ setUser }) => {
             if (setUser) setUser(usuario);
             setFormData((prev) => ({
               ...prev,
-              cedula_requerimiento: usuario.cedula_usuario || "",
+              cedula_emprendedor: usuario.cedula_usuario || "",
             }));
           }
         }
@@ -85,22 +85,22 @@ const RequireSolicit = ({ setUser }) => {
 
   const enviarRequerimiento = async () => {
     try {
-      // Crear la solicitud
+      // Primero, crea la solicitud
       const solicitudPayload = {
-        cedula_solicitud: formData.cedula_requerimiento,
+        cedula_emprendedor: formData.cedula_emprendedor,
         motivo,
         estatus: "Pendiente",
       };
       const solicitudResponse = await createSolicitud(solicitudPayload);
       const id_req = solicitudResponse.id_req; // Asegúrate que tu API devuelve esto
 
-      // Crear requerimiento del emprendedor
+      // Luego, crea el requerimiento del emprendedor usando la misma cedula
       await createRequerimientoEmprendedor({
-        cedula_requerimiento: formData.cedula_requerimiento,
+        cedula_emprendedor: formData.cedula_emprendedor,
         opt_requerimiento: formData.opt_requerimiento,
       });
 
-      // Obtener datos combinados
+      // Opcional: obtener el dato combinado para mostrar
       const datos = await getRequerimientoEmprendedor(id_req);
       setResultado(datos);
 
@@ -125,7 +125,7 @@ const RequireSolicit = ({ setUser }) => {
     setResultado(null);
     setMotivo("");
     setFormData({
-      cedula_requerimiento: user?.cedula_usuario || "",
+      cedula_emprendedor: user?.cedula_usuario || "",
       opt_requerimiento: [],
     });
     setStep(1);
@@ -166,7 +166,7 @@ const RequireSolicit = ({ setUser }) => {
               </p>
               <p>
                 <strong>Cédula Requerimiento:</strong>{" "}
-                {resultado.cedula_requerimiento}
+                {resultado.cedula_emprendedor}
               </p>
               <p>
                 <strong>Requisitos Seleccionados:</strong>{" "}

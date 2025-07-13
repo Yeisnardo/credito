@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import axios from "axios";
+import { motion } from "framer-motion"; // Importar motion
 import miImagen from "../assets/imagenes/logo_ifemi.jpg";
 
 const Login = ({ setUser }) => {
@@ -79,7 +80,12 @@ const Login = ({ setUser }) => {
   return (
     <div className="flex min-h-screen font-serif bg-gray-50 overflow-hidden">
       {/* Panel izquierdo con logo */}
-      <aside className="hidden md:flex w-1/2 items-center justify-center p-4 bg-gray-100 rounded-l-lg shadow-lg">
+      <motion.aside
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="hidden md:flex w-1/2 items-center justify-center p-4 bg-gray-100 rounded-l-lg shadow-lg"
+      >
         <div className="relative w-max h-max rounded-lg overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-900 via-blue-700 to-blue-500 opacity-50 rounded-lg"></div>
           <img
@@ -88,14 +94,24 @@ const Login = ({ setUser }) => {
             className="max-w-xs max-h-xs object-cover relative z-10 rounded-lg shadow-lg"
           />
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Área de inicio de sesión */}
-      <main className="flex-1 flex items-center justify-center p-8 bg-gray-200">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 ">
-          <h2 className="mb-8 text-4xl font-serif text-center text-gray-800 tracking-wide">
-            Inicio de Sesion
-          </h2>
+      <motion.main
+        initial={{ x: 100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="flex-1 flex items-center justify-center p-8 bg-gray-200"
+      >
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8">
+          <motion.h2
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="mb-8 text-4xl font-serif text-center text-gray-800 tracking-wide"
+          >
+            Inicio de Sesión
+          </motion.h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Usuario */}
             <div>
@@ -144,12 +160,14 @@ const Login = ({ setUser }) => {
             </div>
 
             {/* Botón de ingreso */}
-            <button
+            <motion.button
               type="submit"
+              whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)" }}
+              transition={{ duration: 0.3 }}
               className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
             >
               Ingresar
-            </button>
+            </motion.button>
           </form>
 
           {/* Enlace para registrarse */}
@@ -163,7 +181,7 @@ const Login = ({ setUser }) => {
             </button>
           </p>
         </div>
-      </main>
+      </motion.main>
     </div>
   );
 };

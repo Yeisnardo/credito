@@ -10,8 +10,8 @@ export const getSolicitudes = async () => {
   return response.data;
 };
 
-export const getSolicitudPorCedula = async (cedula_solicitud) => {
-  const response = await api.get(`/api/solicitudes/${cedula_solicitud}`);
+export const getSolicitudPorCedula = async (cedula_emprendedor) => {
+  const response = await api.get(`/api/solicitudes/${cedula_emprendedor}`);
   return response.data;
 };
 
@@ -20,19 +20,19 @@ export const createSolicitud = async (solicitud) => {
   return response.data;
 };
 
-export const updateSolicitud = async (cedula_solicitud, solicitud) => {
-  const response = await api.put(`/api/solicitudes/${cedula_solicitud}`, solicitud);
+export const updateSolicitud = async (cedula_emprendedor, solicitud) => {
+  const response = await api.put(`/api/solicitudes/${cedula_emprendedor}`, solicitud);
   return response.data;
 };
 
-export const deleteSolicitud = async (cedula_solicitud) => {
-  const response = await api.delete(`/api/solicitudes/${cedula_solicitud}`);
+export const deleteSolicitud = async (cedula_emprendedor) => {
+  const response = await api.delete(`/api/solicitudes/${cedula_emprendedor}`);
   return response.data;
 };
 
 // Opcional: si necesitas actualizar algún campo específico, como motivo o estado
-export const updateSolicitudMotivo = async (cedula_solicitud, motivo) => {
-  const response = await api.put(`/api/solicitudes/${cedula_solicitud}/motivo`, { motivo });
+export const updateSolicitudMotivo = async (cedula_emprendedor, motivo) => {
+  const response = await api.put(`/api/solicitudes/${cedula_emprendedor}/motivo`, { motivo });
   return response.data;
 };
 

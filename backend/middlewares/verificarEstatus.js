@@ -1,5 +1,5 @@
 // middlewares/verificarEstatus.js
-const { query } = require('../config/db');
+const { query } = require('../config/conexion');
 
 const verificarEstatusUsuario = async (req, res, next) => {
   try {

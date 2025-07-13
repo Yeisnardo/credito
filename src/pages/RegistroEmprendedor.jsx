@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { motion } from "framer-motion"; // Importar motion
 import { locationData } from "../components/Venezuela";
 import miImagen from "../assets/imagenes/logo_ifemi.jpg";
 
@@ -209,8 +210,13 @@ const RegistroEmprendedor = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-serif">
-      {/* Logo izquierda */}
-      <aside className="hidden md:flex w-1/2 items-center justify-center p-4 bg-gray-100 rounded-l-lg shadow-lg">
+      {/* Logo izquierda con animación */}
+      <motion.aside
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="hidden md:flex w-1/2 items-center justify-center p-4 bg-gray-100 rounded-l-lg shadow-lg"
+      >
         <div className="relative w-max h-max rounded-lg overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-tr from-blue-900 via-blue-700 to-blue-500 opacity-50 rounded-lg"></div>
           <img
@@ -219,20 +225,30 @@ const RegistroEmprendedor = () => {
             className="max-w-xs max-h-xs object-cover relative z-10 rounded-lg shadow-lg"
           />
         </div>
-      </aside>
+      </motion.aside>
 
-      {/* Formulario paso a paso */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-gray-200">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 transform transition-transform hover:scale-105 hover:shadow-3xl duration-300">
+      {/* Formulario paso a paso con animación */}
+      <motion.div
+        initial={{ x: 100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="flex-1 flex items-center justify-center p-8"
+      >
+        <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-8 ">
           {/* Título */}
-          <h2 className="mb-6 text-2xl font-serif text-center text-[#1A2C5B] tracking-wide">
+          <motion.h2
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="mb-6 text-3xl font-serif text-center text-[#1A2C5B] tracking-wide"
+          >
             Registro de Emprendedor
-          </h2>
+          </motion.h2>
 
           {/* Indicadores paso */}
-          <div className="flex justify-center mb-4 space-x-3">
+          <div className="flex justify-center mb-8 space-x-4">
             {[1, 2, 3].map((n) => (
-              <button
+              <motion.button
                 key={n}
                 onClick={() => {
                   if (n <= paso) {
@@ -242,8 +258,9 @@ const RegistroEmprendedor = () => {
                       ?.scrollIntoView({ behavior: "smooth" });
                   }
                 }}
-                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer ${
-                  paso === n ? "bg-[#1A2C5B] scale-125" : "bg-gray-400"
+                whileHover={{ scale: 1.1 }}
+                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer ${
+                  paso === n ? "bg-[#1A2C5B] scale-125" : "bg-gray-300"
                 }`}
               >
                 {n < paso ? (
@@ -263,13 +280,19 @@ const RegistroEmprendedor = () => {
                 ) : (
                   <span className="text-white font-semibold">{n}</span>
                 )}
-              </button>
+              </motion.button>
             ))}
           </div>
 
           {/* Paso 1 */}
           {paso === 1 && (
-            <div id="paso-1" className="space-y-4">
+            <motion.div
+              id="paso-1"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="space-y-4"
+            >
               {/* Campos paso 1 */}
               <div className="flex flex-wrap gap-4">
                 {[
@@ -291,7 +314,7 @@ const RegistroEmprendedor = () => {
                     >
                       {label}
                     </label>
-                    <input
+                    <motion.input
                       type={type}
                       id={id}
                       value={datos[id]}
@@ -300,60 +323,55 @@ const RegistroEmprendedor = () => {
                       placeholder={`Ingresa ${label.toLowerCase()}`}
                       min={min}
                       required
+                      whileFocus={{ scale: 1.02 }}
+                      transition={{ duration: 0.2 }}
                     />
                   </div>
                 ))}
               </div>
               {/* Botón Siguiente */}
-              <button
+              <motion.button
                 onClick={handleNext}
+                whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+                transition={{ duration: 0.3 }}
                 className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
               >
                 Siguiente
-              </button>
+              </motion.button>
               {/* Regresar al login */}
               <div className="mt-4 flex justify-center">
-                <button
-                  onClick={() => navigate("/")}
+                <motion.button
+                  onClick={() => navigate("/Login")}
+                  whileHover={{ scale: 1.05, textShadow: "0 0 4px #000" }}
                   className="text-blue-600 hover:underline font-medium"
                 >
                   Regresar al login
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Paso 2 */}
           {paso === 2 && (
-            <div id="paso-2" className="space-y-4">
+            <motion.div
+              id="paso-2"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="space-y-4"
+            >
               <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
                 Datos del Consejo y Emprendimiento
               </h3>
               {/* Campos paso 2 */}
               <div className="flex flex-wrap gap-4">
-                {/* Cédula del Emprendedor */}
-                <div className="w-[180%]" style={{ display: "none" }}>
-                  <label
-                    className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="cedula_emprendedor"
-                  >
-                    Cédula de Identidad
-                  </label>
-                  <input
-                    type="text"
-                    id="cedula_emprendedor"
-                    value={datos.cedula}
-                    readOnly
-                    className="w-full border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
                 {/* Sector */}
                 <div className="w-[45%]">
                   <label
                     className="block mb-1 text-sm font-medium text-gray-600"
                     htmlFor="tipo_sector"
                   >
-                    Tipo de Secto
+                    Tipo de Sector
                   </label>
                   <select
                     id="tipo_sector"
@@ -465,7 +483,6 @@ const RegistroEmprendedor = () => {
                   >
                     Nombre de la Comuna
                   </label>
-                  <br />
                   <input
                     type="text"
                     id="comuna"
@@ -478,25 +495,35 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Botones paso */}
               <div className="flex justify-between mt-4">
-                <button
+                <motion.button
                   onClick={handleBack}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
+                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
                 >
                   Anterior
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   onClick={handleNext}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
+                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
                 >
                   Siguiente
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Paso 3 */}
           {paso === 3 && (
-            <div id="paso-3" className="space-y-4">
+            <motion.div
+              id="paso-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="space-y-4"
+            >
               <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
                 Datos de Usuario
               </h3>
@@ -587,23 +614,27 @@ const RegistroEmprendedor = () => {
               </div>
               {/* Botones */}
               <div className="flex justify-between mt-4">
-                <button
+                <motion.button
                   onClick={handleBack}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
+                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
                 >
                   Anterior
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   onClick={handleFinalizar}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
+                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
                 >
                   Finalizar
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

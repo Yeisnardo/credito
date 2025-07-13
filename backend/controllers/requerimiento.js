@@ -1,0 +1,42 @@
+const express = require('express');
+const { query } = require('../config/conexion'); // Conexión a la base de datos
+
+const router = express.Router();
+
+// Crear un nuevo requerimiento
+router.post('/', async (req, res) => {
+  try {
+    const data = req.body;
+    const { cedula_emprendedor, opt_requerimiento } = data;
+
+    const resultado = await query(
+      `INSERT INTO requerimiento_emprendedor (
+        cedula_emprendedor,
+        opt_requerimiento
+      ) VALUES ($1, $2) RETURNING *`,
+      [cedula_emprendedor, opt_requerimiento]
+    );
+
+    res.status(201).json(resultado.rows[0]);
+  } catch (error) {
+    console.error('Error en createRequerimientoEmprendedor:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtener requerimiento por cedula_emprendedor
+router.get('/:cedula_emprendedor', async (req, res) => {
+  try {
+    const { cedula_emprendedor } = req.params;
+    const resultados = await query(
+      'SELECT * FROM requerimiento_emprendedor WHERE cedula_emprendedor = $1',
+      [cedula_emprendedor]
+    );
+    res.status(200).json(resultados.rows);
+  } catch (error) {
+    console.error('Error en la consulta de requerimiento_emprendedor:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;

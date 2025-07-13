@@ -15,14 +15,14 @@ export const createRequerimientoEmprendedor = async (requerimientoEmprendedor) =
   }
 };
 
-// Obtener un requerimiento_emprendedor por id_req
-export const getRequerimientoEmprendedor = async (id_req) => {
+// Obtener un requerimiento_emprendedor por cedula_emprendedor
+export const getRequerimientoEmprendedor = async (cedula_emprendedor) => {
   try {
-    // Nota: Falta una barra '/' antes de ${id_req}
-    const response = await api.get(`/api/requerimiento_emprendedor/${id_req}`);
+    // Nota: Falta una barra '/' antes de ${cedula_emprendedor}
+    const response = await api.get(`/api/requerimiento_emprendedor/${cedula_emprendedor}`);
     return response.data;
   } catch (error) {
-    console.error(`Error al obtener requerimiento_emprendedor con id ${id_req}:`, error);
+    console.error(`Error al obtener requerimiento_emprendedor con id ${cedula_emprendedor}:`, error);
     throw error;
   }
 };
