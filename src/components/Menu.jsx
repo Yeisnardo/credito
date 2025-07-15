@@ -21,13 +21,19 @@ const Menu = ({ onClose }) => {
 
   // Guardar en localStorage cuando cambien los estados
   useEffect(() => {
-    localStorage.setItem("isRequerimientosOpen", JSON.stringify(isRequerimientosOpen));
+    localStorage.setItem(
+      "isRequerimientosOpen",
+      JSON.stringify(isRequerimientosOpen)
+    );
   }, [isRequerimientosOpen]);
   useEffect(() => {
     localStorage.setItem("isHistorialOpen", JSON.stringify(isHistorialOpen));
   }, [isHistorialOpen]);
   useEffect(() => {
-    localStorage.setItem("isGestionEmprendOpen", JSON.stringify(isGestionEmprendOpen));
+    localStorage.setItem(
+      "isGestionEmprendOpen",
+      JSON.stringify(isGestionEmprendOpen)
+    );
   }, [isGestionEmprendOpen]);
 
   // Cerrar submenús al hacer clic fuera
@@ -59,9 +65,11 @@ const Menu = ({ onClose }) => {
     if (el) linkRefs.current[path] = el;
   };
 
-  const toggleRequerimientos = () => setIsRequerimientosOpen(!isRequerimientosOpen);
+  const toggleRequerimientos = () =>
+    setIsRequerimientosOpen(!isRequerimientosOpen);
   const toggleHistorial = () => setIsHistorialOpen(!isHistorialOpen);
-  const toggleGestionEmprend = () => setIsGestionEmprendOpen(!isGestionEmprendOpen);
+  const toggleGestionEmprend = () =>
+    setIsGestionEmprendOpen(!isGestionEmprendOpen);
 
   return (
     <aside
@@ -73,7 +81,6 @@ const Menu = ({ onClose }) => {
         {/* Navegación */}
         <div>
           <nav className="space-y-4">
-
             {/* Inicio */}
             <div ref={setLinkRef("/dashboard")}>
               <NavLink
@@ -92,26 +99,34 @@ const Menu = ({ onClose }) => {
 
             {/* Solicitud de crédito */}
             <div>
+              {/* Menú de Solicitud de crédito */}
               <button
                 onClick={toggleRequerimientos}
                 className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
               >
                 <i className="bx bx-file text-2xl mr-3"></i>
-                <span className="flex-1 text-md font-semibold text-left">Solicitud de crédito</span>
+                <span className="flex-1 text-md font-semibold text-left">
+                  Solicitud de crédito
+                </span>
                 <i
                   className={`bx transition-transform duration-300 ${
-                    isRequerimientosOpen ? "bx-chevron-up text-blue-500" : "bx-chevron-down"
+                    isRequerimientosOpen
+                      ? "bx-chevron-up text-blue-500"
+                      : "bx-chevron-down"
                   }`}
                 ></i>
               </button>
               {isRequerimientosOpen && (
                 <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
+                  {/* Requerimientos y motivo de solicitud */}
                   <div ref={setLinkRef("/Requeri_solicit")}>
                     <NavLink
                       to="/Requeri_solicit"
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive ? "bg-gray-200 font-semibold" : "hover:bg-gray-100"
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
                         }`
                       }
                       onClick={onClose}
@@ -119,17 +134,36 @@ const Menu = ({ onClose }) => {
                       Requerimientos y motivo de solicitud
                     </NavLink>
                   </div>
+                  {/* Mi Contrato */}
                   <div ref={setLinkRef("/Contrato")}>
                     <NavLink
                       to="/Contrato"
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive ? "bg-gray-200 font-semibold" : "hover:bg-gray-100"
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
                         }`
                       }
                       onClick={onClose}
                     >
                       Mi Contrato
+                    </NavLink>
+                  </div>
+                  {/* Requerimientos */}
+                  <div ref={setLinkRef("/Reqsol")}>
+                    <NavLink
+                      to="/Reqsol"
+                      className={({ isActive }) =>
+                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
+                        }`
+                      }
+                      onClick={onClose}
+                    >
+                      Mis requerimientos y solicitud
                     </NavLink>
                   </div>
                 </div>
@@ -143,10 +177,14 @@ const Menu = ({ onClose }) => {
                 className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
               >
                 <i className="bx bx-folder-open text-2xl mr-3"></i>
-                <span className="flex-1 text-md font-semibold text-left">Control de seguimiento de crédito</span>
+                <span className="flex-1 text-md font-semibold text-left">
+                  Control de seguimiento de crédito
+                </span>
                 <i
                   className={`bx transition-transform duration-300 ${
-                    isHistorialOpen ? "bx-chevron-up text-blue-500" : "bx-chevron-down"
+                    isHistorialOpen
+                      ? "bx-chevron-up text-blue-500"
+                      : "bx-chevron-down"
                   }`}
                 ></i>
               </button>
@@ -157,7 +195,9 @@ const Menu = ({ onClose }) => {
                       to="/depositos"
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive ? "bg-gray-200 font-semibold" : "hover:bg-gray-100"
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
                         }`
                       }
                       onClick={onClose}
@@ -170,7 +210,9 @@ const Menu = ({ onClose }) => {
                       to="/cuotas"
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive ? "bg-gray-200 font-semibold" : "hover:bg-gray-100"
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
                         }`
                       }
                       onClick={onClose}
@@ -194,7 +236,9 @@ const Menu = ({ onClose }) => {
                 onClick={onClose}
               >
                 <i className="bx bx-check-circle text-2xl mr-3"></i>
-                <span className="text-md font-semibold">Modulo de Revisión y Aprobación</span>
+                <span className="text-md font-semibold">
+                  Modulo de Revisión y Aprobación
+                </span>
               </NavLink>
             </div>
 
@@ -209,7 +253,9 @@ const Menu = ({ onClose }) => {
                 onClick={onClose}
               >
                 <i className="bx bx-credit-card text-2xl mr-3"></i>
-                <span className="text-md font-semibold">Modulo Asignación de Contrato</span>
+                <span className="text-md font-semibold">
+                  Modulo Asignación de Contrato
+                </span>
               </NavLink>
             </div>
 
@@ -224,7 +270,9 @@ const Menu = ({ onClose }) => {
                 onClick={onClose}
               >
                 <i className="bx bx-money-withdraw text-2xl mr-3"></i>
-                <span className="text-md font-semibold">Fondo Financiero de Crédito</span>
+                <span className="text-md font-semibold">
+                  Fondo Financiero de Crédito
+                </span>
               </NavLink>
             </div>
 
@@ -239,7 +287,9 @@ const Menu = ({ onClose }) => {
                 onClick={onClose}
               >
                 <i className="bx bx-credit-card text-2xl mr-3"></i>
-                <span className="text-md font-semibold">Modulo de Gestión de Créditos</span>
+                <span className="text-md font-semibold">
+                  Modulo de Gestión de Créditos
+                </span>
               </NavLink>
             </div>
 
@@ -254,7 +304,9 @@ const Menu = ({ onClose }) => {
                 onClick={onClose}
               >
                 <i className="bx bx-money-withdraw text-2xl mr-3"></i>
-                <span className="text-md font-semibold">Modulo de Morosidad</span>
+                <span className="text-md font-semibold">
+                  Modulo de Morosidad
+                </span>
               </NavLink>
             </div>
 
@@ -265,10 +317,14 @@ const Menu = ({ onClose }) => {
                 className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
               >
                 <i className="bx bx-cog text-2xl mr-3"></i>
-                <span className="flex-1 text-md font-semibold text-left">Configuración</span>
+                <span className="flex-1 text-md font-semibold text-left">
+                  Configuración
+                </span>
                 <i
                   className={`bx transition-transform duration-300 ${
-                    isGestionEmprendOpen ? "bx-chevron-up text-blue-500" : "bx-chevron-down"
+                    isGestionEmprendOpen
+                      ? "bx-chevron-up text-blue-500"
+                      : "bx-chevron-down"
                   }`}
                 ></i>
               </button>
@@ -279,7 +335,9 @@ const Menu = ({ onClose }) => {
                       to="/Usuario"
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive ? "bg-gray-200 font-semibold" : "hover:bg-gray-100"
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
                         }`
                       }
                       onClick={onClose}
@@ -292,7 +350,9 @@ const Menu = ({ onClose }) => {
                       to="/Emprendimiento"
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive ? "bg-gray-200 font-semibold" : "hover:bg-gray-100"
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
                         }`
                       }
                       onClick={onClose}
@@ -305,7 +365,9 @@ const Menu = ({ onClose }) => {
                       to="/Requerimientos"
                       className={({ isActive }) =>
                         `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive ? "bg-gray-200 font-semibold" : "hover:bg-gray-100"
+                          isActive
+                            ? "bg-gray-200 font-semibold"
+                            : "hover:bg-gray-100"
                         }`
                       }
                       onClick={onClose}
@@ -321,7 +383,8 @@ const Menu = ({ onClose }) => {
 
         {/* Pie de página */}
         <div className="mt-8 text-center text-sm text-gray-500 italic">
-          © {new Date().getFullYear()} TuInstitución. Todos los derechos reservados.
+          © {new Date().getFullYear()} TuInstitución. Todos los derechos
+          reservados.
         </div>
       </div>
     </aside>

@@ -6,14 +6,14 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 
-
-
 //Emprededor
 import RegistroEmprendedor from "./pages/RegistroEmprendedor";
 import Requeri_solicit from "./pages/Requeri_solicit";
 import Contrato from "./pages/Contrato";
 import Depositos from "./pages/Depositos";
 import Cuotas from "./pages/Cuotas";
+import Reqsol from "./pages/Reqsol";
+
 
 //Administracion IFEMI
 import Usuario from "./pages/Usuario";
@@ -51,6 +51,7 @@ function App() {
         <Route path="/RegistroEmprendedor" element={<RegistroEmprendedor />} />
         <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/Requeri_solicit" element={<Requeri_solicit />} />
+        <Route path="/Reqsol" element={<Reqsol />} />
         <Route path="/Contrato" element={<Contrato />} />
         <Route path="/Depositos" element={<Depositos />} />
         <Route path="/Cuotas" element={<Cuotas />} />

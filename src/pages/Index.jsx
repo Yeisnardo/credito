@@ -4,20 +4,20 @@ import { motion } from "framer-motion";
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-800 relative overflow-x-hidden">
-      
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 font-sans text-gray-800 overflow-x-hidden font-sans">
+
       {/* Encabezado */}
       <motion.header
         initial={{ y: -70, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="bg-indigo-800 py-8 px-4 shadow-lg relative flex items-center justify-center"
+        className="bg-gray-900 py-12 px-4 shadow-xl backdrop-blur-lg bg-opacity-80 flex items-center justify-center"
       >
-        <div className="text-center max-w-4xl">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-wide drop-shadow-lg">
+        <div className="text-center max-w-5xl px-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-white drop-shadow-lg mb-4 tracking-wide">
             Instituto para el Fortalecimiento al Emprendedor
           </h1>
-          <p className="mt-3 text-indigo-100 text-lg md:text-xl font-semibold">
+          <p className="mt-2 text-indigo-100 text-lg md:text-xl font-semibold opacity-80">
             del municipio Independencia
           </p>
         </div>
@@ -28,7 +28,7 @@ function App() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="sticky top-0 z-50 bg-white bg-opacity-80 backdrop-blur-md shadow-md py-4 px-6 flex justify-center items-center space-x-8 font-semibold text-gray-700 hover:text-indigo-700 transition-all duration-300"
+        className="sticky top-0 z-50 bg-white bg-opacity-70 backdrop-blur-md shadow-md py-4 px-8 flex justify-center items-center space-x-8 font-semibold text-gray-700 transition-all hover:text-indigo-600"
       >
         {[
           { href: "#inicio", label: "Inicio" },
@@ -40,61 +40,92 @@ function App() {
           <a
             key={index}
             href={link.href}
-            className="px-3 py-1 rounded hover:bg-indigo-100 transition duration-200"
+            className="px-4 py-2 rounded-full hover:bg-indigo-100 transition-all duration-200"
           >
             {link.label}
           </a>
         ))}
         {/* Botón en línea */}
         <motion.div
-          whileHover={{ scale: 1.1, rotate: -3 }}
+          whileHover={{ scale: 1.1, rotate: -2 }}
           transition={{ duration: 0.3 }}
         >
           <Link
             to="/login"
-            className="bg-gradient-to-r from-indigo-500 to-gray-700 text-white font-semibold py-3 px-6 rounded-full shadow-xl uppercase tracking-widest hover:scale-105 transition-transform"
+            className="bg-gray-900 text-white font-semibold py-3 px-6 rounded-full shadow-lg uppercase tracking-widest hover:scale-105 transition-transform"
           >
             Persona En Línea
           </Link>
         </motion.div>
       </motion.nav>
 
-      {/* Sección Inicio */}
+      {/* Sección Inicio con Carrusel */}
       <section
         id="inicio"
-        className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 py-20 px-4 text-center relative"
+        className="py-20 px-4 bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 relative"
       >
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-800 drop-shadow-lg">
+        {/* Carrusel de imágenes */}
+        <div className="max-w-5xl mx-auto mb-10 relative overflow-hidden rounded-xl shadow-lg">
+          {(() => {
+            const images = [
+              "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80",
+              "https://images.unsplash.com/photo-1493612276216-ee3925520721?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80",
+              "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80",
+            ];
+            const [current, setCurrent] = React.useState(0);
+
+            React.useEffect(() => {
+              const interval = setInterval(() => {
+                setCurrent((prev) => (prev + 1) % images.length);
+              }, 5000);
+              return () => clearInterval(interval);
+            }, []);
+
+            return (
+              <div className="relative h-80 md:h-96 rounded-xl overflow-hidden">
+                {images.map((img, index) => (
+                  <img
+                    key={index}
+                    src={img}
+                    alt={`Slide ${index + 1}`}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                      index === current ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Texto y CTA */}
+        <div className="text-center max-w-3xl mx-auto px-4">
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-800 drop-shadow-lg leading-tight">
             ¡Impulsa tu Emprendimiento!
           </h2>
-          <p className="max-w-3xl mx-auto text-lg md:text-xl text-gray-700 mb-6">
+          <p className="text-lg md:text-xl text-gray-600 mb-8">
             El instituto que fortalece y apoya a los emprendedores del municipio
             Independencia para que alcancen sus metas y sueños.
           </p>
           <motion.a
             whileHover={{ scale: 1.05 }}
             href="#contacto"
-            className="bg-indigo-800 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition duration-300"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-8 rounded-full shadow-lg uppercase tracking-widest transition"
           >
             Contáctanos
           </motion.a>
-        </motion.div>
+        </div>
       </section>
 
       {/* Sobre Nosotros */}
       <section
         id="sobre-nosotros"
-        className="max-w-7xl mx-auto p-8 my-16 bg-white rounded-lg shadow-lg"
+        className="max-w-7xl mx-auto p-8 my-20 bg-white rounded-2xl shadow-xl"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-600 pb-2 text-center text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Sobre Nosotros
         </h2>
-        {/* Cards con animación */}
+        {/* Cards */}
         <div className="grid md:grid-cols-3 gap-8">
           {[
             {
@@ -115,7 +146,7 @@ function App() {
           ].map((card, index) => (
             <motion.div
               key={index}
-              className="bg-gray-50 p-6 rounded-lg shadow hover:shadow-xl transition-shadow duration-300"
+              className="bg-gray-50 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: index * 0.2 }}
@@ -130,18 +161,18 @@ function App() {
       {/* Servicios */}
       <section
         id="servicios"
-        className="max-w-7xl mx-auto p-8 my-16 bg-gray-100 rounded-lg shadow-lg"
+        className="max-w-7xl mx-auto p-8 my-20 bg-gray-50 rounded-3xl shadow-xl"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-600 pb-2 text-center text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Nuestros Servicios
         </h2>
-        {/* Servicios con animación */}
+        {/* Servicios */}
         <div className="grid md:grid-cols-3 gap-8">
           {[
             {
               icon: (
                 <svg
-                  className="w-8 h-8 text-indigo-700 mx-auto mb-4"
+                  className="w-10 h-10 text-indigo-600 mx-auto mb-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -162,7 +193,7 @@ function App() {
             {
               icon: (
                 <svg
-                  className="w-8 h-8 text-indigo-700 mx-auto mb-4"
+                  className="w-10 h-10 text-indigo-600 mx-auto mb-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -179,7 +210,7 @@ function App() {
             {
               icon: (
                 <svg
-                  className="w-8 h-8 text-indigo-700 mx-auto mb-4"
+                  className="w-10 h-10 text-indigo-600 mx-auto mb-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -200,13 +231,13 @@ function App() {
           ].map((servicio, index) => (
             <motion.div
               key={index}
-              className="bg-white p-6 rounded-lg shadow hover:shadow-xl transition-transform hover:-translate-y-2 duration-300"
+              className="bg-white p-6 rounded-3xl shadow hover:scale-105 transition-transform duration-300"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: index * 0.2 }}
             >
               <div className="flex flex-col items-center mb-4">
-                <div className="bg-indigo-200 p-4 rounded-full mb-4">{servicio.icon}</div>
+                <div className="bg-indigo-100 p-4 rounded-full mb-4">{servicio.icon}</div>
                 <h3 className="text-xl font-semibold text-gray-700 text-center">{servicio.title}</h3>
               </div>
               <p className="text-gray-600 text-center">{servicio.description}</p>
@@ -218,13 +249,18 @@ function App() {
       {/* Programas y Cursos */}
       <section
         id="programas"
-        className="max-w-7xl mx-auto p-8 my-16 bg-white rounded-lg shadow-lg"
+        className="max-w-7xl mx-auto p-8 my-20 bg-white rounded-3xl shadow-xl"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-600 pb-2 text-center text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Programas y Cursos
         </h2>
-        <ul className="list-disc list-inside space-y-2 text-gray-700 mb-6 text-lg md:text-xl">
-          {["Formación en Gestión Empresarial", "Innovación y Creatividad", "Marketing Digital", "Finanzas para Emprendedores"].map((item, index) => (
+        <ul className="list-disc list-inside space-y-4 text-gray-700 mb-8 text-lg md:text-xl">
+          {[
+            "Formación en Gestión Empresarial",
+            "Innovación y Creatividad",
+            "Marketing Digital",
+            "Finanzas para Emprendedores",
+          ].map((item, index) => (
             <motion.li
               key={index}
               initial={{ opacity: 0, y: 10 }}
@@ -248,12 +284,12 @@ function App() {
       {/* Contacto */}
       <section
         id="contacto"
-        className="bg-indigo-100 py-20 px-4"
+        className="py-20 px-4 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-600 pb-2 text-center text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-500 pb-2 text-center text-gray-800">
           Contáctanos
         </h2>
-        <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-lg space-y-8">
+        <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-8">
           {[
             {
               title: "Dirección",
@@ -270,7 +306,7 @@ function App() {
             },
           ].map((info, index) => (
             <div key={index}>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">{info.title}:</h3>
+              <h3 className="text-xl font-semibold mb-2 text-indigo-600">{info.title}:</h3>
               <p className="text-gray-800">{info.value}</p>
             </div>
           ))}
