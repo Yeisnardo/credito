@@ -37,13 +37,7 @@ const PerfilOpciones = ({
       className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
       onClick={() => { onEditarEmprendimiento(); onClose(); }}
     >
-      <i className="bx bx-rocket mr-2"></i> Emprendimiento
-    </button>
-    <button
-      className="px-4 py-2 flex items-center hover:bg-gray-100 transition"
-      onClick={() => { onEditarConsejo(); onClose(); }}
-    >
-      <i className="bx bx-phone mr-2"></i> Consejo Comunale
+      <i className="bx bx-rocket mr-2"></i> Mi Emprendimiento
     </button>
     <button
       className="px-4 py-2 flex items-center hover:bg-gray-100 transition text-red-600"
@@ -203,7 +197,7 @@ const handleCambiarUsuario = async () => {
       title: "Perfil de Usuario",
       html: `
         <div class="flex justify-start items-center">
-          <div class="w-auto bg-gray-50 rounded-lg p-4 font-serif text-gray-800 flex flex-col md:flex-row gap-3 max-w-3xl mx-4">
+          <div class="w-auto rounded-lg p-4 font-serif text-gray-800 flex flex-col md:flex-row gap-3 max-w-3xl mx-4">
             <div class="md:w-2/3 flex flex-col space-y-4">
               <div class="bg-white rounded-lg p-4 justify-center items-center">
                 <h4 class="text-lg font-semibold mb-2 text-gray-700">Datos Personales</h4>

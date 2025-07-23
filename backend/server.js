@@ -18,7 +18,7 @@ app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
 // Rutas consolidadas
-app.use('/api/personas', personaAPI);
+app.use('/api/persona', personaAPI);
 app.use('/api/usuarios', usuarioAPI);
 app.use('/api/fondos', fondoAPI);
 app.use('/api/requerimientos', clasificacion_requerimientoAPI); // Aquí agregamos la API de requerimientos

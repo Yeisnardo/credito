@@ -150,7 +150,7 @@ router.post('/login', async (req, res) => {
     }
 
     if (user.clave !== clave) {
-      return res.status(401).json({ error: 'Contraseña incorrecta' });
+      return res.status(401).json({ error: 'Credenciales Incorrectas' });
     }
 
     res.json({ message: 'Inicio de sesión exitoso', user });

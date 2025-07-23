@@ -150,22 +150,6 @@ const Menu = ({ onClose }) => {
                       Mi Contrato
                     </NavLink>
                   </div>
-                  {/* Requerimientos */}
-                  <div ref={setLinkRef("/Reqsol")}>
-                    <NavLink
-                      to="/Reqsol"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Mis requerimientos y solicitud
-                    </NavLink>
-                  </div>
                 </div>
               )}
             </div>

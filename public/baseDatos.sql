@@ -25,12 +25,6 @@ CREATE TABLE emprendimientos (
   CONSTRAINT fk_emprendimiento_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
--- Cuenta Bancaria
-CREATE TABLE cuenta (
-  cedula_titular VARCHAR (20) NOT NULL PRIMARY KEY,
-  nombre_completo VARCHAR (20) NOT NULL,
-  numero_cuentaVARCHAR (20) NOT NULL
-)
 
 -- Tabla de usuario
 CREATE TABLE usuario (
@@ -41,6 +35,13 @@ CREATE TABLE usuario (
   estatus VARCHAR(20),
   CONSTRAINT fk_usuario_persona FOREIGN KEY (cedula_usuario) REFERENCES persona(cedula)
 );
+
+-- Cuenta Bancaria
+CREATE TABLE cuenta (
+  cedula_titular VARCHAR (20) NOT NULL PRIMARY KEY,
+  nombre_completo VARCHAR (20) NOT NULL,
+  numero_cuentaVARCHAR (20) NOT NULL
+)
 
 --TABLA DE REQUERIMIENTOS Y SOLICITUD
 
