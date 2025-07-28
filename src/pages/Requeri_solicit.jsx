@@ -385,7 +385,7 @@ const RequireSolicit = ({ setUser }) => {
                 resultado.map((req, index) => (
                   <div
                     key={index}
-                    className="mb-10 p-6 bg-gray-50 rounded-xl shadow-md border border-gray-200"
+                    className="mb-10 p-6 rounded-xl "
                   >
                     {/* Requerimientos */}
                     <div className="mb-6">
@@ -401,6 +401,7 @@ const RequireSolicit = ({ setUser }) => {
                           ? req.opt_requerimiento.join(", ")
                           : ""}
                       </p>
+
                       {/* Lista visual */}
                       <h4 className="text-xl font-semibold mb-3 text-gray-700">
                         Requerimientos seleccionados

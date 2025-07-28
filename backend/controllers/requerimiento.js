@@ -47,4 +47,17 @@ router.get("/:cedula_emprendedor", async (req, res) => {
   }
 });
 
+// Obtener todos los requerimientos (sin filtro)
+router.get("/", async (req, res) => {
+  try {
+    const resultados = await query(
+      `SELECT * FROM requerimiento_emprendedor, solicitud, persona, emprendimientos`
+    );
+    res.status(200).json(resultados.rows);
+  } catch (error) {
+    console.error("Error en la consulta para obtener todos los requerimientos:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
