@@ -1,426 +1,187 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import Swal from "sweetalert2"; // Importa SweetAlert2
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import api from "../services/api_aprobacion";
 
-const Aprobacion = () => {
+const aprobacion = ({ setUser }) => {
   const navigate = useNavigate();
-
-  // Estados y referencias
   const [menuOpen, setMenuOpen] = useState(true);
-  const [perfiles, setPerfiles] = useState([]);
-  const [mensajeExito, setMensajeExito] = useState("");
-  const [contadorSecuencial, setContadorSecuencial] = useState(1);
-  const secuencialRef = useRef(contadorSecuencial);
-  const [busqueda, setBusqueda] = useState("");
-  const [motivoFiltro, setMotivoFiltro] = useState("");
-  const [activarFiltroMotivo, setActivarFiltroMotivo] = useState(false);
 
-  // Estado para formulario
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [cedulaFormulario, setCedulaFormulario] = useState("");
-  const [contratoFormulario, setContratoFormulario] = useState("");
-  const [fechaFormulario, setFechaFormulario] = useState("");
+  // Lista de personas registradas con detalles adicionales
+  const personasRegistradas = [
+    {
+      id: 1,
+      cedula: "12345678",
+      nombre_completo: "Juan Pérez",
+      direccion_actual: "Madrid",
+      tipo_sector: "Industria",
+      tipo_negocio: "Manufactura",
+      motivo: "Solicitud de registro",
+      detalles: "Juan Pérez, 30 años, residente en Madrid."
+    },
+    {
+      id: 2,
+      cedula: "87654321",
+      nombre_completo: "María Gómez",
+      direccion_actual: "Barcelona",
+      tipo_sector: "Comercio",
+      tipo_negocio: "Venta minorista",
+      motivo: "Solicitud de permisos",
+      detalles: "María Gómez, 25 años, residente en Barcelona."
+    },
+    {
+      id: 3,
+      cedula: "11223344",
+      nombre_completo: "Luis Rodríguez",
+      direccion_actual: "Valencia",
+      tipo_sector: "Servicios",
+      tipo_negocio: "Consultoría",
+      motivo: "Amplificación de negocio",
+      detalles: "Luis Rodríguez, 40 años, residente en Valencia."
+    },
+    {
+      id: 4,
+      cedula: "44332211",
+      nombre_completo: "Ana Martínez",
+      direccion_actual: "Sevilla",
+      tipo_sector: "Agricultura",
+      tipo_negocio: "Finca",
+      motivo: "Solicitando permisos especiales",
+      detalles: "Ana Martínez, 35 años, residente en Sevilla."
+    },
+  ];
 
-  const añoActual = new Date().getFullYear().toString().slice(-2);
-
-  // Sincronizar ref con el estado del contador
-  useEffect(() => {
-    secuencialRef.current = contadorSecuencial;
-  }, [contadorSecuencial]);
-
-  // Cargar perfiles
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const usuarios = await api.getAprobaciones();
-        console.log("Usuarios cargados:", usuarios); // Depuración
-        // Asegúrate que usuarios sea un array
-        if (Array.isArray(usuarios)) {
-          const perfilesConEstatus = usuarios.map((p) => ({
-            ...p,
-            estatus: p.estatus || "Pendiente",
-          }));
-          setPerfiles(perfilesConEstatus);
-        } else {
-          setPerfiles([]);
-        }
-      } catch (error) {
-        console.error("Error al cargar usuarios:", error);
-        Swal.fire({
-          title: "Error",
-          text: "No se pudo cargar la lista de usuarios.",
-          icon: "error",
-          toast: true,
-          position: "top-end",
-          timer: 3000,
-          showConfirmButton: false,
-        });
-      }
-    };
-    fetchData();
-  }, []);
-
-  // Limpieza del mensaje de éxito
-  useEffect(() => {
-    if (mensajeExito) {
-      const timer = setTimeout(() => setMensajeExito(""), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [mensajeExito]);
-
-  const toggleMenu = () => setMenuOpen(!menuOpen);
-
-  // Funciones para abrir/cerrar formulario
-  const handleAbrirFormulario = () => {
-    setCedulaFormulario("");
-    setContratoFormulario("");
-    setFechaFormulario("");
-    setMostrarFormulario(true);
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
   };
 
-  const handleCerrarFormulario = () => {
-    setMostrarFormulario(false);
-  };
-
-  // Enviar datos del formulario
-  const handleEnviarFormulario = async () => {
-    if (!cedulaFormulario || !contratoFormulario || !fechaFormulario) {
-      Swal.fire({
-        icon: "warning",
-        title: "Faltan datos",
-        text: "Por favor completa todos los campos.",
-      });
-      return;
-    }
-    try {
-      await api.enviarAprobacion({
-        cedula_aprobacion: cedulaFormulario,
-        contrato: contratoFormulario,
-        fecha_aprobacion: fechaFormulario,
-        estatus: "Pendiente",
-      });
-      // Actualizar lista local
-      setPerfiles((prev) =>
-        prev.map((p) =>
-          p.cedula === cedulaFormulario
-            ? {
-                ...p,
-                estatus: "Pendiente",
-                contrato: contratoFormulario,
-                fecha_aprobacion: fechaFormulario,
-              }
-            : p
-        )
-      );
-      setMensajeExito(`Aprobación registrada para cédula ${cedulaFormulario}`);
-      handleCerrarFormulario();
-    } catch (error) {
-      console.error("Error al registrar aprobación:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo registrar la aprobación.",
-      });
-    }
-  };
-
-  // Ver detalles
-  const handleVerDetalles = (s) => {
+  // Función para mostrar detalles en Swal
+  const verDetalles = (persona) => {
     Swal.fire({
-      title: `Detalles de ${s.nombre_completo}`,
+      title: `Detalles de ${persona.nombre_completo}`,
       html: `
-        <h3>Información Personal</h3>
-        <p><strong>Nombre:</strong> ${s.nombre_completo}</p>
-        <p><strong>Cédula:</strong> ${s.cedula}</p>
-        <p><strong>Edad:</strong> ${s.edad}</p>
-        <p><strong>Teléfono:</strong> ${s.telefono}</p>
-        <p><strong>Email:</strong> ${s.email}</p>
-        <p><strong>Estado:</strong> ${s.estado}</p>
-        <p><strong>Municipio:</strong> ${s.municipio}</p>
-        <p><strong>Dirección:</strong> ${s.direccion_actual}</p>
-        <hr/>
-        <h3>Solicitud</h3>
-        <p><strong>Motivo:</strong> ${s.motivo}</p>
-        <p><strong>estatus:</strong> ${s.estatus}</p>
-        <hr/>
-        <h3>Emprendimiento</h3>
-        <p><strong>Nombre:</strong> ${s.nombre_emprendimiento}</p>
-        <p><strong>Sector:</strong> ${s.tipo_sector}</p>
-        <p><strong>Tipo Negocio:</strong> ${s.tipo_negocio}</p>
-        <p><strong>Consejo:</strong> ${s.consejo_nombre}</p>
-        <p><strong>Comuna:</strong> ${s.comuna}</p>
-        <p><strong>Dirección:</strong> ${s.direccion_emprendimiento}</p>
-        <hr/>
-        <h3>Requerimientos</h3>
-        <p><strong>Fecha:</strong> ${s.fecha_aprobacion}</p>
-        <p><strong>Número de contrato:</strong> ${s.contrato}</p>
-        <p><strong>estatus:</strong> ${
-          s.estatus === "Pendiente"
-            ? '<span style="color:rgb(223, 0, 0);">Pendiente</span>'
-            : '<span style="color:rgb(0, 153, 56);">Aprobado</span>'
-        }</p>
+        <p><strong>Cédula:</strong> ${persona.cedula}</p>
+        <p><strong>Nombre completo:</strong> ${persona.nombre_completo}</p>
+        <p><strong>Dirección actual:</strong> ${persona.direccion_actual}</p>
+        <p><strong>Tipo de sector:</strong> ${persona.tipo_sector}</p>
+        <p><strong>Tipo de negocio:</strong> ${persona.tipo_negocio}</p>
+        <p><strong>Motivo:</strong> ${persona.motivo}</p>
       `,
-      showCloseButton: true,
-      focusConfirm: false,
+      icon: "info",
       confirmButtonText: "Cerrar",
+      customClass: {
+        popup: "rounded-lg shadow-lg",
+        title: "text-xl font-semibold text-gray-700",
+        content: "text-gray-600",
+        confirmButton: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg mt-4"
+      }
     });
   };
 
-  // Aprobar desde lista
-  const handleAprobarDesdeLista = (s) => {
+  // Función para aprobar una persona
+  const aprobarPersona = (id) => {
     Swal.fire({
-      title: `¿Aprobar solicitud de ${s.nombre_completo}?`,
-      text: "¿Deseas aprobar esta solicitud y asignar un contrato?",
+      title: "¿Estás seguro?",
+      text: "¿Deseas aprobar a esta persona?",
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Sí, aprobar",
       cancelButtonText: "Cancelar",
+      customClass: {
+        popup: "rounded-lg shadow-lg",
+        confirmButton: "bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg",
+        cancelButton: "bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg"
+      }
     }).then((result) => {
       if (result.isConfirmed) {
-        aprobarSolicitud(s);
+        Swal.fire({
+          title: "¡Aprobado!",
+          text: "La persona ha sido aprobada.",
+          icon: "success",
+          customClass: {
+            popup: "rounded-lg shadow-lg",
+            confirmButton: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
+          }
+        });
+        // Aquí puedes actualizar el estado en backend si quieres
+        // También podrías actualizar el estado local para reflejar el cambio
       }
     });
   };
 
-  // Función para aprobar solicitud
-  const aprobarSolicitud = async (s) => {
-    // Incrementar secuencial
-    secuencialRef.current += 1;
-    setContadorSecuencial(secuencialRef.current);
-
-    const numeroSecuencial = String(secuencialRef.current).padStart(3, "0");
-    const contratoNumero = `IFEMI/CRED-${numeroSecuencial}/${añoActual}`;
-    const fechaActual = new Date().toISOString().slice(0, 10);
-
-    // Actualizar lista local
-    setPerfiles((prev) =>
-      prev.map((p) =>
-        p.cedula === s.cedula
-          ? {
-              ...p,
-              estatus: "Aprobado",
-              contrato: contratoNumero,
-              fecha_aprobacion: fechaActual,
-            }
-          : p
-      )
-    );
-
-    setMensajeExito(`Número de contrato: ${contratoNumero}`);
-
-    // Enviar a API
-    try {
-      await api.enviarAprobacion({
-        cedula_aprobacion: s.cedula,
-        contrato: contratoNumero,
-        fecha_aprobacion: fechaActual,
-        estatus: "Aprobado",
-      });
-    } catch (error) {
-      console.error("Error en enviar aprobación a API:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo enviar la aprobación a la API.",
-      });
-    }
-  };
-
-  // Filtrar perfiles
-  const perfilesFiltrados = perfiles.filter((s) => {
-    if (s.estatus === "Pendientes") return false; // Solo pendientes
-    const coincideBusqueda = s.nombre_completo
-      ?.toLowerCase()
-      .includes(busqueda.toLowerCase());
-    const coincideMotivo = activarFiltroMotivo
-      ? s.motivo === motivoFiltro
-      : true;
-    return coincideBusqueda && coincideMotivo;
-  });
-
-  // Para verificar qué datos tiene
-  console.log("Perfiles cargados:", perfiles);
-  console.log("Perfiles filtrados:", perfilesFiltrados);
-
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 font-sans">
       {menuOpen && <Menu />}
-      <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${
-          menuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
+        {/* Header */}
         <Header toggleMenu={toggleMenu} />
 
-        {/* Botón para abrir formulario */}
-        <div className="px-8 mb-4">
-          <button
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            onClick={handleAbrirFormulario}
-          >
-            Registrar Aprobación
-          </button>
-        </div>
-
-        {/* Formulario modal */}
-        {mostrarFormulario && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full space-y-4">
-              <h2 className="text-xl font-semibold mb-4">Registrar Aprobación</h2>
-              <div>
-                <label className="block mb-1 font-medium">Cédula</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border border-gray-300 rounded"
-                  value={cedulaFormulario}
-                  onChange={(e) => setCedulaFormulario(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">Contrato</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border border-gray-300 rounded"
-                  value={contratoFormulario}
-                  onChange={(e) => setContratoFormulario(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-medium">
-                  Fecha de Aprobación
-                </label>
-                <input
-                  type="date"
-                  className="w-full p-2 border border-gray-300 rounded"
-                  value={fechaFormulario}
-                  onChange={(e) => setFechaFormulario(e.target.value)}
-                />
-              </div>
-              <div className="flex justify-end space-x-2 mt-4">
-                <button
-                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                  onClick={handleCerrarFormulario}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  onClick={handleEnviarFormulario}
-                >
-                  Registrar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Contenido principal */}
-        <div className="pt-20 px-8">
-          {mensajeExito && (
-            <div className="mb-4 p-3 bg-green-200 text-green-800 rounded">
-              {mensajeExito}
-            </div>
-          )}
-
+        {/* Contenido */}
+        <main className="p-8 flex-1 overflow-y-auto">
           {/* Encabezado */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4">
-              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
+              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 cursor-pointer">
                 <i className="bx bx-check-circle text-3xl text-gray-700"></i>
               </div>
-              <h1 className="text-3xl font-semibold text-gray-800">Revision y Aprobacion</h1>
+              <h1 className="text-3xl font-bold text-gray-800">Revision y aprobacion</h1>
             </div>
           </div>
 
-          {/* Buscador */}
-          <div className="mb-6 max-w-4xl mx-auto flex flex-col items-start space-y-2">
-            <label
-              htmlFor="buscarnombre_completo"
-              className="text-gray-700 font-semibold"
-            >
-              Buscar nombre completo
-            </label>
-            <div className="w-full flex items-center space-x-4">
-              <input
-                id="buscarnombre_completo"
-                type="text"
-                placeholder="Buscar..."
-                className="w-full p-3 pl-10 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Lista de perfiles */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {perfilesFiltrados.length > 0 ? (
-              perfilesFiltrados.map((s) => (
-                <div
-                  key={s.cedula}
-                  className="bg-white p-4 rounded-xl shadow-lg transform transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-xl relative"
-                >
-                  {/* Icono */}
-                  <div className="absolute top-4 right-4 text-gray-400 text-xl">
-                    <i className="bx bx-user-circle"></i>
-                  </div>
-                  {/* Datos */}
-                  <h2 className="text-xl font-semibold mb-2 flex items-center space-x-2">
-                    <i className="bx bx-user text-blue-500"></i>
-                    <span>{s.nombre_completo}</span>
-                  </h2>
-                  <p className="mb-2">
-                    <strong>Contrato:</strong> {s.contrato ?? "Pendiente"}
-                  </p>
-                  <p
-                    className={`mb-2 font-semibold ${
-                      s.estatus === "Pendiente"
-                        ? "text-red-600"
-                        : "text-green-600"
-                    } flex items-center space-x-2`}
-                  >
-                    <i
-                      className={`bx ${
-                        s.estatus === "Pendiente"
-                          ? "bx-time"
-                          : "bx-check-circle"
+          {/* Sección de registros */}
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">Personas Registradas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {personasRegistradas.map((persona) => (
+              <div
+                key={persona.id}
+                className="bg-white rounded-xl shadow-lg p-6 transform hover:scale-105 transition-transform duration-300 hover:shadow-2xl"
+              >
+                <div className="mb-4">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">{persona.nombre_completo}</h3>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Estado:{" "}
+                    <span
+                      className={`font-semibold ${
+                        persona.estado === 'aprobada' ? 'text-green-600' : 'text-yellow-600'
                       }`}
-                    ></i>
-                    <span>{s.estatus}</span>
-                  </p>
-                  {/* Botón detalles */}
-                  <button
-                    onClick={() => handleVerDetalles(s)}
-                    className="mt-auto bg-gradient-to-r from-indigo-600 to-purple-700 text-white px-5 py-2 rounded-full shadow-md hover:scale-105 transform transition duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
-                    Ver detalles
-                  </button>
-                  {/* Botón aprobar si pendiente */}
-                  {s.estatus === "Pendiente" && (
-                    <button
-                      onClick={() => handleAprobarDesdeLista(s)}
-                      className="mt-2 bg-green-500 text-white px-3 py-1 rounded flex items-center space-x-2 hover:bg-green-600 transition"
                     >
-                      <i className="bx bx-check"></i>
-                      <span>Aprobar</span>
+                      {persona.estado}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex space-x-3 justify-end">
+                  {/* Ver detalles */}
+                  <button
+                    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg shadow-md transition"
+                    onClick={() => verDetalles(persona)}
+                  >
+                    Ver detalles de solicitud
+                  </button>
+                  {/* Aprobar */}
+                  {persona.estado !== 'aprobada' && (
+                    <button
+                      className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg shadow-md transition"
+                      onClick={() => aprobarPersona(persona.id)}
+                    >
+                      Aprobar
                     </button>
                   )}
                 </div>
-              ))
-            ) : (
-              <p className="col-span-3 text-center text-gray-500 text-lg mt-12 select-none">
-                No hay perfiles que coincidan
-              </p>
-            )}
-          </section>
-        </div>
+              </div>
+            ))}
+          </div>
+        </main>
+
+        {/* Pie */}
+        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
+        </footer>
       </div>
     </div>
   );
 };
 
-export default Aprobacion;
+export default aprobacion;

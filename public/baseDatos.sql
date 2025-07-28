@@ -40,8 +40,8 @@ CREATE TABLE usuario (
 CREATE TABLE cuenta (
   cedula_titular VARCHAR (20) NOT NULL PRIMARY KEY,
   nombre_completo VARCHAR (20) NOT NULL,
-  numero_cuentaVARCHAR (20) NOT NULL
-)
+  numero_cuenta VARCHAR (20) NOT NULL
+);
 
 --TABLA DE REQUERIMIENTOS Y SOLICITUD
 
@@ -51,12 +51,14 @@ CREATE TABLE requerimientos (
     nombre_requerimiento VARCHAR (100)
 );
 
+-- Tabla intermedia para relacionar requerimientos y emprendedores
 CREATE TABLE requerimiento_emprendedor (
-    id_req SERIAL PRIMARY KEY,
-    cedula_emprendedor VARCHAR (20) NOT NULL,
-    opt_requerimiento VARCHAR (1000000),
-    CONSTRAINT fk_persona FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos),
-    CONSTRAINT fk_requerimiento FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula)
+  id_req SERIAL PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) NOT NULL,
+  id_requerimientos INTEGER NOT NULL,
+  opt_requerimiento TEXT,
+  CONSTRAINT fk_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula),
+  CONSTRAINT fk_requerimiento FOREIGN KEY (id_requerimientos) REFERENCES requerimientos(id_requerimientos)
 );
 
 --TABLA DE SOLICITUD

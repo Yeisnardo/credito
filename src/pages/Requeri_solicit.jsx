@@ -157,7 +157,9 @@ const RequireSolicit = ({ setUser }) => {
   };
 
   const handleMotivoChange = (e) => {
-    setMotivo(e.target.value);
+    const value = e.target.value;
+    setMotivo(value);
+    setFormData((prev) => ({ ...prev, motivo: value }));
   };
 
   // Enviar requerimiento y solicitud
@@ -269,17 +271,6 @@ const RequireSolicit = ({ setUser }) => {
                             key={req.id_requerimientos}
                             className="flex items-center mb-2"
                           >
-                            <input
-                              type="checkbox"
-                              id={`requerimiento-${req.id_requerimientos}`}
-                              name="opt_requerimiento"
-                              value={req.id_requerimientos}
-                              checked={formData.opt_requerimiento.includes(
-                                req.id_requerimientos
-                              )}
-                              onChange={handleInputChange}
-                              className="h-6 w-6 border-2 border-gray-300 rounded-md transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400"
-                            />
                             <label
                               htmlFor={`requerimiento-${req.id_requerimientos}`}
                               className="ml-3 text-gray-700 font-medium"
@@ -384,72 +375,89 @@ const RequireSolicit = ({ setUser }) => {
 
           {/* Mostrar resultados */}
           {resultado && (
-            <div className="mt-8 p-6 bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-7xl mx-auto">
-              <h3 className="text-2xl font-semibold mb-6 text-center text-gray-800">
-                Detalles del Requerimiento y Solicitud
+            <div className="mt-8 max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+              <h3 className="text-3xl font-semibold mb-8 text-center text-gray-800">
+                Detalles de Requerimientos y Solicitudes
               </h3>
 
-              {/* Mostrar detalles dependiendo si resultado es array o único */}
               {Array.isArray(resultado) ? (
                 resultado.length > 0 &&
                 resultado.map((req, index) => (
                   <div
                     key={index}
-                    className="mb-8 p-4 bg-gray-50 rounded-lg shadow-md border border-gray-200"
+                    className="mb-10 p-6 bg-gray-50 rounded-xl shadow-md border border-gray-200"
                   >
-                    {/* Detalles del requerimiento */}
-                    <div className="mb-4">
-                      <p className="mb-2">
-                        <span className="font-semibold text-gray-700">ID:</span>{" "}
-                        {req.id_req}
-                      </p>
-                      <p className="mb-2">
+                    {/* Requerimientos */}
+                    <div className="mb-6">
+                      {/* Oculto pero accesible para SEO */}
+                      <p
+                        className="mb-2 text-sm text-gray-500"
+                        style={{ display: "none" }}
+                      >
                         <span className="font-semibold text-gray-700">
-                          Cédula:
+                          Requerimientos:
                         </span>{" "}
-                        {req.cedula_emprendedor}
+                        {Array.isArray(req.opt_requerimiento)
+                          ? req.opt_requerimiento.join(", ")
+                          : ""}
                       </p>
-                      {/* Después de mostrar los detalles del requerimiento */}
-                      <h4 className="text-lg font-semibold mb-2">
-                        Requerimientos asociados:
+                      {/* Lista visual */}
+                      <h4 className="text-xl font-semibold mb-3 text-gray-700">
+                        Requerimientos seleccionados
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        {requerimientos.map((req) => (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto p-4 bg-white rounded-xl shadow-md border border-gray-300">
+                        {requerimientos.map((r) => (
                           <div
-                            key={req.id_req}
-                            className="flex items-center"
+                            key={r.id_requerimientos}
+                            className="flex items-center p-2 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
                           >
-                            <input
-                              type="checkbox"
-                              checked={
-                                Array.isArray(resultado.opt_requerimiento) &&
-                                resultado.opt_requerimiento.includes(req.id_req)
-                              }
-                              readOnly
-                              className="h-4 w-4 text-blue-600"
-                            />
-                            <label className="ml-2 text-gray-700">
-                              {req.nombre_requerimiento}
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={req.opt_requerimiento?.includes(
+                                  r.id_requerimientos
+                                )}
+                                readOnly
+                                className="peer hidden"
+                              />
+                              <label className="inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={req.opt_requerimiento?.includes(
+                                    r.id_requerimientos
+                                  )}
+                                  readOnly
+                                  className="peer sr-only"
+                                />
+                                <div className="w-11 h-6 bg-red-700 rounded-full peer-focus:outline-none peer-checked:bg-blue-700 transition-colors duration-200 relative">
+                                  <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 peer-checked:translate-x-10"></div>
+                                </div>
+                              </label>
+                              {/* Opcional: Agregar un efecto visual en hover o cuando esté checked */}
+                            </div>
+                            <label className="ml-3 text-gray-700 font-medium hover:text-blue-600 transition-colors cursor-pointer">
+                              {r.nombre_requerimiento}
                             </label>
                           </div>
                         ))}
                       </div>
                     </div>
+
                     {/* Tabla Motivo y Estado */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-max border-collapse border border-gray-300 rounded-lg shadow-sm">
-                        <thead className="bg-gray-100">
+                    <div className="overflow-x-auto mt-6">
+                      <table className="w-full min-w-max border border-gray-300 rounded-xl shadow-sm bg-white">
+                        <thead className="bg-gray-100 rounded-t-xl">
                           <tr>
-                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tl-lg">
+                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tl-xl">
                               Motivo
                             </th>
-                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tr-lg">
+                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tr-xl">
                               Estado
                             </th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr className="hover:bg-gray-50">
+                          <tr className="hover:bg-gray-50 transition-colors">
                             <td className="border border-gray-300 px-4 py-3">
                               {req.motivo}
                             </td>
@@ -464,20 +472,20 @@ const RequireSolicit = ({ setUser }) => {
                 ))
               ) : (
                 // Resultado único
-                <div className="p-4 bg-gray-50 rounded-lg shadow-md border border-gray-200">
-                  {/* Detalles del resultado */}
+                <div className="p-6 bg-gray-50 rounded-xl shadow-md border border-gray-200 mb-8 transition-transform hover:scale-105">
+                  {/* Detalles principales */}
                   <div className="mb-4">
-                    <p className="mb-2">
+                    <p className="mb-2 text-gray-600">
                       <span className="font-semibold text-gray-700">ID:</span>{" "}
                       {resultado.id_req}
                     </p>
-                    <p className="mb-2">
+                    <p className="mb-2 text-gray-600">
                       <span className="font-semibold text-gray-700">
                         Cédula:
                       </span>{" "}
                       {resultado.cedula_emprendedor}
                     </p>
-                    <p className="mb-4">
+                    <p className="mb-2 text-gray-600">
                       <span className="font-semibold text-gray-700">
                         Requerimientos:
                       </span>{" "}
@@ -486,21 +494,22 @@ const RequireSolicit = ({ setUser }) => {
                         : ""}
                     </p>
                   </div>
+
                   {/* Tabla Motivo y Estado */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-max border-collapse border border-gray-300 rounded-lg shadow-sm">
-                      <thead className="bg-gray-100">
+                  <div className="overflow-x-auto mt-4">
+                    <table className="w-full min-w-max border border-gray-300 rounded-xl shadow-sm bg-white">
+                      <thead className="bg-gray-100 rounded-t-xl">
                         <tr>
-                          <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tl-lg">
+                          <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tl-xl">
                             Motivo
                           </th>
-                          <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tr-lg">
+                          <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700 rounded-tr-xl">
                             Estado
                           </th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="hover:bg-gray-50">
+                        <tr className="hover:bg-gray-50 transition-colors">
                           <td className="border border-gray-300 px-4 py-3">
                             {resultado.motivo}
                           </td>

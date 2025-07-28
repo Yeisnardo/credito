@@ -221,7 +221,7 @@ const Menu = ({ onClose }) => {
               >
                 <i className="bx bx-check-circle text-2xl mr-3"></i>
                 <span className="text-md font-semibold">
-                  Modulo de Revisión y Aprobación
+                  Modulo de revisión y aprobación
                 </span>
               </NavLink>
             </div>

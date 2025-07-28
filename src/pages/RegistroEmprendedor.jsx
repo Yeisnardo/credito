@@ -528,7 +528,7 @@ const RegistroEmprendedor = () => {
                 Datos de Usuario
               </h3>
               {/* Cédula del Emprendedor */}
-              <div>
+              <div style={{ display: "none" }}>
                 <label
                   className="block mb-1 text-sm font-medium text-gray-600"
                   htmlFor="cedula_usuario"
