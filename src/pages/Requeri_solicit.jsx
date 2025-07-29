@@ -271,6 +271,17 @@ const RequireSolicit = ({ setUser }) => {
                             key={req.id_requerimientos}
                             className="flex items-center mb-2"
                           >
+                            <input
+                              type="checkbox"
+                              id={`requerimiento-${req.id_requerimientos}`}
+                              name="opt_requerimiento"
+                              value={req.id_requerimientos}
+                              checked={formData.opt_requerimiento.includes(
+                                req.id_requerimientos
+                              )}
+                              onChange={handleInputChange}
+                              className="h-6 w-6 border-2 border-gray-300 rounded-md transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400"
+                            />
                             <label
                               htmlFor={`requerimiento-${req.id_requerimientos}`}
                               className="ml-3 text-gray-700 font-medium"
