@@ -55,7 +55,6 @@ CREATE TABLE requerimientos (
 CREATE TABLE requerimiento_emprendedor (
   id_req SERIAL PRIMARY KEY,
   cedula_emprendedor VARCHAR(20) NOT NULL,
-  id_requerimientos INTEGER NOT NULL,
   opt_requerimiento TEXT,
   CONSTRAINT fk_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula),
   CONSTRAINT fk_requerimiento FOREIGN KEY (id_requerimientos) REFERENCES requerimientos(id_requerimientos)
@@ -66,6 +65,7 @@ CREATE TABLE solicitud (
   cedula_emprendedor VARCHAR(20) PRIMARY KEY,
   motivo VARCHAR (1000) NOT NULL,
   estatus VARCHAR (20),
+  motivo_rechazo TEXT,
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 

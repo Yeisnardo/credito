@@ -60,4 +60,29 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Actualizar un requerimiento_emprendedor por cédula del emprendedor
+router.put("/:cedula_emprendedor", async (req, res) => {
+  try {
+    const { cedula_emprendedor } = req.params;
+    const { opt_requerimiento } = req.body;
+
+    const resultado = await query(
+      `UPDATE requerimiento_emprendedor
+       SET opt_requerimiento = $1
+       WHERE cedula_emprendedor = $2
+       RETURNING *`,
+      [opt_requerimiento, cedula_emprendedor]
+    );
+
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({ message: "Requerimiento no encontrado" });
+    }
+
+    res.status(200).json(resultado.rows[0]);
+  } catch (error) {
+    console.error("Error en updateRequerimientoEmprendedor:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
