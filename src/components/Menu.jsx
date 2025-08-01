@@ -238,7 +238,7 @@ const Menu = ({ onClose }) => {
               >
                 <i className="bx bx-credit-card text-2xl mr-3"></i>
                 <span className="text-md font-semibold">
-                  Modulo Asignación de Contrato
+                  Modulo gestion de contrato
                 </span>
               </NavLink>
             </div>
@@ -272,24 +272,7 @@ const Menu = ({ onClose }) => {
               >
                 <i className="bx bx-credit-card text-2xl mr-3"></i>
                 <span className="text-md font-semibold">
-                  Modulo de Gestión de Créditos
-                </span>
-              </NavLink>
-            </div>
-
-            <div ref={setLinkRef("/amortizacion")}>
-              <NavLink
-                to="/amortizacion"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-money-withdraw text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Modulo de Morosidad
+                  Módulo de supervisión de cuotas
                 </span>
               </NavLink>
             </div>

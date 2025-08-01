@@ -25,7 +25,6 @@ CREATE TABLE emprendimientos (
   CONSTRAINT fk_emprendimiento_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
-
 -- Tabla de usuario
 CREATE TABLE usuario (
   cedula_usuario VARCHAR(20) NOT NULL PRIMARY KEY,
@@ -57,12 +56,13 @@ CREATE TABLE requerimiento_emprendedor (
   cedula_emprendedor VARCHAR(20) NOT NULL,
   opt_requerimiento TEXT,
   CONSTRAINT fk_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula),
-  CONSTRAINT fk_requerimiento FOREIGN KEY (id_requerimientos) REFERENCES requerimientos(id_requerimientos)
+  CONSTRAINT fk_requerimiento FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos)
 );
 
 --TABLA DE SOLICITUD
 CREATE TABLE solicitud (
-  cedula_emprendedor VARCHAR(20) PRIMARY KEY,
+  id_contrato SERIAL PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) ,
   motivo VARCHAR (1000) NOT NULL,
   estatus VARCHAR (20),
   motivo_rechazo TEXT,
@@ -76,56 +76,45 @@ CREATE TABLE clasificacion (
   negocio VARCHAR(100) NOT NULL
 );
 
-
-
--- TABLA DE APROBACION
-CREATE TABLE aprobacion (
-  cedula_aprobacion VARCHAR (20) PRIMARY KEY,
-  contrato VARCHAR (50) NOT NULL,
-  estatus VARCHAR (10) NOT NULL,
-  confirmacion_persona VARCHAR (15),
-  condiciones TEXT,
-  fecha_aprobacion VARCHAR (20) NOT NULL,
-  CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_aprobacion) REFERENCES persona(cedula) ON DELETE CASCADE
+CREATE TABLE Contrato (
+  id_contrato SERIAL PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20),
+  numero_contrato VARCHAR(20),
+  monto_aprob_euro TEXT,
+  cincoflat TEXT,
+  diezinteres TEXT,
+  monto_devolver TEXT,
+  fecha_desde DATE,
+  fecha_hasta DATE,
+  estatus VARCHAR(20),
+  FOREIGN KEY (id_contrato) REFERENCES solicitud(id_contrato)
 );
 
---TABLA DE FONDO
-CREATE TABLE fondo (
-  id_fondo SERIAL PRIMARY KEY,
-  fecha VARCHAR (40),
-  tipo_movimiento VARCHAR (10),
-  monto VARCHAR (100),
-  Saldo VARCHAR (100)
+CREATE TABLE deposito(
+  id_deposito SERIAL PRIMARY KEY,
+  cedula_emprendedor VARCHAR (20) NOT NULL,
+  referencia VARCHAR (5) NOT NULL,
+  fecha DATE NOT NULL,
+  estatus VARCHAR (20) NOT null,
+  FOREIGN KEY (id_deposito) REFERENCES contrato (id_contrato)
 );
 
---TABLA DE CREDITO
-CREATE TABLE credito (
-  aprobacion_id SERIAL PRIMARY KEY,
-  cedula_credito VARCHAR(20) NOT NULL,
-  referencia VARCHAR(5) NOT NULL,
-  monto_euros VARCHAR(255) NOT NULL,
-  monto_bs VARCHAR(255) NOT NULL,
-  diez_euros VARCHAR(255) NOT NULL,
-  fecha_desde VARCHAR(15) NOT NULL,
-  fecha_hasta VARCHAR(15) NOT NULL,
-  estatus VARCHAR(40) NOT NULL,
-  cuota VARCHAR(40) NOT NULL,
-  CONSTRAINT fk_cedula FOREIGN KEY (cedula_credito) REFERENCES aprobacion(cedula_aprobacion)
-);
+INSERT INTO requerimientos (nombre_requerimiento) VALUES
+('Carta de Motivo para Solicitar Crédito'),
+('Postulación UBCH'),
+('Certificado de emprender juntos'),
+('Registro Municipal'),
+('Carta de residencia'),
+('Copia de cédula'),
+('RIF personal'),
+('Fotos del emprendimiento'),
+('RIF de emprendimiento'),
+('Referencia bancaria');
 
-    INSERT INTO requerimientos (nombre_requerimiento) VALUES
-    ('Carta de Motivo para Solicitar Crédito'),
-    ('Postulación UBCH'),
-    ('Certificado de emprender juntos'),
-    ('Registro Municipal'),
-    ('Carta de residencia'),
-    ('Copia de cédula'),
-    ('RIF personal'),
-    ('Fotos del emprendimiento'),
-    ('RIF de emprendimiento'),
-    ('Referencia bancaria');
 
-    
+-- Insertar en persona
+
+
 INSERT INTO clasificacion (sector, negocio) VALUES
 -- Sector Primario
 ('Agricultura', 'Cultivo de frutas'),
@@ -218,3 +207,42 @@ INSERT INTO clasificacion (sector, negocio) VALUES
 ('Economía Colaborativa', 'Plataformas de economía compartida'),
 ('Economía Colaborativa', 'Servicios de coworking'),
 ('Economía Colaborativa', 'Intercambio de bienes y servicios');
+
+INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona)
+VALUES ('30608696', 'Yeisnardo Eliander Bravo Colina', 30, '555-1234', 'admin@example.com', 'Activo', 'Ciudad', 'Dirección 123', 'Administrador');
+
+-- Insertar en usuario
+INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
+VALUES ('30608696', 'Administrador', 'admin123', 'Administrador', 'Activo');
+
+INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES
+('1234567890', 'Juan Perez', 35, '3001234567', 'juan.perez@example.com', 'Activo', 'Bogotá', 'Calle 123 #45-67', 'Emprendedor'),
+('0987654321', 'Maria Lopez', 28, '3107654321', 'maria.lopez@example.com', 'Activo', 'Medellín', 'Carrera 89 #12-34', 'Emprendedora');
+
+INSERT INTO emprendimientos (cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, consejo_nombre, comuna, direccion_emprendimiento) VALUES
+('1234567890', 'Tecnología', 'Software', 'SoftTech SAS', 'Juan Pérez', 'Chapinería', 'Avenida Siempre Viva 742'),
+('0987654321', 'Artesanía', 'Manualidades', 'ArtisanCraft', 'Maria Lopez', 'Laureles', 'Calle 34 #56-78');
+
+INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus) VALUES
+('1234567890', 'juanp', 'pass123', 'Administrador', 'Activo'),
+('0987654321', 'marial', 'pass456', 'Emprendedor', 'Activo');
+
+INSERT INTO cuenta (cedula_titular, nombre_completo, numero_cuenta) VALUES
+('1234567890', 'Juan Perez', '1234567890-001'),
+('0987654321', 'Maria Lopez', '0987654321-002');
+
+INSERT INTO requerimiento_emprendedor (cedula_emprendedor, opt_requerimiento) VALUES
+('1234567890', '[1,2,3,4,5,6]'),
+('0987654321', '[1,2,3,4]');
+
+INSERT INTO solicitud (cedula_emprendedor, motivo, estatus, motivo_rechazo) VALUES
+('1234567890', 'Necesito financiamiento para ampliar mi negocio', 'En proceso', NULL),
+('0987654321', 'Requiere fondos para compra de maquinaria', 'En proceso', NULL);
+
+INSERT INTO contrato (cedula_emprendedor, numero_contrato, monto_aprob_euro, cincoflat, diezinteres, monto_devolver, fecha_desde, fecha_hasta, estatus) VALUES
+('1234567890', 'CONTRATO001', '5000', '100', '10%', '5500', '2024-01-01', '2024-12-31', 'Activo'),
+('0987654321', 'CONTRATO002', '3000', '50', '8%', '3240', '2024-02-01', '2024-11-30', 'Activo');
+
+INSERT INTO deposito (cedula_emprendedor, referencia, fecha, estatus) VALUES
+('1234567890', 'REF01', '2024-01-15', 'Completado'),
+('0987654321', 'REF02', '2024-02-20', 'Pendiente');

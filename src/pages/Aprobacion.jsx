@@ -43,6 +43,7 @@ const Aprobacion = () => {
   // Filtros
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [searchTerm, setSearchTerm] = useState("");
+  const [cedulaFiltro, setCedulaFiltro] = useState("");
 
   // Carga de requerimientos
   useEffect(() => {
@@ -65,11 +66,17 @@ const Aprobacion = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   const verDetalles = async (persona) => {
-    setPersonaSeleccionada(persona);
-    const detalles = await fetchDetallesPersona(persona.cedula_emprendedor);
-    setResultado(detalles);
-    setModalOpen(true);
-  };
+  setPersonaSeleccionada(persona);
+  const detalles = await fetchDetallesPersona(persona.cedula_emprendedor);
+  // Si fetchDetallesPersona devuelve todos los registros, filtra aquí:
+  const detallesFiltrados = detalles
+    ? Array.isArray(detalles)
+      ? detalles.filter((d) => d.cedula_emprendedor === persona.cedula_emprendedor)
+      : [detalles] // si es un objeto, poner en array
+    : [];
+  setResultado(detallesFiltrados);
+  setModalOpen(true);
+};
 
   const cerrarModal = () => {
     setModalOpen(false);
@@ -151,6 +158,7 @@ const Aprobacion = () => {
     const estadoMatch =
       filtroEstado === "todos" ||
       persona.estatus.toLowerCase() === filtroEstado;
+
     const searchMatch =
       persona.nombre_completo
         .toLowerCase()
@@ -158,7 +166,12 @@ const Aprobacion = () => {
       persona.cedula_emprendedor
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
-    return estadoMatch && searchMatch;
+
+    const cedulaMatch =
+      cedulaFiltro.trim() === "" ||
+      persona.cedula_emprendedor.includes(cedulaFiltro.trim());
+
+    return estadoMatch && searchMatch && cedulaMatch;
   });
 
   return (
@@ -197,6 +210,7 @@ const Aprobacion = () => {
               <option value="aprobada">Aprobada</option>
               <option value="rechazada">Rechazada</option>
             </select>
+            {/* Input para buscar por nombre o cédula */}
             <input
               type="text"
               placeholder="Buscar por nombre o cédula"
@@ -204,71 +218,84 @@ const Aprobacion = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            {/* Input para filtrar por cédula */}
+            <input
+              type="text"
+              placeholder="Filtrar por cédula"
+              className="p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition flex-1"
+              value={cedulaFiltro}
+              onChange={(e) => setCedulaFiltro(e.target.value)}
+            />
           </div>
 
           {/* Lista de personas */}
-          <div className="grid gap-6 px-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredPersonas.length === 0 ? (
-              <p className="col-span-full text-center text-gray-400 font-semibold text-lg py-8">
-                No hay personas que coincidan con los filtros.
-              </p>
-            ) : (
-              filteredPersonas.map((persona) => (
-                <div
-                  key={persona.cedula_emprendedor}
-                  className="bg-white rounded-xl shadow-md border border-gray-200 p-6 hover:shadow-xl transform transition duration-300 hover:scale-105"
-                >
-                  <div className="flex flex-col items-center mb-4">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                      {persona.nombre_completo}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Estado:{" "}
-                      <span
-                        className={`font-semibold ${
-                          persona.estatus === "aprobada"
-                            ? "text-green-600"
-                            : persona.estatus === "rechazada"
-                            ? "text-red-600"
-                            : "text-blue-600"
-                        }`}
-                      >
-                        {persona.estatus}
-                      </span>
-                    </p>
-                    {persona.estatus === "rechazada" && (
-                      <p className="text-sm text-gray-400 mt-1 italic text-center max-w-xs">
-                        Motivo: {persona.motivo_rechazo}
+          <div className="px-4 py-8 max-w-7xl mx-auto">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredPersonas.length === 0 ? (
+                <p className="col-span-full text-center text-gray-400 font-semibold text-lg py-8">
+                  No hay personas que coincidan con los filtros.
+                </p>
+              ) : (
+                filteredPersonas.map((persona) => (
+                  <div
+                    key={persona.cedula_emprendedor}
+                    className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-transform duration-300 transform hover:scale-105"
+                  >
+                    {/* Encabezado */}
+                    <div className="flex flex-col items-center mb-4">
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2 text-center">
+                        {persona.nombre_completo}
+                      </h3>
+                      <p className="text-sm text-gray-500 text-center">
+                        Estado:{" "}
+                        <span
+                          className={`font-semibold ${
+                            persona.estatus === "aprobada"
+                              ? "text-green-600"
+                              : persona.estatus === "rechazada"
+                              ? "text-red-600"
+                              : "text-yellow-600"
+                          }`}
+                        >
+                          {persona.estatus}
+                        </span>
                       </p>
-                    )}
+                      {persona.estatus === "rechazada" && (
+                        <p className="text-sm text-gray-400 mt-1 italic max-w-xs text-center">
+                          Motivo: {persona.motivo_rechazo}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Botones */}
+                    <div className="flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-2">
+                      <button
+                        className="bg-gray-900 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-500 transition"
+                        onClick={() => verDetalles(persona)}
+                      >
+                        Ver detalles
+                      </button>
+                      {persona.estatus !== "aprobada" && (
+                        <>
+                          <button
+                            className="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-500 transition"
+                            onClick={() => aprobarPersona(persona.cedula_emprendedor)}
+                          >
+                            Aprobar
+                          </button>
+                          <button
+                            className="bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-500 transition"
+                            onClick={() => rechazarPersona(persona)}
+                          >
+                            Rechazar
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-center space-x-3">
-                    <button
-                      className="bg-gray-900 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-500 transition"
-                      onClick={() => verDetalles(persona)}
-                    >
-                      Ver detalles
-                    </button>
-                    {persona.estatus !== "aprobada" && (
-                      <>
-                        <button
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-500 transition"
-                          onClick={() => aprobarPersona(persona.cedula_emprendedor)}
-                        >
-                          Aprobar
-                        </button>
-                        <button
-                          className="bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-500 transition"
-                          onClick={() => rechazarPersona(persona)}
-                        >
-                          Rechazar
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </main>
 
@@ -418,7 +445,7 @@ const Aprobacion = () => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-gray-100 border-t border-gray-200 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} &nbsp; <strong>IFEMI & UPTYAB</strong>. Todos los derechos reservados.
+          © {new Date().getFullYear()}   <strong>IFEMI & UPTYAB</strong>. Todos los derechos reservados.
         </footer>
       </div>
     </div>
