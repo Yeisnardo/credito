@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 
-const Menu = ({ onClose }) => {
+const Menu = ({ onClose, userRole }) => {
   const activeClassName = "bg-gray-300 text-black font-semibold shadow-lg";
 
   // Estados para los submenús, con persistencia en localStorage
@@ -21,19 +21,13 @@ const Menu = ({ onClose }) => {
 
   // Guardar en localStorage cuando cambien los estados
   useEffect(() => {
-    localStorage.setItem(
-      "isRequerimientosOpen",
-      JSON.stringify(isRequerimientosOpen)
-    );
+    localStorage.setItem("isRequerimientosOpen", JSON.stringify(isRequerimientosOpen));
   }, [isRequerimientosOpen]);
   useEffect(() => {
     localStorage.setItem("isHistorialOpen", JSON.stringify(isHistorialOpen));
   }, [isHistorialOpen]);
   useEffect(() => {
-    localStorage.setItem(
-      "isGestionEmprendOpen",
-      JSON.stringify(isGestionEmprendOpen)
-    );
+    localStorage.setItem("isGestionEmprendOpen", JSON.stringify(isGestionEmprendOpen));
   }, [isGestionEmprendOpen]);
 
   // Cerrar submenús al hacer clic fuera
@@ -65,11 +59,9 @@ const Menu = ({ onClose }) => {
     if (el) linkRefs.current[path] = el;
   };
 
-  const toggleRequerimientos = () =>
-    setIsRequerimientosOpen(!isRequerimientosOpen);
+  const toggleRequerimientos = () => setIsRequerimientosOpen(!isRequerimientosOpen);
   const toggleHistorial = () => setIsHistorialOpen(!isHistorialOpen);
-  const toggleGestionEmprend = () =>
-    setIsGestionEmprendOpen(!isGestionEmprendOpen);
+  const toggleGestionEmprend = () => setIsGestionEmprendOpen(!isGestionEmprendOpen);
 
   return (
     <aside
@@ -99,7 +91,6 @@ const Menu = ({ onClose }) => {
 
             {/* Solicitud de crédito */}
             <div>
-              {/* Menú de Solicitud de crédito */}
               <button
                 onClick={toggleRequerimientos}
                 className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
@@ -118,7 +109,6 @@ const Menu = ({ onClose }) => {
               </button>
               {isRequerimientosOpen && (
                 <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
-                  {/* Requerimientos y motivo de solicitud */}
                   <div ref={setLinkRef("/Requeri_solicit")}>
                     <NavLink
                       to="/Requeri_solicit"
@@ -134,7 +124,6 @@ const Menu = ({ onClose }) => {
                       Requerimientos y motivo de solicitud
                     </NavLink>
                   </div>
-                  {/* Mi Contrato */}
                   <div ref={setLinkRef("/Contrato")}>
                     <NavLink
                       to="/Contrato"
@@ -209,73 +198,81 @@ const Menu = ({ onClose }) => {
             </div>
 
             {/* Enlaces adicionales */}
-            <div ref={setLinkRef("/Aprobacion")}>
-              <NavLink
-                to="/Aprobacion"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-check-circle text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Modulo de revisión y aprobación
-                </span>
-              </NavLink>
-            </div>
+            {userRole === 'admin' && (
+              <div ref={setLinkRef("/Aprobacion")}>
+                <NavLink
+                  to="/Aprobacion"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-check-circle text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Modulo de revisión y aprobación
+                  </span>
+                </NavLink>
+              </div>
+            )}
 
-            <div ref={setLinkRef("/Gestion")}>
-              <NavLink
-                to="/Gestion"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-credit-card text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Modulo gestion de contrato
-                </span>
-              </NavLink>
-            </div>
+            {userRole === 'admin' && (
+              <div ref={setLinkRef("/Gestion")}>
+                <NavLink
+                  to="/Gestion"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-credit-card text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Modulo gestión de contrato
+                  </span>
+                </NavLink>
+              </div>
+            )}
 
-            <div ref={setLinkRef("/Fondo")}>
-              <NavLink
-                to="/Fondo"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-money-withdraw text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Fondo Financiero de Crédito
-                </span>
-              </NavLink>
-            </div>
+            {userRole === 'admin' && (
+              <div ref={setLinkRef("/Fondo")}>
+                <NavLink
+                  to="/Fondo"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-money-withdraw text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Fondo Financiero de Crédito
+                  </span>
+                </NavLink>
+              </div>
+            )}
 
-            <div ref={setLinkRef("/confirmacionCuota")}>
-              <NavLink
-                to="/confirmacionCuota"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-credit-card text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Módulo de supervisión de cuotas
-                </span>
-              </NavLink>
-            </div>
+            {userRole === 'admin' && (
+              <div ref={setLinkRef("/confirmacionCuota")}>
+                <NavLink
+                  to="/confirmacionCuota"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-credit-card text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Módulo de supervisión de cuotas
+                  </span>
+                </NavLink>
+              </div>
+            )}
 
             {/* Configuración */}
             <div>
