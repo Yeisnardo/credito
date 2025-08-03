@@ -47,21 +47,19 @@ router.get("/:cedula_emprendedor", async (req, res) => {
   }
 });
 
-// Ruta para obtener requerimientos por cedula_emprendedor
-router.get("/:cedula", async (req, res) => {
-  const { cedula } = req.params;
+// Obtener todos los requerimientos
+router.get('/', async (req, res) => {
   try {
     const resultados = await query(
       `SELECT re.*, s.motivo, s.estatus, p.nombre_completo, e.nombre_emprendimiento
        FROM requerimiento_emprendedor re
        LEFT JOIN solicitud s ON re.cedula_emprendedor = s.cedula_emprendedor
        LEFT JOIN persona p ON p.cedula = re.cedula_emprendedor
-       LEFT JOIN emprendimientos e ON e.cedula_emprendedor = re.cedula_emprendedor
-       WHERE re.cedula_emprendedor = $1`, [cedula]
+       LEFT JOIN emprendimientos e ON e.cedula_emprendedor = re.cedula_emprendedor`
     );
     res.status(200).json(resultados.rows);
   } catch (error) {
-    console.error("Error en la consulta para obtener requerimientos por cedula:", error);
+    console.error("Error en obtener todos los requerimientos:", error);
     res.status(500).json({ error: error.message });
   }
 });
