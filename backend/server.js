@@ -5,6 +5,7 @@ const cors = require('cors');
 const personaAPI = require('./controllers/persona');
 const usuarioAPI = require('./controllers/usuario');
 const fondoAPI = require('./controllers/fondo');
+const contratoAPI = require('./controllers/contrato');
 const clasificacion_requerimientoAPI = require('./controllers/clasificacion_requerimiento'); // Asegúrate de que la ruta sea correcta
 const emprendimientoAPI = require('./controllers/empredimiento'); // Importa el controlador de emprendimientos
 const solicitudAPI = require('./controllers/solicitud'); // Importa el controlador de solicitudes
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/persona', personaAPI);
 app.use('/api/usuarios', usuarioAPI);
 app.use('/api/fondos', fondoAPI);
+app.use('/api/contrato', contratoAPI);
 app.use('/api/requerimientos', clasificacion_requerimientoAPI); // Aquí agregamos la API de requerimientos
 app.use('/api/emprendimientos', emprendimientoAPI); // Aquí agregamos la API de emprendimientos
 app.use('/api/solicitudes', solicitudAPI); // Aquí agregamos la API de solicitudes
@@ -41,6 +43,7 @@ app.listen(PORT, () => {
   console.log('   /api/personas');
   console.log('   /api/usuarios');
   console.log('   /api/fondos');
+  console.log('   /api/contrato');
   console.log('   /api/requerimientos'); // Endpoint de requerimientos
   console.log('   /api/emprendimientos'); // Endpoint de emprendimientos
   console.log('   /api/solicitudes'); // Endpoint de solicitudes
