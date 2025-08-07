@@ -2,29 +2,6 @@ const express = require('express');
 const cors = require('cors');
 
 
-// Ruta para la raíz
-app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="es">
-      <head>
-        <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/src/assets/imagenes/logo_ifemi.jpg" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>siccee</title>
-      </head>
-      <body
-        style="
-          font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-        "
-      >
-        <div id="root"></div>
-        <script type="module" src="/src/main.jsx"></script>
-      </body>
-    </html>
-  `); // Puedes cambiar esto por un HTML o JSON
-});
 
 // Importamos todos los archivos consolidados
 const personaAPI = require('./controllers/persona');
