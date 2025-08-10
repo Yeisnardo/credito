@@ -73,7 +73,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-server.timeout = 60000; // 60 segundos (para peticiones largas)
+
 
 // Iniciar servidor
 const PORT = process.env.PORT || 5000;
