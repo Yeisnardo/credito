@@ -4,7 +4,11 @@ import axios from "axios"; // Asegúrate de importar axios
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import { getContratos, registrarContratoPorCedula, asignarNumeroContratoPorCedula } from "../services/api_contrato";
+import {
+  getContratos,
+  registrarContratoPorCedula,
+  asignarNumeroContratoPorCedula,
+} from "../services/api_contrato";
 
 const gestionnumero_contratos = ({ setUser }) => {
   const navigate = useNavigate();
@@ -36,20 +40,55 @@ const gestionnumero_contratos = ({ setUser }) => {
     numero_cuenta: "",
     titular: "",
   });
-  const [numero_contratoSeleccionado, setnumero_contratoSeleccionado] = useState(null);
+  const [numero_contratoSeleccionado, setnumero_contratoSeleccionado] =
+    useState(null);
   const [mostrarModalDetalle, setMostrarModalDetalle] = useState(false);
   const [mostrarModalDeposito, setMostrarModalDeposito] = useState(false);
   const [mostrarModalRegistro, setMostrarModalRegistro] = useState(false);
   const [montoDeposito, setMontoDeposito] = useState("");
   const [referenciaDeposito, setReferenciaDeposito] = useState("");
   const [fechaDeposito, setFechaDeposito] = useState("");
+  const [monto_bs_calculado, setMonto_bs_calculado] = useState("");
+  const [calculatedMonto5, setCalculatedMonto5] = useState(0);
+  const [calculatedMonto10, setCalculatedMonto10] = useState(0);
+  const [calculatedMontoDevolver, setCalculatedMontoDevolver] = useState(0);
 
   // Función para alternar menú
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
-  // Función para obtener la tasa de cambio del EUR a VES
+  // useEffect para actualizar monto en Bs. automáticamente
+  useEffect(() => {
+    if (nuevonumero_contrato.monto_euros && exchangeRate) {
+      const euros = parseFloat(nuevonumero_contrato.monto_euros);
+      if (!isNaN(euros)) {
+        const bs = euros * exchangeRate;
+        setMonto_bs_calculado(bs.toFixed(2));
+      } else {
+        setMonto_bs_calculado("");
+      }
+    } else {
+      setMonto_bs_calculado("");
+    }
+  }, [nuevonumero_contrato.monto_euros, exchangeRate]);
+
+  useEffect(() => {
+    const euros = parseFloat(nuevonumero_contrato.monto_euros);
+    if (!isNaN(euros)) {
+      const monto5 = euros * 0.05;
+      const monto10 = euros * 0.1;
+      const montoDevolver = euros + monto10;
+      setCalculatedMonto5(monto5.toFixed(2));
+      setCalculatedMonto10(monto10.toFixed(2));
+      setCalculatedMontoDevolver(montoDevolver.toFixed(2));
+    } else {
+      setCalculatedMonto5("0.00");
+      setCalculatedMonto10("0.00");
+      setCalculatedMontoDevolver("0.00");
+    }
+  }, [nuevonumero_contrato.monto_euros]);
+
   const fetchExchangeRate = async () => {
     try {
       const response = await axios.get(
@@ -71,12 +110,30 @@ const gestionnumero_contratos = ({ setUser }) => {
       })
       .catch((err) => {
         console.error("Error loading data from API:", err);
-        const storedData = JSON.parse(localStorage.getItem("numero_contratos")) || [];
+        const storedData =
+          JSON.parse(localStorage.getItem("numero_contratos")) || [];
         setnumero_contratos(storedData);
       });
   }, []);
 
-  // Filtro para la búsqueda
+  useEffect(() => {
+    if (nuevonumero_contrato.fecha_desde) {
+      const fechaInicio = new Date(nuevonumero_contrato.fecha_desde);
+      const diasASumar = 20 * 7; // 20 semanas * 7 días
+      const fechaFin = new Date(fechaInicio);
+      fechaFin.setDate(fechaInicio.getDate() + diasASumar);
+      const yyyy = fechaFin.getFullYear();
+      const mm = String(fechaFin.getMonth() + 1).padStart(2, "0");
+      const dd = String(fechaFin.getDate()).padStart(2, "0");
+      const fechaFinFormateada = `${yyyy}-${mm}-${dd}`;
+      setNuevonumero_contrato((prev) => ({
+        ...prev,
+        fecha_hasta: fechaFinFormateada,
+      }));
+    }
+  }, [nuevonumero_contrato.fecha_desde]);
+
+  // Filtro por búsqueda
   const contratosFiltrados = numero_contratos.filter((contrato) => {
     const nombreCompleto = contrato.nombre_completo || "";
     const cedula = contrato.cedula || "";
@@ -89,6 +146,18 @@ const gestionnumero_contratos = ({ setUser }) => {
       numeroContrato.toLowerCase().includes(busquedaLower)
     );
   });
+
+  // Agrupar contratos por cédula
+  const contratosPorCedula = Object.entries(
+    contratosFiltrados.reduce((acc, contrato) => {
+      const cedula = contrato.cedula || "sin_cedula";
+      if (!acc[cedula]) {
+        acc[cedula] = [];
+      }
+      acc[cedula].push(contrato);
+      return acc;
+    }, {})
+  );
 
   // Funciones para manejar modales y acciones
   const handleVerListanumero_contratos = (contrato) => {
@@ -129,7 +198,7 @@ const gestionnumero_contratos = ({ setUser }) => {
   };
 
   const handleAbrirModalRegistro = () => {
-    const nuevoNumero = generarNumeroContrato(); // genera el número automáticamente
+    const nuevoNumero = generarNumeroContrato();
     setNuevonumero_contrato({
       cedula_emprendedor: "",
       nombre_apellido: "",
@@ -163,10 +232,6 @@ const gestionnumero_contratos = ({ setUser }) => {
       fecha_desde,
       fecha_hasta,
       monto_euros,
-      monto_bs,
-      monto_flat,
-      monto_interes,
-      monto_devolver,
     } = nuevonumero_contrato;
 
     if (
@@ -174,11 +239,7 @@ const gestionnumero_contratos = ({ setUser }) => {
       !nombre_apellido ||
       !fecha_desde ||
       !fecha_hasta ||
-      !monto_euros ||
-      !monto_bs ||
-      !monto_flat ||
-      !monto_interes ||
-      !monto_devolver
+      !monto_euros
     ) {
       alert("Por favor, complete todos los campos requeridos");
       return;
@@ -187,20 +248,26 @@ const gestionnumero_contratos = ({ setUser }) => {
     const contratoData = {
       id_contrato: numero_contrato,
       monto_aprob_euro: monto_euros,
-      cincoflat: monto_flat,
-      diezinteres: monto_interes,
-      monto_devolver: monto_devolver,
+      cincoflat: calculatedMonto5,
+      diezinteres: calculatedMonto10,
+      monto_devolver: calculatedMontoDevolver,
       fecha_desde: fecha_desde,
       fecha_hasta: fecha_hasta,
       estatus: estatus,
     };
 
     try {
-      const response = await registrarContratoPorCedula(contratoData, cedula_emprendedor);
+      const response = await registrarContratoPorCedula(
+        contratoData,
+        cedula_emprendedor
+      );
       alert(response.message || "Contrato registrado exitosamente");
-      const nuevosContratos = [...numero_contratos, response.contrato];
-      setnumero_contratos(nuevosContratos);
-      localStorage.setItem("numero_contratos", JSON.stringify(nuevosContratos));
+      // Agregar el nuevo contrato a la lista
+      setnumero_contratos((prev) => [...prev, response.contrato]);
+      localStorage.setItem(
+        "numero_contratos",
+        JSON.stringify([...numero_contratos, response.contrato])
+      );
       setMostrarModalRegistro(false);
     } catch (error) {
       console.error("Error al registrar contrato:", error);
@@ -227,11 +294,25 @@ const gestionnumero_contratos = ({ setUser }) => {
   const handleAsignarNumero = async (contrato) => {
     const nuevoNumeroContrato = generarNumeroContrato();
     try {
-      const response = await asignarNumeroContratoPorCedula(contrato.cedula, nuevoNumeroContrato);
-      alert(`Número de contrato asignado correctamente: ${response.message || ''}`);
+      const response = await asignarNumeroContratoPorCedula(
+        contrato.cedula,
+        nuevoNumeroContrato
+      );
+      alert(
+        `Número de contrato asignado correctamente: ${response.message || ""}`
+      );
+      // Actualizar contrato en la lista
+      setnumero_contratos((prev) =>
+        prev.map((c) =>
+          c.cedula === contrato.cedula &&
+          c.numero_contrato !== nuevoNumeroContrato
+            ? { ...c, numero_contrato: nuevoNumeroContrato }
+            : c
+        )
+      );
     } catch (error) {
-      console.error('Error asignando número de contrato:', error);
-      alert('Error al asignar el número de contrato.');
+      console.error("Error asignando número de contrato:", error);
+      alert("Error al asignar el número de contrato.");
     }
   };
 
@@ -258,7 +339,6 @@ const gestionnumero_contratos = ({ setUser }) => {
                 Gestión de contratos
               </h1>
             </div>
-            {/* Mostrar el precio del euro en Bs. si la tasa está cargada */}
             {exchangeRate && (
               <p className="text-gray-600">
                 Precio del Euro en Bs.: {exchangeRate} Bs.
@@ -277,76 +357,91 @@ const gestionnumero_contratos = ({ setUser }) => {
             />
           </div>
 
-          {/* Lista filtrada */}
+          {/* Lista agrupada por cédula con estilos viejos */}
           <section className="mb-8">
-            {contratosFiltrados.length === 0 ? (
-              <p>No hay solicitudes que coincidan con la búsqueda.</p>
+            {contratosPorCedula.length === 0 ? (
+              <p>No hay contratos para mostrar.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {contratosFiltrados.map((contrato) => (
+              contratosPorCedula.map(([cedula, contratos]) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div
-                    key={contrato.numero_contrato}
-                    className="bg-white p-4 rounded-xl shadow-lg flex flex-col justify-between"
+                    key={cedula}
+                    className="bg-white p-4 mb-4 rounded-xl shadow-lg"
                   >
-                    {/* Información básica */}
-                    <div>
-                      <h3 className="font-semibold mb-2">
-                        {contrato.nombre_completo || "Nombre no disponible"}
-                      </h3>
-                      <p>
-                        <strong>Cédula:</strong> {contrato.cedula}
-                      </p>
-                      <p>
-                        <strong>N° de contrato:</strong>{" "}
-                        {contrato.numero_contrato}
-                        {!contrato.numero_contrato && (
+                    <h3 className="text-xl font-semibold mb-2">
+                      Cédula: {cedula}
+                    </h3>
+                    {/* Mostrar info del primer contrato */}
+                    <p>
+                      <strong>Nombre:</strong>{" "}
+                      {contratos[0]?.nombre_completo || "N/A"}
+                    </p>
+                    <p>
+                      <strong>N° de contratos:</strong> {contratos.length}
+                    </p>
+                    {/* Lista de contratos */}
+                    {contratos.map((contrato) => (
+                      <div
+                        key={contrato.numero_contrato}
+                        className="border-t mt-2 pt-2"
+                      >
+                        <p>
+                          <strong>Contrato:</strong> {contrato.numero_contrato}
+                        </p>
+                        <p>
+                          <strong>Fecha inicio:</strong> {contrato.fecha_desde}
+                        </p>
+                        <p>
+                          <strong>Fecha fin:</strong> {contrato.fecha_hasta}
+                        </p>
+                        <p>
+                          <strong>Estatus:</strong> {contrato.estatus}
+                        </p>
+                        {/* Botones para acciones */}
+                        <div className="mt-2 flex space-x-2">
                           <button
-                            className="px-2 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
-                            onClick={() => handleAsignarNumero(contrato)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                            onClick={() =>
+                              handleVerListanumero_contratos(contrato)
+                            }
                           >
-                            Asignar contrato
+                            Ver detalles
                           </button>
-                        )}
-                      </p>
-                    </div>
-                    {/* Botones */}
-                    <div className="mt-4 flex flex-col space-y-2">
-                      <button
-                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition"
-                        onClick={() => handleVerListanumero_contratos(contrato)}
-                      >
-                        Ver detalles
-                      </button>
-                      <button
-                        className="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600 transition"
-                        onClick={() => {
-                          setNuevonumero_contrato({
-                            ...nuevonumero_contrato,
-                            cedula_emprendedor: contrato.cedula,
-                            nombre_apellido: contrato.nombre_completo,
-                          });
-                          setMostrarModalRegistro(true);
-                        }}
-                      >
-                        Registrar nuevo contrato
-                      </button>
-                      <button
-                        className="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600 transition"
-                        onClick={() => handleAbrirModalDeposito(contrato)}
-                      >
-                        Realizar depósito
-                      </button>
-                    </div>
+                          <button
+                            className="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600"
+                            onClick={() => {
+                              setNuevonumero_contrato({
+                                ...nuevonumero_contrato,
+                                cedula_emprendedor: contrato.cedula,
+                                nombre_apellido:
+                                  contrato.nombre_completo ||
+                                  "Nombre no disponible",
+                              });
+                              setMostrarModalRegistro(true);
+                            }}
+                          >
+                            Registrar nuevo contrato
+                          </button>
+                          <button
+                            className="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600"
+                            onClick={() => handleAbrirModalDeposito(contrato)}
+                          >
+                            Realizar depósito
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             )}
           </section>
         </main>
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos
+          reservados.
         </footer>
       </div>
 
@@ -369,38 +464,73 @@ const gestionnumero_contratos = ({ setUser }) => {
               <div>
                 {/* Información general */}
                 <p>
-                  <strong>Número:</strong> {numero_contratoSeleccionado.numero_contrato}
+                  <strong>Número:</strong>{" "}
+                  {numero_contratoSeleccionado.numero_contrato}
                 </p>
                 <p>
-                  <strong>Estatus:</strong> {numero_contratoSeleccionado.estatus}
+                  <strong>Estatus:</strong>{" "}
+                  {numero_contratoSeleccionado.estatus_contrato}
                 </p>
                 <p>
-                  <strong>Fecha inicio:</strong> {numero_contratoSeleccionado.fecha_desde}
+                  <strong>Fecha inicio:</strong>{" "}
+                  {numero_contratoSeleccionado.fecha_desde}
                 </p>
                 <p>
-                  <strong>Fecha fin:</strong> {numero_contratoSeleccionado.fecha_hasta}
+                  <strong>Fecha fin:</strong>{" "}
+                  {numero_contratoSeleccionado.fecha_hasta}
                 </p>
                 <p>
-                  <strong>Monto total:</strong> {numero_contratoSeleccionado.monto_euros}
+                  <strong>Monto aprobado en euros:</strong>{" "}
+                  {numero_contratoSeleccionado.monto_aprob_euro}
                 </p>
                 <p>
-                  <strong>Referencia:</strong> {numero_contratoSeleccionado.referencia}
+                  <strong>Monto 5% FLAT:</strong>{" "}
+                  {numero_contratoSeleccionado.cincoflat}
+                </p>
+                <p>
+                  <strong>Monto 10% Interes:</strong>{" "}
+                  {numero_contratoSeleccionado.diezinteres}
+                </p>
+                <p>
+                  <strong>Monto a devolver:</strong>{" "}
+                  {numero_contratoSeleccionado.monto_devolver}
+                </p>
+                <p>
+                  <strong>Referencia:</strong>{" "}
+                  {numero_contratoSeleccionado.referencia}
                 </p>
                 {/* Datos de cuenta bancaria */}
-                <h4 className="font-semibold mt-4 mb-2">Datos de la cuenta bancaria</h4>
+                <h4 className="font-semibold mt-4 mb-2">
+                  Datos de la cuenta bancaria
+                </h4>
                 <table className="min-w-full divide-y divide-gray-200 table-auto mb-4">
                   <thead className="bg-gray-100 text-gray-700 uppercase text-xs font-semibold">
                     <tr>
-                      <th className="px-4 py-2 border-b border-gray-200">Banco</th>
-                      <th className="px-4 py-2 border-b border-gray-200">Número de cuenta</th>
-                      <th className="px-4 py-2 border-b border-gray-200">Titular</th>
+                      <th className="px-4 py-2 border-b border-gray-200">
+                        Banco
+                      </th>
+                      <th className="px-4 py-2 border-b border-gray-200">
+                        Número de cuenta
+                      </th>
+                      <th className="px-4 py-2 border-b border-gray-200">
+                        Titular
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200 text-sm text-gray-800">
                     <tr>
-                      <td className="px-4 py-2 border-b border-gray-200">{numero_contratoSeleccionado.cuenta_bancaria?.banco || ""}</td>
-                      <td className="px-4 py-2 border-b border-gray-200">{numero_contratoSeleccionado.cuenta_bancaria?.numero_cuenta || ""}</td>
-                      <td className="px-4 py-2 border-b border-gray-200">{numero_contratoSeleccionado.cuenta_bancaria?.titular || ""}</td>
+                      <td className="px-4 py-2 border-b border-gray-200">
+                        {numero_contratoSeleccionado.cuenta_bancaria?.banco ||
+                          ""}
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-200">
+                        {numero_contratoSeleccionado.cuenta_bancaria
+                          ?.numero_cuenta || ""}
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-200">
+                        {numero_contratoSeleccionado.cuenta_bancaria?.titular ||
+                          ""}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -409,16 +539,31 @@ const gestionnumero_contratos = ({ setUser }) => {
                 <table className="min-w-full divide-y divide-gray-200 table-auto mb-4">
                   <thead className="bg-gray-100 text-gray-700 uppercase text-xs font-semibold">
                     <tr>
-                      <th className="px-4 py-2 border-b border-gray-200">Referencia</th>
-                      <th className="px-4 py-2 border-b border-gray-200">Fecha</th>
-                      <th className="px-4 py-2 border-b border-gray-200">Medio</th>
+                      <th className="px-4 py-2 border-b border-gray-200">
+                        Referencia
+                      </th>
+                      <th className="px-4 py-2 border-b border-gray-200">
+                        Fecha
+                      </th>
+                      <th className="px-4 py-2 border-b border-gray-200">
+                        Medio
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200 text-sm text-gray-800">
                     <tr>
-                      <td className="px-4 py-2 border-b border-gray-200">{numero_contratoSeleccionado.detalle_deposito?.referencia || "N/A"}</td>
-                      <td className="px-4 py-2 border-b border-gray-200">{numero_contratoSeleccionado.detalle_deposito?.fecha || "N/A"}</td>
-                      <td className="px-4 py-2 border-b border-gray-200">{numero_contratoSeleccionado.detalle_deposito?.medio || "N/A"}</td>
+                      <td className="px-4 py-2 border-b border-gray-200">
+                        {numero_contratoSeleccionado.detalle_deposito
+                          ?.referencia || "N/A"}
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-200">
+                        {numero_contratoSeleccionado.detalle_deposito?.fecha ||
+                          "N/A"}
+                      </td>
+                      <td className="px-4 py-2 border-b border-gray-200">
+                        {numero_contratoSeleccionado.detalle_deposito?.medio ||
+                          "N/A"}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -441,7 +586,9 @@ const gestionnumero_contratos = ({ setUser }) => {
               ✖
             </button>
             {/* Título */}
-            <h2 className="text-xl font-semibold mb-4">Registrar Nuevo Número Contrato</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              Registrar Nuevo Número Contrato
+            </h2>
             {/* Formulario */}
             <form
               onSubmit={(e) => {
@@ -453,14 +600,22 @@ const gestionnumero_contratos = ({ setUser }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 {/* Cédula */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="cedula_emprendedor">Cédula</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="cedula_emprendedor"
+                  >
+                    Cédula
+                  </label>
                   <input
                     id="cedula_emprendedor"
                     type="text"
                     placeholder="Cédula"
                     value={nuevonumero_contrato.cedula_emprendedor}
                     onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, cedula_emprendedor: e.target.value })
+                      setNuevonumero_contrato({
+                        ...nuevonumero_contrato,
+                        cedula_emprendedor: e.target.value,
+                      })
                     }
                     className="border border-gray-300 rounded px-3 py-2 w-full"
                     required
@@ -468,39 +623,44 @@ const gestionnumero_contratos = ({ setUser }) => {
                 </div>
                 {/* Nombre y Apellido */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="nombre_apellido">Nombre y Apellido</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="nombre_apellido"
+                  >
+                    Nombre y Apellido
+                  </label>
                   <input
                     id="nombre_apellido"
                     type="text"
                     placeholder="Nombre y Apellido"
                     value={nuevonumero_contrato.nombre_apellido}
                     onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, nombre_apellido: e.target.value })
+                      setNuevonumero_contrato({
+                        ...nuevonumero_contrato,
+                        nombre_apellido: e.target.value,
+                      })
                     }
                     className="border border-gray-300 rounded px-3 py-2 w-full"
                     required
                   />
                 </div>
-                {/* N° Contrato (solo lectura y generado automáticamente) */}
-                <div>
-                  <label className="block mb-1 font-medium" htmlFor="numero_contrato">N° Contrato</label>
-                  <input
-                    id="numero_contrato"
-                    type="text"
-                    value={nuevonumero_contrato.numero_contrato}
-                    readOnly
-                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
                 {/* Fecha Inicio */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="fecha_desde">Fecha Inicio</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="fecha_desde"
+                  >
+                    Fecha Inicio
+                  </label>
                   <input
                     id="fecha_desde"
                     type="date"
                     value={nuevonumero_contrato.fecha_desde}
                     onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, fecha_desde: e.target.value })
+                      setNuevonumero_contrato({
+                        ...nuevonumero_contrato,
+                        fecha_desde: e.target.value,
+                      })
                     }
                     className="border border-gray-300 rounded px-3 py-2 w-full"
                     required
@@ -508,28 +668,38 @@ const gestionnumero_contratos = ({ setUser }) => {
                 </div>
                 {/* Fecha Fin */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="fecha_hasta">Fecha Fin</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="fecha_hasta"
+                  >
+                    Fecha Fin (calculada)
+                  </label>
                   <input
                     id="fecha_hasta"
                     type="date"
                     value={nuevonumero_contrato.fecha_hasta}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, fecha_hasta: e.target.value })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
-                    required
+                    readOnly
+                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
                   />
                 </div>
                 {/* Monto en Euros */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="monto_euros">Monto en Euros</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="monto_euros"
+                  >
+                    Monto en Euros
+                  </label>
                   <input
                     id="monto_euros"
                     type="text"
                     placeholder="Monto en Euros"
                     value={nuevonumero_contrato.monto_euros}
                     onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, monto_euros: e.target.value })
+                      setNuevonumero_contrato({
+                        ...nuevonumero_contrato,
+                        monto_euros: e.target.value,
+                      })
                     }
                     className="border border-gray-300 rounded px-3 py-2 w-full"
                     required
@@ -537,59 +707,66 @@ const gestionnumero_contratos = ({ setUser }) => {
                 </div>
                 {/* Monto en Bs.S */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="monto_bs">Monto en Bs.S</label>
+                  <label className="block mb-1 font-medium" htmlFor="monto_bs">
+                    Monto en Bs.S
+                  </label>
                   <input
                     id="monto_bs"
                     type="text"
                     placeholder="Monto en Bs.S"
-                    value={nuevonumero_contrato.monto_bs}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, monto_bs: e.target.value })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
-                    required
+                    value={monto_bs_calculado}
+                    readOnly
+                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
                   />
                 </div>
                 {/* Monto 5% FLAT */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="monto_flat">Monto 5% FLAT</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="monto_flat"
+                  >
+                    Monto 5% FLAT
+                  </label>
                   <input
                     id="monto_flat"
-                    type="number"
-                    placeholder="Monto 5% FLAT"
-                    value={nuevonumero_contrato.monto_flat}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, monto_flat: e.target.value })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
+                    type="text"
+                    value={calculatedMonto5}
+                    readOnly
+                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
                   />
                 </div>
+
                 {/* Monto 10% de Interés */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="monto_interes">Monto 10% de Interés</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="monto_interes"
+                  >
+                    Monto 10% de Interés
+                  </label>
                   <input
                     id="monto_interes"
-                    type="number"
-                    placeholder="Monto 10% Interés"
-                    value={nuevonumero_contrato.monto_interes}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, monto_interes: e.target.value })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
+                    type="text"
+                    value={calculatedMonto10}
+                    readOnly
+                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
                   />
                 </div>
+
                 {/* Monto a devolver */}
                 <div>
-                  <label className="block mb-1 font-medium" htmlFor="monto_devolver">Monto a devolver</label>
+                  <label
+                    className="block mb-1 font-medium"
+                    htmlFor="monto_devolver"
+                  >
+                    Monto a devolver
+                  </label>
                   <input
                     id="monto_devolver"
                     type="text"
-                    placeholder="Monto a devolver"
-                    value={nuevonumero_contrato.monto_devolver}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({ ...nuevonumero_contrato, monto_devolver: e.target.value })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
+                    value={calculatedMontoDevolver}
+                    readOnly
+                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
                   />
                 </div>
               </div>

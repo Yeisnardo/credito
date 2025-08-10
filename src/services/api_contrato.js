@@ -12,7 +12,7 @@ export const getContratos = async () => {
 
 // Registrar contrato usando la cédula del emprendedor
 export const registrarContratoPorCedula = async (contratoData, cedula_emprendedor) => {
-  const response = await api.post('/api/contrato/registrarPorCedula', {
+  const response = await api.post('/api/contrato/registrarContratoPorCedula', {
     ...contratoData,
     cedula_emprendedor,
   });

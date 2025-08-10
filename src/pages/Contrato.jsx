@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-// import api, { getUsuarioPorCedula } from "../services/api_usuario"; // Ya no es necesario en esta versión
 
 const Contrato = ({ setUser }) => {
   const navigate = useNavigate();
@@ -12,10 +11,12 @@ const Contrato = ({ setUser }) => {
   const [contratos, setContratos] = useState([]); // Contratos del usuario
   const [loading, setLoading] = useState(true);
 
+  // Función para toggle del menú lateral
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
+  // Fetch ficticio de datos del usuario y contratos
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -51,7 +52,7 @@ const Contrato = ({ setUser }) => {
           },
         ];
 
-        // Simular retraso
+        // Simular retraso en carga
         setTimeout(() => {
           setContratos(contratosFicticios);
           setLoading(false);
@@ -61,13 +62,18 @@ const Contrato = ({ setUser }) => {
         setLoading(false);
       }
     };
-    if (!user) fetchUserData();
+
+    if (!user) {
+      fetchUserData();
+    }
   }, [setUser, user]);
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-serif">
+      {/* Menú lateral */}
       {menuOpen && <Menu />}
 
+      {/* Contenido principal */}
       <div
         className={`flex-1 flex flex-col transition-margin duration-300 ${
           menuOpen ? "ml-64" : "ml-0"
@@ -76,7 +82,7 @@ const Contrato = ({ setUser }) => {
         {/* Header */}
         <Header toggleMenu={toggleMenu} />
 
-        {/* Contenido */}
+        {/* Main Content */}
         <main className="flex-1 p-8 bg-gray-100">
           {/* Encabezado */}
           <div className="flex items-center justify-between mb-8 mt-12">
@@ -90,7 +96,14 @@ const Contrato = ({ setUser }) => {
             </div>
           </div>
 
-          {/* Lista de Contratos del Usuario */}
+          {/* Número de contrato */}
+          <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 shadow-md max-w-2xl mx-auto mb-4">
+            <h4 className="text-2xl font-semibold text-gray-800 text-center tracking-wide uppercase">
+              Número de contrato: <span className="font-bold">IFEMI/CRED/001-25</span>
+            </h4>
+          </div>
+
+          {/* Lista de Contratos */}
           <section className="bg-white p-8 rounded-2xl shadow-lg border border-gray-200 overflow-x-auto mb-12">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b border-gray-300 pb-2">
               Lista de Contratos
@@ -105,7 +118,7 @@ const Contrato = ({ setUser }) => {
                       N° Contrato
                     </th>
                     <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
-                      Estatus del Depósito
+                      Nombre
                     </th>
                     <th className="px-4 py-3 text-sm font-medium text-gray-600 uppercase tracking-wide">
                       Email
@@ -137,7 +150,7 @@ const Contrato = ({ setUser }) => {
           </section>
         </main>
 
-        {/* Pie */}
+        {/* Pie de página */}
         <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
           © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>

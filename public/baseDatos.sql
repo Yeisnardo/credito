@@ -76,10 +76,16 @@ CREATE TABLE clasificacion (
   negocio VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE Contrato (
+CREATE TABLE n_contrato(
+  id_n_ontrato SERIAL PRIMARY KEY,
+  cedula_emprendedor VARCHAR (20) NOT NULL,
+  numero_contrato VARCHAR (20) NOT NULL
+);
+
+CREATE TABLE contrato(
   id_contrato SERIAL PRIMARY KEY,
+  id_sol INTEGER,
   cedula_emprendedor VARCHAR(20),
-  numero_contrato VARCHAR(20),
   monto_aprob_euro TEXT,
   cincoflat TEXT,
   diezinteres TEXT,
@@ -87,8 +93,9 @@ CREATE TABLE Contrato (
   fecha_desde DATE,
   fecha_hasta DATE,
   estatus VARCHAR(20),
-  FOREIGN KEY (id_contrato) REFERENCES solicitud(id_contrato)
-);
+  FOREIGN KEY (id_contrato) REFERENCES n_contrato(id_n_ontrato),
+  FOREIGN KEY (id_sol) REFERENCES solicitud(id_contrato)
+); 
 
 CREATE TABLE deposito(
   id_deposito SERIAL PRIMARY KEY,
