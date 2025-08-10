@@ -82,7 +82,7 @@ router.put('/:cedula', async (req, res) => {
         municipio = $6,
         direccion_actual = $7,
         tipo_persona = $8
-        WHERE cedula = $9
+       WHERE cedula = $9
        RETURNING *`,
       [
         personaData.nombre_completo,

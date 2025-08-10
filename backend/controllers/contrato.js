@@ -34,8 +34,73 @@ router.get("/", async (req, res) => {
     res.json(resultado.rows);
   } catch (err) {
     console.error("Error al obtener solicitud en estatus de Aprobada:", err);
-    res.status(500).json({ message: "Error al obtener solicitud en estatus de Aprobada" });
+    res
+      .status(500)
+      .json({ message: "Error al obtener solicitud en estatus de Aprobada" });
   }
 });
 
+// Ruta para registrar asignación de contrato usando la cédula del emprendedor
+
+router.post("/asignarNumeroPorCedula", async (req, res) => {
+  const { cedula_emprendedor, numero_contrato } = req.body;
+
+  try {
+    // Inserta directamente en Contrato con la cédula del emprendedor
+    const resultado = await query(
+      `INSERT INTO contrato (cedula_emprendedor, numero_contrato) VALUES ($1, $2) RETURNING *`,
+      [cedula_emprendedor, numero_contrato]
+    );
+
+    res.json({ message: "Contrato asignado correctamente", contrato: resultado.rows[0] });
+  } catch (err) {
+    console.error("Error al asignar contrato por cédula:", err);
+    res.status(500).json({ message: "Error al asignar contrato" });
+  }
+});;
+
+router.post("/registrarContratoPorCedula", async (req, res) => {
+  const {
+    id_contrato,
+    monto_aprob_euro,
+    cincoflat,
+    diezinteres,
+    monto_devolver,
+    fecha_desde,
+    fecha_hasta,
+    estatus,
+  } = req.body;
+
+  try {
+    const resultado = await query(
+      `INSERT INTO Contrato (
+        id_contrato,
+        monto_aprob_euro,
+        cincoflat,
+        diezinteres,
+        monto_devolver,
+        fecha_desde,
+        fecha_hasta,
+        estatus
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, "Pendiente") RETURNING *`,
+      [
+        id_contrato,
+        monto_aprob_euro,
+        cincoflat,
+        diezinteres,
+        monto_devolver,
+        fecha_desde,
+        fecha_hasta,
+        estatus,
+      ]
+    );
+    res.json({
+      message: "Contrato registrado correctamente",
+      contrato: resultado.rows[0],
+    });
+  } catch (err) {
+    console.error("Error al registrar contrato:", err);
+    res.status(500).json({ message: "Error al registrar contrato" });
+  }
+});
 module.exports = router;

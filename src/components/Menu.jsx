@@ -210,21 +210,21 @@ const Menu = ({ onClose }) => {
 
             {/* Enlaces adicionales */}
             <div ref={setLinkRef("/banco")}>
-              <NavLink
-                to="/banco"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-bacnk text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Mi Banco
-                </span>
-              </NavLink>
-            </div>
+  <NavLink
+    to="/banco"
+    className={({ isActive }) =>
+      `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+        isActive ? activeClassName : "hover:bg-gray-100"
+      }`
+    }
+    onClick={onClose}
+  >
+    <i className="bx bx-wallet text-2xl mr-3" ></i> {/* Icono de banco */}
+    <span className="text-md font-semibold">
+      Mi Banco
+    </span>
+  </NavLink>
+</div>
 
             {/* Enlaces adicionales */}
             <div ref={setLinkRef("/Aprobacion")}>

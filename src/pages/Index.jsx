@@ -4,17 +4,17 @@ import { motion } from "framer-motion";
 
 function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 font-sans text-gray-800 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 font-sans text-gray-800 overflow-x-hidden">
 
       {/* Encabezado */}
       <motion.header
         initial={{ y: -70, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="bg-gray-900 py-12 px-4 shadow-xl backdrop-blur-lg bg-opacity-80 flex items-center justify-center"
+        className="bg-gray-900 py-8 px-4 md:px-8 shadow-xl backdrop-blur-lg bg-opacity-80 flex flex-col md:flex-row items-center justify-center text-center md:text-left"
       >
-        <div className="text-center max-w-5xl px-4">
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white drop-shadow-lg mb-4 tracking-wide">
+        <div className="max-w-5xl text-white drop-shadow-lg mb-4 md:mb-0 md:mr-8 px-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-wide">
             Instituto para el Fortalecimiento al Emprendedor
           </h1>
           <p className="mt-2 text-indigo-100 text-lg md:text-xl font-semibold opacity-80">
@@ -28,7 +28,7 @@ function App() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="sticky top-0 z-50 bg-white bg-opacity-70 backdrop-blur-md shadow-md py-4 px-8 flex justify-center items-center space-x-8 font-semibold text-gray-700 transition-all hover:text-indigo-600"
+        className="sticky top-0 z-50 w-full bg-white bg-opacity-70 backdrop-blur-md shadow-md py-4 px-4 md:px-8 flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 font-semibold text-gray-700 transition-all hover:text-indigo-600"
       >
         {[
           { href: "#inicio", label: "Inicio" },
@@ -62,7 +62,7 @@ function App() {
       {/* Sección Inicio con Carrusel */}
       <section
         id="inicio"
-        className="py-20 px-4 bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 relative"
+        className="py-10 md:py-20 px-4 bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 relative"
       >
         {/* Carrusel de imágenes */}
         <div className="max-w-5xl mx-auto mb-10 relative overflow-hidden rounded-xl shadow-lg">
@@ -82,7 +82,7 @@ function App() {
             }, []);
 
             return (
-              <div className="relative h-80 md:h-96 rounded-xl overflow-hidden">
+              <div className="relative h-64 md:h-96 w-full overflow-hidden">
                 {images.map((img, index) => (
                   <img
                     key={index}
@@ -120,13 +120,13 @@ function App() {
       {/* Sobre Nosotros */}
       <section
         id="sobre-nosotros"
-        className="max-w-7xl mx-auto p-8 my-20 bg-white rounded-2xl shadow-xl"
+        className="max-w-7xl mx-auto p-4 md:p-8 my-10 md:my-20 bg-white rounded-2xl shadow-xl"
       >
         <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Sobre Nosotros
         </h2>
         {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
               title: "Historia",
@@ -161,13 +161,13 @@ function App() {
       {/* Servicios */}
       <section
         id="servicios"
-        className="max-w-7xl mx-auto p-8 my-20 bg-gray-50 rounded-3xl shadow-xl"
+        className="max-w-7xl mx-auto p-4 md:p-8 my-10 md:my-20 bg-gray-50 rounded-2xl shadow-xl"
       >
         <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Nuestros Servicios
         </h2>
         {/* Servicios */}
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             {
               icon: (
@@ -249,12 +249,12 @@ function App() {
       {/* Programas y Cursos */}
       <section
         id="programas"
-        className="max-w-7xl mx-auto p-8 my-20 bg-white rounded-3xl shadow-xl"
+        className="max-w-7xl mx-auto p-4 md:p-8 my-10 md:my-20 bg-white rounded-2xl shadow-xl"
       >
         <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Programas y Cursos
         </h2>
-        <ul className="list-disc list-inside space-y-4 text-gray-700 mb-8 text-lg md:text-xl">
+        <ul className="list-disc list-inside space-y-2 md:space-y-4 text-gray-700 text-sm md:text-base mb-8">
           {[
             "Formación en Gestión Empresarial",
             "Innovación y Creatividad",
@@ -284,12 +284,12 @@ function App() {
       {/* Contacto */}
       <section
         id="contacto"
-        className="py-20 px-4 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100"
+        className="py-10 md:py-20 px-4 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100"
       >
         <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-500 pb-2 text-center text-gray-800">
           Contáctanos
         </h2>
-        <div className="max-w-3xl mx-auto bg-white p-8 rounded-2xl shadow-xl space-y-8">
+        <div className="max-w-2xl md:max-w-4xl mx-auto bg-white p-4 md:p-8 rounded-2xl shadow-xl space-y-4 md:space-y-8">
           {[
             {
               title: "Dirección",
