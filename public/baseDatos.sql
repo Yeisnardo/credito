@@ -37,8 +37,10 @@ CREATE TABLE usuario (
 
 -- Cuenta Bancaria
 CREATE TABLE cuenta (
-  cedula_titular VARCHAR (20) NOT NULL PRIMARY KEY,
-  nombre_completo VARCHAR (20) NOT NULL,
+  cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
+  banco TEXT,
+  cedula_titular VARCHAR (20) NOT NULL,
+  nombre_completo VARCHAR (255) NOT NULL,
   numero_cuenta VARCHAR (20) NOT NULL
 );
 

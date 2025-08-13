@@ -13,6 +13,7 @@ import Contrato from "./pages/Contrato";
 import Depositos from "./pages/Depositos";
 import Cuotas from "./pages/Cuotas";
 import Reqsol from "./pages/Reqsol";
+import Banco from "./pages/Banco";
 
 
 //Administracion IFEMI
@@ -52,6 +53,7 @@ function App() {
         <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/Requeri_solicit" element={<Requeri_solicit />} />
         <Route path="/Reqsol" element={<Reqsol />} />
+        <Route path="/Banco" element={<Banco />} />
         <Route path="/Contrato" element={<Contrato />} />
         <Route path="/Depositos" element={<Depositos />} />
         <Route path="/Cuotas" element={<Cuotas />} />

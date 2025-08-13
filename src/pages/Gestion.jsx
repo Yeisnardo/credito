@@ -388,15 +388,6 @@ const gestionnumero_contratos = ({ setUser }) => {
                         <p>
                           <strong>Contrato:</strong> {contrato.numero_contrato}
                         </p>
-                        <p>
-                          <strong>Fecha inicio:</strong> {contrato.fecha_desde}
-                        </p>
-                        <p>
-                          <strong>Fecha fin:</strong> {contrato.fecha_hasta}
-                        </p>
-                        <p>
-                          <strong>Estatus:</strong> {contrato.estatus}
-                        </p>
                         {/* Botones para acciones */}
                         <div className="mt-2 flex space-x-2">
                           <button
@@ -406,6 +397,12 @@ const gestionnumero_contratos = ({ setUser }) => {
                             }
                           >
                             Ver detalles
+                          </button>
+                          <button
+                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                            onClick={() => handleAsignarNumero(contrato)}
+                          >
+                            Asignar Número
                           </button>
                           <button
                             className="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600"
