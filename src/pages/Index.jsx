@@ -4,23 +4,24 @@ import { motion } from "framer-motion";
 
 function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 font-sans text-gray-800 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 font-sans text-gray-800 overflow-x-hidden">
 
       {/* Encabezado */}
       <motion.header
         initial={{ y: -70, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
-        className="bg-gray-900 py-8 px-4 md:px-8 shadow-xl backdrop-blur-lg bg-opacity-80 flex flex-col md:flex-row items-center justify-center text-center md:text-left"
+        className="bg-white/80 backdrop-blur-lg shadow-xl py-8 px-4 md:px-12 flex flex-col md:flex-row items-center justify-between text-center md:text-left rounded-b-3xl"
       >
-        <div className="max-w-5xl text-white drop-shadow-lg mb-4 md:mb-0 md:mr-8 px-4">
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-wide">
+        <div className="max-w-5xl text-gray-800 drop-shadow-lg mb-4 md:mb-0 px-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-2 tracking-tight">
             Instituto para el Fortalecimiento al Emprendedor
           </h1>
-          <p className="mt-2 text-indigo-100 text-lg md:text-xl font-semibold opacity-80">
+          <p className="text-lg md:text-xl font-semibold text-indigo-700 opacity-80">
             del municipio Independencia
           </p>
         </div>
+        {/* Logo o ícono opcional */}
       </motion.header>
 
       {/* Navegación */}
@@ -28,7 +29,7 @@ function App() {
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="sticky top-0 z-50 w-full bg-white bg-opacity-70 backdrop-blur-md shadow-md py-4 px-4 md:px-8 flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 font-semibold text-gray-700 transition-all hover:text-indigo-600"
+        className="sticky top-0 z-50 w-full bg-white/70 backdrop-blur-md shadow-md py-4 px-6 flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 font-semibold text-gray-700 transition-all hover:text-indigo-600"
       >
         {[
           { href: "#inicio", label: "Inicio" },
@@ -52,7 +53,7 @@ function App() {
         >
           <Link
             to="/login"
-            className="bg-gray-900 text-white font-semibold py-3 px-6 rounded-full shadow-lg uppercase tracking-widest hover:scale-105 transition-transform"
+            className="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-full shadow-lg uppercase tracking-widest hover:bg-indigo-700 transition"
           >
             Persona En Línea
           </Link>
@@ -62,10 +63,10 @@ function App() {
       {/* Sección Inicio con Carrusel */}
       <section
         id="inicio"
-        className="py-10 md:py-20 px-4 bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 relative"
+        className="py-12 md:py-24 px-4 bg-gradient-to-br from-purple-100 via-indigo-100 to-pink-100 relative"
       >
         {/* Carrusel de imágenes */}
-        <div className="max-w-5xl mx-auto mb-10 relative overflow-hidden rounded-xl shadow-lg">
+        <div className="max-w-5xl mx-auto mb-12 relative overflow-hidden rounded-3xl shadow-xl">
           {(() => {
             const images = [
               "https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80",
@@ -77,12 +78,12 @@ function App() {
             React.useEffect(() => {
               const interval = setInterval(() => {
                 setCurrent((prev) => (prev + 1) % images.length);
-              }, 5000);
+              }, 6000);
               return () => clearInterval(interval);
             }, []);
 
             return (
-              <div className="relative h-64 md:h-96 w-full overflow-hidden">
+              <div className="relative h-96 w-full overflow-hidden">
                 {images.map((img, index) => (
                   <img
                     key={index}
@@ -100,17 +101,17 @@ function App() {
 
         {/* Texto y CTA */}
         <div className="text-center max-w-3xl mx-auto px-4">
-          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-800 drop-shadow-lg leading-tight">
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-900 drop-shadow-lg leading-tight">
             ¡Impulsa tu Emprendimiento!
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 mb-8">
+          <p className="text-lg md:text-xl text-gray-700 mb-8">
             El instituto que fortalece y apoya a los emprendedores del municipio
             Independencia para que alcancen sus metas y sueños.
           </p>
           <motion.a
             whileHover={{ scale: 1.05 }}
             href="#contacto"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-8 rounded-full shadow-lg uppercase tracking-widest transition"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-4 px-10 rounded-full shadow-lg uppercase tracking-widest transition duration-300"
           >
             Contáctanos
           </motion.a>
@@ -120,9 +121,9 @@ function App() {
       {/* Sobre Nosotros */}
       <section
         id="sobre-nosotros"
-        className="max-w-7xl mx-auto p-4 md:p-8 my-10 md:my-20 bg-white rounded-2xl shadow-xl"
+        className="max-w-7xl mx-auto p-4 md:p-8 my-12 md:my-20 bg-white/90 rounded-3xl shadow-xl"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Sobre Nosotros
         </h2>
         {/* Cards */}
@@ -146,7 +147,7 @@ function App() {
           ].map((card, index) => (
             <motion.div
               key={index}
-              className="bg-gray-50 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300"
+              className="bg-white/70 p-6 rounded-3xl shadow-xl hover:scale-105 transition-transform duration-300"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: index * 0.2 }}
@@ -161,9 +162,9 @@ function App() {
       {/* Servicios */}
       <section
         id="servicios"
-        className="max-w-7xl mx-auto p-4 md:p-8 my-10 md:my-20 bg-gray-50 rounded-2xl shadow-xl"
+        className="max-w-7xl mx-auto p-4 md:p-8 my-12 md:my-20 bg-gray-50 rounded-3xl shadow-xl"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Nuestros Servicios
         </h2>
         {/* Servicios */}
@@ -172,7 +173,7 @@ function App() {
             {
               icon: (
                 <svg
-                  className="w-10 h-10 text-indigo-600 mx-auto mb-4"
+                  className="w-12 h-12 text-indigo-600 mx-auto mb-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -193,7 +194,7 @@ function App() {
             {
               icon: (
                 <svg
-                  className="w-10 h-10 text-indigo-600 mx-auto mb-4"
+                  className="w-12 h-12 text-indigo-600 mx-auto mb-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -210,7 +211,7 @@ function App() {
             {
               icon: (
                 <svg
-                  className="w-10 h-10 text-indigo-600 mx-auto mb-4"
+                  className="w-12 h-12 text-indigo-600 mx-auto mb-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -231,7 +232,7 @@ function App() {
           ].map((servicio, index) => (
             <motion.div
               key={index}
-              className="bg-white p-6 rounded-3xl shadow hover:scale-105 transition-transform duration-300"
+              className="bg-white/80 p-6 rounded-3xl shadow hover:scale-105 transition-transform duration-300"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: index * 0.2 }}
@@ -249,9 +250,9 @@ function App() {
       {/* Programas y Cursos */}
       <section
         id="programas"
-        className="max-w-7xl mx-auto p-4 md:p-8 my-10 md:my-20 bg-white rounded-2xl shadow-xl"
+        className="max-w-7xl mx-auto p-4 md:p-8 my-12 md:my-20 bg-white/95 rounded-3xl shadow-xl"
       >
-        <h2 className="text-3xl md:text-4xl font-bold mb-10 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
           Programas y Cursos
         </h2>
         <ul className="list-disc list-inside space-y-2 md:space-y-4 text-gray-700 text-sm md:text-base mb-8">
@@ -284,12 +285,12 @@ function App() {
       {/* Contacto */}
       <section
         id="contacto"
-        className="py-10 md:py-20 px-4 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100"
+        className="py-12 md:py-24 px-4 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100"
       >
         <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-500 pb-2 text-center text-gray-800">
           Contáctanos
         </h2>
-        <div className="max-w-2xl md:max-w-4xl mx-auto bg-white p-4 md:p-8 rounded-2xl shadow-xl space-y-4 md:space-y-8">
+        <div className="max-w-2xl md:max-w-4xl mx-auto bg-white/80 p-8 rounded-3xl shadow-xl space-y-6">
           {[
             {
               title: "Dirección",
@@ -305,7 +306,7 @@ function App() {
               value: "contacto@institutoparaelfortalecimiento.cl",
             },
           ].map((info, index) => (
-            <div key={index}>
+            <div key={index} className="text-center md:text-left">
               <h3 className="text-xl font-semibold mb-2 text-indigo-600">{info.title}:</h3>
               <p className="text-gray-800">{info.value}</p>
             </div>
