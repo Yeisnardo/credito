@@ -4,7 +4,7 @@
 CREATE TABLE persona (
   cedula VARCHAR(20) PRIMARY KEY,  
   nombre_completo VARCHAR(100),
-  edad INTEGER,
+  edad DATE,
   telefono VARCHAR(20),
   email VARCHAR(100),
   estado VARCHAR(50),

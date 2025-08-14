@@ -302,7 +302,7 @@ const RegistroEmprendedor = () => {
                     type: "text",
                     id: "nombre_completo",
                   },
-                  { label: "Edad", type: "number", id: "edad", min: "0" },
+                  { label: "Edad", type: "date", id: "edad", min: "0" },
                   { label: "Número de Teléfono", type: "tel", id: "telefono" },
                   { label: "Correo Electrónico", type: "email", id: "correo" },
                   { label: "Dirección Actual", type: "text", id: "direccion" },
@@ -464,8 +464,7 @@ const RegistroEmprendedor = () => {
                   >
                     Nombre del Consejo Comunal
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="consejo_nombre"
                     value={datos.consejo_nombre}
                     onChange={(e) =>
@@ -473,7 +472,71 @@ const RegistroEmprendedor = () => {
                     }
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
                     placeholder="Ingresa el nombre del consejo"
-                  />
+                  >
+                  <option value="">Selecciona el consejo</option>
+                  <option value="DON JUANCHO">DON JUANCHO</option>
+                  <option value="ALTO PRADO">ALTO PRADO</option>
+                  <option value="SECTOR JUVENTUD">SECTOR JUVENTUD</option>
+                  <option value="SABANETA">SABANETA</option>
+                  <option value="BRISAS DEL TERMINAL">BRISAS DEL TERMINAL</option>
+                  <option value="LA ROSALEDA">LA ROSALEDA</option>
+                  <option value="SAVAYO II">SAVAYO II</option>
+                  <option value="LUISA CACERES DE ARISMENDI">LUISA CACERES DE ARISMENDI</option>
+                  <option value="LOS PINOS">LOS PINOS</option>
+                  <option value="FLORENCIO HERNANDEZ">FLORENCIO HERNANDEZ</option>
+                  <option value="LA VILLA">LA VILLA</option>
+                  <option value="BRISAS DEL ESTADIUM">BRISAS DEL ESTADIUM</option>
+                  <option value="PALOTAL EN MARCHA">PALOTAL EN MARCHA</option>
+                  <option value="RECTA DE APOLONIO">RECTA DE APOLONIO</option>
+                  <option value="VISTA ALEGRE">VISTA ALEGRE</option>
+                  <option value="24 DE JULIO">24 DE JULIO</option>
+                  <option value="EL SAMAN">EL SAMAN</option>
+                  <option value="PRADOS II III Y COLINAS">PRADOS II III Y COLINAS</option>
+                  <option value="PRADOS DEL NORTE I">PRADOS DEL NORTE I</option>
+                  <option value="VILLA ESPERANZA SAVAYO I">VILLA ESPERANZA SAVAYO I</option>
+                  <option value="CAÑAVERAL">CAÑAVERAL</option>
+                  <option value="LA HACIENDA">LA HACIENDA</option>
+                  <option value="FUNDO EL CARMEN">FUNDO EL CARMEN</option>
+                  <option value="VIJAGUAL">VIJAGUAL</option>
+                  <option value="TAMANAVARE">TAMANAVARE</option>
+                  <option value="JOSE PIEDRAS">JOSE PIEDRAS</option>
+                  <option value="LAS MADRES VENCEDORAS">LAS MADRES VENCEDORAS</option>
+                  <option value="CANAIMA SUR">CANAIMA SUR</option>
+                  <option value="LOS SAUCES">LOS SAUCES</option>
+                  <option value="CULANTRILLO">CULANTRILLO</option>
+                  <option value="CHAGUANTRILLO">CHAGUANTRILLO</option>
+                  <option value="LA CEIBA">LA CEIBA</option>
+                  <option value="COROCITO CARLOS BONILLA">COROCITO CARLOS BONILLA</option>
+                  <option value="RUIZ PINEDA SUR DE PIEDRA GRANDE">RUIZ PINEDA SUR DE PIEDRA GRANDE</option>
+                  <option value="RUIZ PINEDA (NO INDICA)">RUIZ PINEDA (NO INDICA)</option>
+                  <option value="UNIDOS POR SAN JOSE">UNIDOS POR SAN JOSE</option>
+                  <option value="EL CEMENTERIO">EL CEMENTERIO</option>
+                  <option value="RAUL LEONI">RAUL LEONI</option>
+                  <option value="LA NEGRITA MAMPOSTAL">LA NEGRITA MAMPOSTAL</option>
+                  <option value="RESISTENCIA INDIGENA CANOABO">RESISTENCIA INDIGENA CANOABO</option>
+                  <option value="NAZARENO DE GUAYABAL Y PARADERO">NAZARENO DE GUAYABAL Y PARADERO</option>
+                  <option value="SAN JOSE">SAN JOSE</option>
+                  <option value="SANTA LUCIA">SANTA LUCIA</option>
+                  <option value="ALICIA PIETRI DE CALDERA">ALICIA PIETRI DE CALDERA</option>
+                  <option value="ALTO YURUBI">ALTO YURUBI</option>
+                  <option value="SAN MIGUEL NORTE">SAN MIGUEL NORTE</option>
+                  <option value="MANUEL CEDEÑO (SIN NOMBRE COMERCIAL)">MANUEL CEDEÑO (SIN NOMBRE COMERCIAL)</option>
+                  <option value="SAN MIGUEL 2006">SAN MIGUEL 2006</option>
+                  <option value="CANAIMA NORTE">CANAIMA NORTE</option>
+                  <option value="LA MONTAÑA 2007">LA MONTAÑA 2007</option>
+                  <option value="CALLEJON CASCABEL NORTE">CALLEJON CASCABEL NORTE</option>
+                  <option value="SAN JUAN">SAN JUAN</option>
+                  <option value="RAFAEL CALDERA 1 DE MARZO">RAFAEL CALDERA 1 DE MARZO</option>
+                  <option value="SIMON BOLIVAR">SIMON BOLIVAR</option>
+                  <option value="COROCITO II">COROCITO II</option>
+                  <option value="ANTONIO JOSE DE SUCRE">ANTONIO JOSE DE SUCRE</option>
+                  <option value="VIRGEN DEL VALLE UNIDO">VIRGEN DEL VALLE UNIDO</option>
+                  <option value="SANTA ELENA">SANTA ELENA</option>
+                  <option value="CASCABEL SUR">CASCABEL SUR</option>
+                  <option value="SAN RAFAEL (NO INDICA)">SAN RAFAEL (NO INDICA)</option>
+                  <option value="EL CAMPITO">EL CAMPITO</option>
+                  <option value="BARRIO ALEGRIA">BARRIO ALEGRIA</option>
+                  </select>
                 </div>
                 {/* Comuna */}
                 <div className="w-[45%]">
@@ -483,14 +546,15 @@ const RegistroEmprendedor = () => {
                   >
                     Nombre de la Comuna
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="comuna"
                     value={datos.comuna}
                     onChange={(e) => handleChange("comuna", e.target.value)}
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                    placeholder="Ingresa la comuna"
-                  />
+                  >
+                    <option value="">Selecciona la comuna</option>
+                    <option value="Comuna 1">William Lara Vive</option>
+                  </select>
                 </div>
               </div>
               {/* Botones paso */}
