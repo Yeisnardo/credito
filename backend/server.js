@@ -16,7 +16,7 @@ const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasifi
 const app = express();
 
 // Middlewares básicos
-app.use(cors({ origin: 'https://credito-1.onrender.com' }));
+app.use(cors({ origin: 'https://credito-2.onrender.com' }));
 app.use(express.json());
 
 
