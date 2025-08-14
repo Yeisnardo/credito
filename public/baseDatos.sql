@@ -41,7 +41,7 @@ CREATE TABLE cuenta (
   banco TEXT,
   cedula_titular VARCHAR (20) NOT NULL,
   nombre_completo VARCHAR (255) NOT NULL,
-  numero_cuenta VARCHAR (20) NOT NULL
+  numero_cuenta VARCHAR (50) NOT NULL
 );
 
 --TABLA DE REQUERIMIENTOS Y SOLICITUD
