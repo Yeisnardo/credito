@@ -217,12 +217,20 @@ INSERT INTO clasificacion (sector, negocio) VALUES
 ('Economía Colaborativa', 'Servicios de coworking'),
 ('Economía Colaborativa', 'Intercambio de bienes y servicios');
 
+-- Administrador
+
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona)
 VALUES ('30608696', 'Yeisnardo Eliander Bravo Colina', 30, '555-1234', 'admin@example.com', 'Activo', 'Ciudad', 'Dirección 123', 'Administrador');
 
--- Insertar en usuario
 INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
 VALUES ('30608696', 'Administrador', 'admin123', 'Administrador', 'Activo');
+
+-- Admin. Creditos y cobranzas
+INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona)
+VALUES ('12345678', 'Eliangel Del Carmen', 30, '555-1234', 'admin@example.com', 'Activo', 'Ciudad', 'Dirección 123', 'Admin. Creditos y cobranzas');
+
+INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
+VALUES ('12345678', 'Creditos1', 'admin123', 'Admin. Creditos y cobranzas', 'Activo');
 
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES
 ('1234567890', 'Juan Perez', 35, '3001234567', 'juan.perez@example.com', 'Activo', 'Bogotá', 'Calle 123 #45-67', 'Emprendedor'),

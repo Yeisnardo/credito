@@ -19,21 +19,29 @@ const Menu = ({ onClose }) => {
   const linkRefs = useRef({});
   const location = useLocation();
 
-  // Guardar en localStorage cuando cambien los estados
+  // Cargar usuario logueado desde localStorage (o contexto)
+  const [usuarioLogueado, setUsuarioLogueado] = useState(null);
   useEffect(() => {
-    localStorage.setItem(
-      "isRequerimientosOpen",
-      JSON.stringify(isRequerimientosOpen)
-    );
+    const usuario = JSON.parse(localStorage.getItem("usuario")) || null;
+    setUsuarioLogueado(usuario);
+  }, []);
+
+  // Función para verificar permisos por rol
+  const puedeVer = (rolesPermitidos) => {
+    return usuarioLogueado && rolesPermitidos.includes(usuarioLogueado.rol);
+  };
+
+  // Persistir estados de los submenús en localStorage
+  useEffect(() => {
+    localStorage.setItem("isRequerimientosOpen", JSON.stringify(isRequerimientosOpen));
   }, [isRequerimientosOpen]);
+
   useEffect(() => {
     localStorage.setItem("isHistorialOpen", JSON.stringify(isHistorialOpen));
   }, [isHistorialOpen]);
+
   useEffect(() => {
-    localStorage.setItem(
-      "isGestionEmprendOpen",
-      JSON.stringify(isGestionEmprendOpen)
-    );
+    localStorage.setItem("isGestionEmprendOpen", JSON.stringify(isGestionEmprendOpen));
   }, [isGestionEmprendOpen]);
 
   // Cerrar submenús al hacer clic fuera
@@ -51,7 +59,7 @@ const Menu = ({ onClose }) => {
     };
   }, []);
 
-  // Scroll hacia el elemento activo cuando cambia la ruta
+  // Scroll hacia el elemento activo
   useEffect(() => {
     const path = location.pathname;
     const element = linkRefs.current[path];
@@ -60,16 +68,13 @@ const Menu = ({ onClose }) => {
     }
   }, [location]);
 
-  // Función para asignar refs a los enlaces
   const setLinkRef = (path) => (el) => {
     if (el) linkRefs.current[path] = el;
   };
 
-  const toggleRequerimientos = () =>
-    setIsRequerimientosOpen(!isRequerimientosOpen);
+  const toggleRequerimientos = () => setIsRequerimientosOpen(!isRequerimientosOpen);
   const toggleHistorial = () => setIsHistorialOpen(!isHistorialOpen);
-  const toggleGestionEmprend = () =>
-    setIsGestionEmprendOpen(!isGestionEmprendOpen);
+  const toggleGestionEmprend = () => setIsGestionEmprendOpen(!isGestionEmprendOpen);
 
   return (
     <aside
@@ -81,7 +86,7 @@ const Menu = ({ onClose }) => {
         {/* Navegación */}
         <div>
           <nav className="space-y-4">
-            {/* Inicio */}
+            {/* Inicio - visible para todos */}
             <div ref={setLinkRef("/dashboard")}>
               <NavLink
                 to="/dashboard"
@@ -97,278 +102,299 @@ const Menu = ({ onClose }) => {
               </NavLink>
             </div>
 
-            {/* Solicitud de crédito */}
-            <div>
-              {/* Menú de Solicitud de crédito */}
-              <button
-                onClick={toggleRequerimientos}
-                className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
-              >
-                <i className="bx bx-file text-2xl mr-3"></i>
-                <span className="flex-1 text-md font-semibold text-left">
-                  Solicitud de crédito
-                </span>
-                <i
-                  className={`bx transition-transform duration-300 ${
-                    isRequerimientosOpen
-                      ? "bx-chevron-up text-blue-500"
-                      : "bx-chevron-down"
-                  }`}
-                ></i>
-              </button>
-              {isRequerimientosOpen && (
-                <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
-                  {/* Requerimientos y motivo de solicitud */}
-                  <div ref={setLinkRef("/Requeri_solicit")}>
-                    <NavLink
-                      to="/Requeri_solicit"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Requerimientos y motivo de solicitud
-                    </NavLink>
+            {/* Solicitud de crédito - solo roles permitidos */}
+            {puedeVer(["Emprendedor"]) && (
+              <div>
+                {/* Menú de Solicitud de crédito */}
+                <button
+                  onClick={toggleRequerimientos}
+                  className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
+                >
+                  <i className="bx bx-file text-2xl mr-3"></i>
+                  <span className="flex-1 text-md font-semibold text-left">
+                    Solicitud de crédito
+                  </span>
+                  <i
+                    className={`bx transition-transform duration-300 ${
+                      isRequerimientosOpen
+                        ? "bx-chevron-up text-blue-500"
+                        : "bx-chevron-down"
+                    }`}
+                  ></i>
+                </button>
+                {isRequerimientosOpen && (
+                  <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
+                    {/* Requerimientos y motivo */}
+                    <div ref={setLinkRef("/Requeri_solicit")}>
+                      <NavLink
+                        to="/Requeri_solicit"
+                        className={({ isActive }) =>
+                          `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? "bg-gray-200 font-semibold"
+                              : "hover:bg-gray-100"
+                          }`
+                        }
+                        onClick={onClose}
+                      >
+                        Requerimientos y motivo de solicitud
+                      </NavLink>
+                    </div>
+                    {/* Mi Contrato */}
+                    <div ref={setLinkRef("/Contrato")}>
+                      <NavLink
+                        to="/Contrato"
+                        className={({ isActive }) =>
+                          `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? "bg-gray-200 font-semibold"
+                              : "hover:bg-gray-100"
+                          }`
+                        }
+                        onClick={onClose}
+                      >
+                        Mi Contrato
+                      </NavLink>
+                    </div>
                   </div>
-                  {/* Mi Contrato */}
-                  <div ref={setLinkRef("/Contrato")}>
-                    <NavLink
-                      to="/Contrato"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Mi Contrato
-                    </NavLink>
+                )}
+              </div>
+            )}
+
+            {/* Control de seguimiento de crédito - solo roles permitidos */}
+            {puedeVer(["Emprendedor"]) && (
+              <div>
+                {/* Menú de Control de seguimiento */}
+                <button
+                  onClick={toggleHistorial}
+                  className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
+                >
+                  <i className="bx bx-folder-open text-2xl mr-3"></i>
+                  <span className="flex-1 text-md font-semibold text-left">
+                    Control de seguimiento de crédito
+                  </span>
+                  <i
+                    className={`bx transition-transform duration-300 ${
+                      isHistorialOpen
+                        ? "bx-chevron-up text-blue-500"
+                        : "bx-chevron-down"
+                    }`}
+                  ></i>
+                </button>
+                {isHistorialOpen && (
+                  <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
+                    {/* Opciones */}
+                    <div ref={setLinkRef("/depositos")}>
+                      <NavLink
+                        to="/depositos"
+                        className={({ isActive }) =>
+                          `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? "bg-gray-200 font-semibold"
+                              : "hover:bg-gray-100"
+                          }`
+                        }
+                        onClick={onClose}
+                      >
+                        Historial de crédito depositado
+                      </NavLink>
+                    </div>
+                    <div ref={setLinkRef("/cuotas")}>
+                      <NavLink
+                        to="/cuotas"
+                        className={({ isActive }) =>
+                          `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? "bg-gray-200 font-semibold"
+                              : "hover:bg-gray-100"
+                          }`
+                        }
+                        onClick={onClose}
+                      >
+                        Reporte de cuotas
+                      </NavLink>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
-            {/* Control de seguimiento de crédito */}
-            <div>
-              <button
-                onClick={toggleHistorial}
-                className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
-              >
-                <i className="bx bx-folder-open text-2xl mr-3"></i>
-                <span className="flex-1 text-md font-semibold text-left">
-                  Control de seguimiento de crédito
-                </span>
-                <i
-                  className={`bx transition-transform duration-300 ${
-                    isHistorialOpen
-                      ? "bx-chevron-up text-blue-500"
-                      : "bx-chevron-down"
-                  }`}
-                ></i>
-              </button>
-              {isHistorialOpen && (
-                <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
-                  <div ref={setLinkRef("/depositos")}>
-                    <NavLink
-                      to="/depositos"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Historial de crédito depositado
-                    </NavLink>
+            {/* Enlaces que solo ven los emprendedores */}
+            {puedeVer(["Emprendedor"]) && (
+              <div ref={setLinkRef("/Banco")}>
+                <NavLink
+                  to="/Banco"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-wallet text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">Mi banco</span>
+                </NavLink>
+              </div>
+            )}
+
+            {/* Revisión y aprobación - solo roles */}
+            {puedeVer(["Asist. creditos y cobranzas", "Administrador"]) && (
+              <div ref={setLinkRef("/Aprobacion")}>
+                <NavLink
+                  to="/Aprobacion"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-check-circle text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Modulo de revisión y aprobación
+                  </span>
+                </NavLink>
+              </div>
+            )}
+
+            {/* Gestión de contratos - solo Administrador */}
+            {puedeVer(["Admin. Credito y cobranzas", "Administrador"]) && (
+              <div ref={setLinkRef("/Gestion")}>
+                <NavLink
+                  to="/Gestion"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-credit-card text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Modulo gestion de contrato
+                  </span>
+                </NavLink>
+              </div>
+            )}
+
+            {/* Fondo financiero - solo Administrador */}
+            {puedeVer(["Administrador"]) && (
+              <div ref={setLinkRef("/Fondo")}>
+                <NavLink
+                  to="/Fondo"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-money-withdraw text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Fondo Financiero de Crédito
+                  </span>
+                </NavLink>
+              </div>
+            )}
+
+            {/* Supervisión de cuotas - solo Administrador */}
+            {puedeVer(["Admin. Credito y cobranzas", "Administrador"]) && (
+              <div ref={setLinkRef("/confirmacionCuota")}>
+                <NavLink
+                  to="/confirmacionCuota"
+                  className={({ isActive }) =>
+                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                      isActive ? activeClassName : "hover:bg-gray-100"
+                    }`
+                  }
+                  onClick={onClose}
+                >
+                  <i className="bx bx-credit-card text-2xl mr-3"></i>
+                  <span className="text-md font-semibold">
+                    Módulo de supervisión de cuotas
+                  </span>
+                </NavLink>
+              </div>
+            )}
+
+            {/* Configuración - solo Administrador */}
+            {puedeVer(["Administrador"]) && (
+              <>
+                {/* Menú de Configuración */}
+                <button
+                  onClick={toggleGestionEmprend}
+                  className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
+                >
+                  <i className="bx bx-cog text-2xl mr-3"></i>
+                  <span className="flex-1 text-md font-semibold text-left">
+                    Configuración
+                  </span>
+                  <i
+                    className={`bx transition-transform duration-300 ${
+                      isGestionEmprendOpen
+                        ? "bx-chevron-up text-blue-500"
+                        : "bx-chevron-down"
+                    }`}
+                  ></i>
+                </button>
+                {isGestionEmprendOpen && (
+                  <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
+                    {/* Opciones en configuración */}
+                    <div ref={setLinkRef("/Usuario")}>
+                      <NavLink
+                        to="/Usuario"
+                        className={({ isActive }) =>
+                          `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? "bg-gray-200 font-semibold"
+                              : "hover:bg-gray-100"
+                          }`
+                        }
+                        onClick={onClose}
+                      >
+                        Gestión de Usuarios
+                      </NavLink>
+                    </div>
+                    <div ref={setLinkRef("/Emprendimiento")}>
+                      <NavLink
+                        to="/Emprendimiento"
+                        className={({ isActive }) =>
+                          `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? "bg-gray-200 font-semibold"
+                              : "hover:bg-gray-100"
+                          }`
+                        }
+                        onClick={onClose}
+                      >
+                        Registro de Clasificación Emprendimiento
+                      </NavLink>
+                    </div>
+                    <div ref={setLinkRef("/Requerimientos")}>
+                      <NavLink
+                        to="/Requerimientos"
+                        className={({ isActive }) =>
+                          `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
+                            isActive
+                              ? "bg-gray-200 font-semibold"
+                              : "hover:bg-gray-100"
+                          }`
+                        }
+                        onClick={onClose}
+                      >
+                        Requerimientos
+                      </NavLink>
+                    </div>
                   </div>
-                  <div ref={setLinkRef("/cuotas")}>
-                    <NavLink
-                      to="/cuotas"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Reporte de cuotas
-                    </NavLink>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Enlaces adicionales */}
-            <div ref={setLinkRef("/Banco")}>
-              <NavLink
-                to="/Banco"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-wallet text-2xl mr-3"></i>{" "}
-                {/* Icono de banco */}
-                <span className="text-md font-semibold">Mi banco</span>
-              </NavLink>
-            </div>
-
-            {/* Enlaces adicionales */}
-            <div ref={setLinkRef("/Aprobacion")}>
-              <NavLink
-                to="/Aprobacion"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-check-circle text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Modulo de revisión y aprobación
-                </span>
-              </NavLink>
-            </div>
-
-            <div ref={setLinkRef("/Gestion")}>
-              <NavLink
-                to="/Gestion"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-credit-card text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Modulo gestion de contrato
-                </span>
-              </NavLink>
-            </div>
-
-            <div ref={setLinkRef("/Fondo")}>
-              <NavLink
-                to="/Fondo"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-money-withdraw text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Fondo Financiero de Crédito
-                </span>
-              </NavLink>
-            </div>
-
-            <div ref={setLinkRef("/confirmacionCuota")}>
-              <NavLink
-                to="/confirmacionCuota"
-                className={({ isActive }) =>
-                  `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                    isActive ? activeClassName : "hover:bg-gray-100"
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-credit-card text-2xl mr-3"></i>
-                <span className="text-md font-semibold">
-                  Módulo de supervisión de cuotas
-                </span>
-              </NavLink>
-            </div>
-
-            {/* Configuración */}
-            <div>
-              <button
-                onClick={toggleGestionEmprend}
-                className="w-full flex items-center px-1 py-3 rounded-lg hover:bg-gray-100 transition cursor-pointer focus:outline-none"
-              >
-                <i className="bx bx-cog text-2xl mr-3"></i>
-                <span className="flex-1 text-md font-semibold text-left">
-                  Configuración
-                </span>
-                <i
-                  className={`bx transition-transform duration-300 ${
-                    isGestionEmprendOpen
-                      ? "bx-chevron-up text-blue-500"
-                      : "bx-chevron-down"
-                  }`}
-                ></i>
-              </button>
-              {isGestionEmprendOpen && (
-                <div className="ml-6 mt-2 space-y-2 transition-all duration-300 max-h-60 overflow-hidden">
-                  <div ref={setLinkRef("/Usuario")}>
-                    <NavLink
-                      to="/Usuario"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Gestión de Usuarios
-                    </NavLink>
-                  </div>
-                  <div ref={setLinkRef("/Emprendimiento")}>
-                    <NavLink
-                      to="/Emprendimiento"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Registro de Clasificación Emprendimiento
-                    </NavLink>
-                  </div>
-                  <div ref={setLinkRef("/Requerimientos")}>
-                    <NavLink
-                      to="/Requerimientos"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer ${
-                          isActive
-                            ? "bg-gray-200 font-semibold"
-                            : "hover:bg-gray-100"
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      Requerimientos
-                    </NavLink>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </>
+            )}
           </nav>
         </div>
 
         {/* Pie de página */}
         <div className="mt-8 text-center text-sm text-gray-500 italic">
-          © {new Date().getFullYear()} TuInstitución. Todos los derechos
-          reservados.
+          © {new Date().getFullYear()} TuInstitución. Todos los derechos reservados.
         </div>
       </div>
     </aside>
