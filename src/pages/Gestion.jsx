@@ -254,6 +254,7 @@ const gestionnumero_contratos = ({ setUser }) => {
       fecha_desde: fecha_desde,
       fecha_hasta: fecha_hasta,
       estatus: estatus,
+      numero_cuenta: numero_cuenta,
     };
 
     try {
@@ -358,54 +359,66 @@ const gestionnumero_contratos = ({ setUser }) => {
           </div>
 
           {/* Lista agrupada por cédula con estilos viejos */}
-          <section className="mb-8">
+          <section className="mb-8 px-6 bg-gray-50 min-h-screen font-sans">
             {contratosPorCedula.length === 0 ? (
-              <p>No hay contratos para mostrar.</p>
+              <p className="text-center text-gray-600 text-lg mt-10">
+                No hay contratos para mostrar.
+              </p>
             ) : (
               contratosPorCedula.map(([cedula, contratos]) => (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div
-                    key={cedula}
-                    className="bg-white p-4 mb-4 rounded-xl shadow-lg"
-                  >
-                    <h3 className="text-xl font-semibold mb-2">
+                <div key={cedula} className="mb-8">
+                  <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 transition-transform hover:scale-105 duration-300 hover:shadow-xl">
+                    {/* Encabezado */}
+                    <h3 className="text-2xl font-semibold mb-3 text-blue-900 border-b border-gray-200 pb-2">
                       Cédula: {cedula}
                     </h3>
-                    {/* Mostrar info del primer contrato */}
-                    <p>
+                    {/* Info del primer contrato */}
+                    <p className="mb-2 text-gray-700">
                       <strong>Nombre:</strong>{" "}
                       {contratos[0]?.nombre_completo || "N/A"}
                     </p>
-                    <p>
+                    <p className="mb-4 text-gray-700">
                       <strong>N° de contratos:</strong> {contratos.length}
                     </p>
                     {/* Lista de contratos */}
                     {contratos.map((contrato) => (
                       <div
                         key={contrato.numero_contrato}
-                        className="border-t mt-2 pt-2"
+                        className="border-t border-gray-200 pt-3 mb-3"
                       >
-                        <p>
-                          <strong>Contrato:</strong> {contrato.numero_contrato}
-                        </p>
-                        {/* Botones para acciones */}
-                        <div className="mt-2 flex space-x-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-semibold text-gray-800">
+                            Contrato: {contrato.numero_contrato}
+                          </p>
+                          {/* Estado opcional */}
+                          {/* <span className="text-sm text-green-500">Activo</span> */}
+                        </div>
+                        {/* Botones con efecto institucional */}
+                        <div className="flex flex-wrap gap-3 justify-start">
                           <button
-                            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                            className="flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
                             onClick={() =>
                               handleVerListanumero_contratos(contrato)
                             }
                           >
-                            Ver detalles
+                            <span>🔍</span>
+                            <span className="font-medium">Ver detalles</span>
                           </button>
+
+                          {!contrato.numero_asignado && (
+                            <button
+                              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
+                              onClick={() => handleAsignarNumero(contrato)}
+                            >
+                              <span>📝</span>
+                              <span className="font-medium">
+                                Asignar numero de contrato
+                              </span>
+                            </button>
+                          )}
+
                           <button
-                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                            onClick={() => handleAsignarNumero(contrato)}
-                          >
-                            Asignar Número
-                          </button>
-                          <button
-                            className="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600"
+                            className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
                             onClick={() => {
                               setNuevonumero_contrato({
                                 ...nuevonumero_contrato,
@@ -417,13 +430,18 @@ const gestionnumero_contratos = ({ setUser }) => {
                               setMostrarModalRegistro(true);
                             }}
                           >
-                            Registrar nuevo contrato
+                            <span>✍️</span>
+                            <span className="font-medium">
+                              Registrar contrato
+                            </span>
                           </button>
+
                           <button
-                            className="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-600"
+                            className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
                             onClick={() => handleAbrirModalDeposito(contrato)}
                           >
-                            Realizar depósito
+                            <span>💰</span>
+                            <span className="font-medium">Depositar</span>
                           </button>
                         </div>
                       </div>
@@ -500,6 +518,10 @@ const gestionnumero_contratos = ({ setUser }) => {
                 <h4 className="font-semibold mt-4 mb-2">
                   Datos de la cuenta bancaria
                 </h4>
+                {/* Datos de cuenta bancaria */}
+                <h4 className="font-semibold mt-4 mb-2">
+                  Datos de la cuenta bancaria
+                </h4>
                 <table className="min-w-full divide-y divide-gray-200 table-auto mb-4">
                   <thead className="bg-gray-100 text-gray-700 uppercase text-xs font-semibold">
                     <tr>
@@ -515,18 +537,15 @@ const gestionnumero_contratos = ({ setUser }) => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200 text-sm text-gray-800">
-                    <tr>
+                    <tr align="center">
                       <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.cuenta_bancaria?.banco ||
-                          ""}
+                        {numero_contratoSeleccionado.banco || "N/A"}
                       </td>
                       <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.cuenta_bancaria
-                          ?.numero_cuenta || ""}
+                        {numero_contratoSeleccionado.numero_cuenta || "N/A"}
                       </td>
                       <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.cuenta_bancaria?.titular ||
-                          ""}
+                        {numero_contratoSeleccionado.nombre_completo || "N/A"}
                       </td>
                     </tr>
                   </tbody>

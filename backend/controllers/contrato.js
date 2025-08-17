@@ -9,33 +9,40 @@ router.get("/", async (req, res) => {
   try {
     const resultado = await query(`
       SELECT 
-        p.cedula, 
-        p.nombre_completo, 
-        p.edad, 
-        p.telefono, 
-        p.email, 
-        p.estado, 
-        p.municipio, 
-        p.direccion_actual, 
-        p.tipo_persona,
-        c.monto_aprob_euro,
-        c.cincoflat,
-        c.diezinteres,
-        c.monto_devolver,
-        c.fecha_desde,
-        c.fecha_hasta,
-        c.estatus AS estatus_contrato,
-        nc.numero_contrato
-      FROM persona p
-      LEFT JOIN solicitud s ON p.cedula = s.cedula_emprendedor
-      LEFT JOIN contrato c ON s.id_contrato = c.id_contrato
-      LEFT JOIN n_contrato nc ON c.id_contrato = nc.id_n_ontrato
-      WHERE s.estatus = 'Aprobada';
+    p.cedula, 
+    p.nombre_completo, 
+    p.edad, 
+    p.telefono, 
+    p.email, 
+    p.estado, 
+    p.municipio, 
+    p.direccion_actual, 
+    p.tipo_persona,
+    c.monto_aprob_euro,
+    c.cincoflat,
+    c.diezinteres,
+    c.monto_devolver,
+    c.fecha_desde,
+    c.fecha_hasta,
+    c.estatus AS estatus_contrato,
+    nc.numero_contrato,
+    cu.banco,
+    cu.cedula_titular,
+    cu.numero_cuenta
+    cu.nombre_completo AS nombre_titular
+FROM persona p
+LEFT JOIN solicitud s ON p.cedula = s.cedula_emprendedor
+LEFT JOIN contrato c ON s.id_contrato = c.id_contrato
+LEFT JOIN n_contrato nc ON c.id_contrato = nc.id_n_ontrato
+LEFT JOIN cuenta cu ON p.cedula = cu.cedula_emprendedor
+WHERE s.estatus = 'Aprobada';
     `);
     res.json(resultado.rows);
   } catch (err) {
     console.error("Error al obtener solicitud en estatus de Aprobada:", err);
-    res.status(500).json({ message: "Error al obtener solicitud en estatus de Aprobada" });
+    res
+      .status(500)
+      .json({ message: "Error al obtener solicitud en estatus de Aprobada" });
   }
 });
 
@@ -50,7 +57,10 @@ router.post("/asignarNumeroPorCedula", async (req, res) => {
       `INSERT INTO n_contrato (cedula_emprendedor, numero_contrato) VALUES ($1, $2) RETURNING *`,
       [cedula_emprendedor, numero_contrato]
     );
-    res.json({ message: "Contrato asignado correctamente", contrato: resultado.rows[0] });
+    res.json({
+      message: "Contrato asignado correctamente",
+      contrato: resultado.rows[0],
+    });
   } catch (err) {
     console.error("Error al asignar contrato por cédula:", err);
     res.status(500).json({ message: "Error al asignar contrato" });
@@ -68,7 +78,7 @@ router.post("/registrarContratoPorCedula", async (req, res) => {
     monto_devolver,
     fecha_desde,
     fecha_hasta,
-    cedula_emprendedor
+    cedula_emprendedor,
   } = req.body;
 
   try {
@@ -90,7 +100,7 @@ router.post("/registrarContratoPorCedula", async (req, res) => {
         monto_devolver,
         fecha_desde,
         fecha_hasta,
-        cedula_emprendedor 
+        cedula_emprendedor,
       ]
     );
     res.json({
