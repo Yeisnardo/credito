@@ -15,6 +15,12 @@ export const getSolicitudPorCedula = async (cedula_emprendedor) => {
   return response.data;
 };
 
+// Función para obtener solicitudes por estatus
+export const getSolicitudesPorEstatus = async (estatus) => {
+  const response = await api.get(`/api/solicitudes/estatus/${estatus}`);
+  return response.data;
+};
+
 export const createSolicitud = async (solicitud) => {
   const response = await api.post('/api/solicitudes', solicitud);
   return response.data;
@@ -39,6 +45,7 @@ export const updateSolicitudMotivo = async (cedula_emprendedor, motivo) => {
 export default {
   getSolicitudes,
   getSolicitudPorCedula,
+  getSolicitudesPorEstatus,
   createSolicitud,
   updateSolicitud,
   deleteSolicitud,

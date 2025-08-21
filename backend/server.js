@@ -3,13 +3,13 @@ const cors = require('cors');
 
 // Importamos todos los archivos consolidados
 const personaAPI = require('./controllers/persona');
+const emprendimientoAPI = require('./controllers/empredimiento');
 const usuarioAPI = require('./controllers/usuario');
+const solicitudAPI = require('./controllers/solicitud');
+const cuentaAPI = require('./controllers/banco');
 const fondoAPI = require('./controllers/fondo');
 const contratoAPI = require('./controllers/contrato');
-const cuentaAPI = require('./controllers/banco');
 const clasificacion_requerimientoAPI = require('./controllers/clasificacion_requerimiento');
-const solicitudAPI = require('./controllers/solicitud');
-const emprendimientoAPI = require('./controllers/empredimiento');
 const requerimientoEmprendedorAPI = require('./controllers/requerimiento');
 const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasificacion_emprendimiento');
 
@@ -24,11 +24,11 @@ app.use(express.json());
 app.use('/api/persona', personaAPI);
 app.use('/api/usuarios', usuarioAPI);
 app.use('/api/fondos', fondoAPI);
-app.use('/api/contrato', contratoAPI);
 app.use('/api/cuenta', cuentaAPI);
 app.use('/api/requerimientos', clasificacion_requerimientoAPI); 
 app.use('/api/emprendimientos', emprendimientoAPI);
-app.use('/api/solicitudes', solicitudAPI); 
+app.use('/api/solicitudes', solicitudAPI);
+app.use('/api/contratos', contratoAPI);
 app.use('/api/requerimiento_emprendedor', requerimientoEmprendedorAPI); 
 app.use('/api/clasificacion', clasificacionEmprendimientoEmprendedorAPI);
 
@@ -46,11 +46,11 @@ app.listen(PORT, () => {
   console.log('   /api/personas');
   console.log('   /api/usuarios');
   console.log('   /api/fondos');
-  console.log('   /api/contrato');
   console.log('   /api/banco');
   console.log('   /api/requerimientos');
   console.log('   /api/emprendimientos');
   console.log('   /api/solicitudes');
+  console.log('   /api/contratos');
   console.log('   /api/requerimiento_emprendedor');
   console.log('   /api/clasificacion');
 });

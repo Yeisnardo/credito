@@ -1,10 +1,14 @@
 --Nombre de la base de datos: siccee
 
+----------------------------------------------------------------------------------
+--  Registro emprededor ----------------------------------------------------------
+----------------------------------------------------------------------------------
+
 -- Tabla de persona
 CREATE TABLE persona (
   cedula VARCHAR(20) PRIMARY KEY,  
   nombre_completo VARCHAR(100),
-  edad DATE,
+  edad VARCHAR (20),
   telefono VARCHAR(20),
   email VARCHAR(100),
   estado VARCHAR(50),
@@ -44,13 +48,21 @@ CREATE TABLE cuenta (
   numero_cuenta VARCHAR (50) NOT NULL
 );
 
---TABLA DE REQUERIMIENTOS Y SOLICITUD
+
+----------------------------------------------------------------------------------
+--  Administrador ----------------------------------------------------------------
+----------------------------------------------------------------------------------
 
 --TABLAS DE REQUEIMIENTOS
 CREATE TABLE requerimientos (
     id_requerimientos SERIAL PRIMARY KEY,
     nombre_requerimiento VARCHAR (100)
 );
+
+
+----------------------------------------------------------------------------------
+--  Emprededor -------------------------------------------------------------------
+----------------------------------------------------------------------------------
 
 -- Tabla intermedia para relacionar requerimientos y emprendedores
 CREATE TABLE requerimiento_emprendedor (
@@ -71,6 +83,11 @@ CREATE TABLE solicitud (
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
+
+----------------------------------------------------------------------------------
+--  Administrador ----------------------------------------------------------------
+----------------------------------------------------------------------------------
+
 --TABLA DE CLASIFICACION
 CREATE TABLE clasificacion (
   id_clasificacion SERIAL PRIMARY KEY,
@@ -79,34 +96,38 @@ CREATE TABLE clasificacion (
 );
 
 CREATE TABLE n_contrato(
-  id_n_ontrato SERIAL PRIMARY KEY,
-  cedula_emprendedor VARCHAR (20) NOT NULL,
-  numero_contrato VARCHAR (20) NOT NULL
+  cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
+  numero_contrato VARCHAR(20) NOT NULL UNIQUE
 );
 
-CREATE TABLE contrato(
-  id_contrato SERIAL PRIMARY KEY,
-  id_sol INTEGER,
-  cedula_emprendedor VARCHAR(20),
-  monto_aprob_euro TEXT,
-  cincoflat TEXT,
-  diezinteres TEXT,
-  monto_devolver TEXT,
-  fecha_desde DATE,
-  fecha_hasta DATE,
-  estatus VARCHAR(20),
-  FOREIGN KEY (id_contrato) REFERENCES n_contrato(id_n_ontrato),
-  FOREIGN KEY (id_sol) REFERENCES solicitud(id_contrato)
+CREATE TABLE contrato (
+    id_contrato INT PRIMARY KEY,
+    numero_contrato VARCHAR(20) NOT NULL,
+    cedula_emprendedor VARCHAR(20),
+    monto_aprob_euro TEXT,
+    monto_bs TEXT,
+    cincoflat TEXT,
+    diezinteres TEXT,
+    monto_devolver TEXT,
+    fecha_desde DATE,
+    fecha_hasta DATE,
+    estatus VARCHAR(20),
+    FOREIGN KEY (numero_contrato) REFERENCES n_contrato (numero_contrato)
 ); 
 
 CREATE TABLE deposito(
   id_deposito SERIAL PRIMARY KEY,
   cedula_emprendedor VARCHAR (20) NOT NULL,
-  referencia VARCHAR (5) NOT NULL,
-  fecha DATE NOT NULL,
-  estatus VARCHAR (20) NOT null,
+  comprobante text,
   FOREIGN KEY (id_deposito) REFERENCES contrato (id_contrato)
 );
+
+
+
+----------------------------------------------------------------------------------
+--  Inserciones ----------------------------------------------------------------
+----------------------------------------------------------------------------------
+
 
 INSERT INTO requerimientos (nombre_requerimiento) VALUES
 ('Carta de Motivo para Solicitar Crédito'),
@@ -119,10 +140,6 @@ INSERT INTO requerimientos (nombre_requerimiento) VALUES
 ('Fotos del emprendimiento'),
 ('RIF de emprendimiento'),
 ('Referencia bancaria');
-
-
--- Insertar en persona
-
 
 INSERT INTO clasificacion (sector, negocio) VALUES
 -- Sector Primario
@@ -217,10 +234,16 @@ INSERT INTO clasificacion (sector, negocio) VALUES
 ('Economía Colaborativa', 'Servicios de coworking'),
 ('Economía Colaborativa', 'Intercambio de bienes y servicios');
 
--- Administrador
+
+
+
+----------------------------------------------------------------------------------
+--  Datos del Administrador ------------------------------------------------------
+----------------------------------------------------------------------------------
+
 
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona)
-VALUES ('30608696', 'Yeisnardo Eliander Bravo Colina', 30, '555-1234', 'admin@example.com', 'Activo', 'Ciudad', 'Dirección 123', 'Administrador');
+VALUES ('31234567', 'Carlos Alberto Mendoza Ruiz', '1990-03-25', '555-9876', 'carlos.mendoza@example.com', 'Activo', 'MunicipioY', 'Calle Luna 456', 'Administrador');
 
 INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
-VALUES ('30608696', 'Administrador', 'admin123', 'Administrador', 'Activo');
+VALUES ('31234567', 'CarlosMendoza', 'carlos2024', 'Administrador', 'Activo');

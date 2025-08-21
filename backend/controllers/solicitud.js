@@ -26,6 +26,22 @@ router.get("/:cedula_emprendedor", async (req, res) => {
   }
 });
 
+// Obtener nombres de personas con solicitudes aprobadas
+router.get("/estatus/aprobada", async (req, res) => {
+  try {
+    const resultado = await query(
+      `SELECT p.nombre_completo
+       FROM solicitud s
+       JOIN persona p ON s.cedula_emprendedor = p.cedula
+       WHERE s.estatus = 'Aprobada'`
+    );
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error("Error al obtener nombres de personas con solicitudes aprobadas:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint para crear una nueva solicitud
 router.post("/", async (req, res) => {
   try {
@@ -62,13 +78,14 @@ router.put("/:cedula_emprendedor", async (req, res) => {
     if (resultado.rows.length > 0) {
       res.json(resultado.rows[0]);
     } else {
-      res.status(404).json({ message: "Solicitud no encontrada para esa cédula" });
+      res
+        .status(404)
+        .json({ message: "Solicitud no encontrada para esa cédula" });
     }
   } catch (error) {
     console.error("Error al actualizar la solicitud:", error);
     res.status(500).json({ error: error.message });
   }
 });
-
 
 module.exports = router;

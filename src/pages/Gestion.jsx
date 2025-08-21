@@ -1,325 +1,815 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios"; // Asegúrate de importar axios
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import {
-  getContratos,
-  registrarContratoPorCedula,
-  asignarNumeroContratoPorCedula,
-} from "../services/api_contrato";
 
-const gestionnumero_contratos = ({ setUser }) => {
+const Gestion = ({ user, setUser }) => {
   const navigate = useNavigate();
-
-  // Estados principales
   const [menuOpen, setMenuOpen] = useState(true);
-  const [numero_contratos, setnumero_contratos] = useState([]);
-  const [user, setUserState] = useState(null);
-  const [busqueda, setBusqueda] = useState("");
-
-  // Estado para la tasa de cambio
-  const [exchangeRate, setExchangeRate] = useState(null);
-
-  // Estados para manejo de modales y datos
-  const [nuevonumero_contrato, setNuevonumero_contrato] = useState({
-    cedula_emprendedor: "",
-    nombre_apellido: "",
-    numero_contrato: "",
+  const [activeTab, setActiveTab] = useState("asignacion");
+  const [empleadores, setEmpleadores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [secuencia, setSecuencia] = useState(1);
+  const [empleadorModal, setEmpleadorModal] = useState(null);
+  const [formData, setFormData] = useState({
+    numeroContrato: "",
+    cedulaEmprendedor: "",
+    montoAprobEuro: "",
+    montoBs: "",
+    cincoFlat: "",
+    diezInteres: "",
+    montoDevolver: "",
+    fechaDesde: "",
+    fechaHasta: "",
     estatus: "Pendiente",
-    fecha_desde: "",
-    fecha_hasta: "",
-    monto_euros: "",
-    monto_bs: "",
-    monto_flat: "",
-    monto_interes: "",
-    monto_devolver: "",
-    referencia: "",
     banco: "",
-    numero_cuenta: "",
-    titular: "",
+    cedulaTitular: "",
+    nombreCompleto: "",
+    numeroCuenta: "",
   });
-  const [numero_contratoSeleccionado, setnumero_contratoSeleccionado] =
-    useState(null);
-  const [mostrarModalDetalle, setMostrarModalDetalle] = useState(false);
-  const [mostrarModalDeposito, setMostrarModalDeposito] = useState(false);
-  const [mostrarModalRegistro, setMostrarModalRegistro] = useState(false);
-  const [montoDeposito, setMontoDeposito] = useState("");
-  const [referenciaDeposito, setReferenciaDeposito] = useState("");
-  const [fechaDeposito, setFechaDeposito] = useState("");
-  const [monto_bs_calculado, setMonto_bs_calculado] = useState("");
-  const [calculatedMonto5, setCalculatedMonto5] = useState(0);
-  const [calculatedMonto10, setCalculatedMonto10] = useState(0);
-  const [calculatedMontoDevolver, setCalculatedMontoDevolver] = useState(0);
+  const [depositoData, setDepositoData] = useState({
+    emprendedorId: "",
+    monto: "",
+    fecha: new Date().toISOString().split("T")[0],
+    referencia: "",
+    estado: "Completado",
+    comprobante: null,
+  });
+  const [asignandoContrato, setAsignandoContrato] = useState(null);
+  const [gestionandoContrato, setGestionandoContrato] = useState(null);
+  const [editandoBancarios, setEditandoBancarios] = useState(null);
+  const [contratosAsignados, setContratosAsignados] = useState({});
+  const [contratosGestionados, setContratosGestionados] = useState({});
+  const [depositos, setDepositos] = useState([]);
 
-  // Función para alternar menú
+  useEffect(() => {
+    cargarEmpleadores();
+    cargarDepositos();
+  }, []);
+
+  const generarNumeroContrato = () => {
+    const ano = getAnoActual();
+    const secuenciaStr = String(secuencia).padStart(3, "0"); // 001, 002, ...
+    const numeroContrato = `IFEMI/CRED-${secuenciaStr}-${ano}`;
+    return numeroContrato;
+  };
+
+  const asignarNuevoContrato = () => {
+    const nuevoNumero = generarNumeroContrato();
+    setSecuencia((prev) => prev + 1);
+    return nuevoNumero;
+  };
+
+  
+  const getAnoActual = () => {
+    const year = new Date().getFullYear();
+    return year.toString().slice(-2);
+  };
+
+  // Agrega esta función en tu componente (fuera del componente principal)
+  const obtenerEmprendedoresAprobados = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/solicitudes/estatus/aprobada"
+      );
+      console.log("Respuesta fetch:", response);
+      if (!response.ok) {
+        throw new Error(`Respuesta no ok: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Datos recibidos:", data);
+      return data.map((emprendedor) => ({
+        id: emprendedor.id || emprendedor.cedula,
+        nombre: `${emprendedor.nombre_completo}`,
+        detalle: emprendedor.detalle_proyecto || "Sin detalles",
+        cedula: emprendedor.cedula_emprendedor,
+        tieneContrato: !!emprendedor.numero_contrato,
+        numeroContrato: emprendedor.numero_contrato || null,
+        tieneDatosBancarios: false,
+        datosBancarios: null,
+      }));
+    } catch (error) {
+      console.error("Error en obtenerEmprendedoresAprobados:", error);
+      throw error;
+    }
+  };
+
+  // Agrega esta función en tu componente (fuera del componente principal)
+  const asignarNumeroContrato = async (cedula, numeroContrato) => {
+    try {
+      const response = await fetch("/api/contratos/asignar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cedula_emprendedor: cedula,
+          numero_contrato: numeroContrato,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al asignar número de contrato");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error:", error);
+      throw error;
+    }
+  };
+
+  const cargarEmpleadores = async () => {
+    try {
+      const data = await obtenerEmprendedoresAprobados();
+      setEmpleadores(data);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error cargando emprendedores:", error);
+      setLoading(false);
+      alert(
+        "Error al cargar los emprendedores. Por favor, intenta nuevamente."
+      );
+    }
+  };
+
+  const cargarDepositos = async () => {
+    try {
+      // Aquí se conectaría a la API real para cargar depósitos
+      // const response = await fetch('/api/depositos');
+      // const data = await response.json();
+      // setDepositos(data);
+
+      // Por ahora, inicializamos con array vacío
+      setDepositos([]);
+    } catch (error) {
+      console.error("Error cargando depósitos:", error);
+    }
+  };
+
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
-  // useEffect para actualizar monto en Bs. automáticamente
-  useEffect(() => {
-    if (nuevonumero_contrato.monto_euros && exchangeRate) {
-      const euros = parseFloat(nuevonumero_contrato.monto_euros);
-      if (!isNaN(euros)) {
-        const bs = euros * exchangeRate;
-        setMonto_bs_calculado(bs.toFixed(2));
-      } else {
-        setMonto_bs_calculado("");
-      }
-    } else {
-      setMonto_bs_calculado("");
-    }
-  }, [nuevonumero_contrato.monto_euros, exchangeRate]);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-  useEffect(() => {
-    const euros = parseFloat(nuevonumero_contrato.monto_euros);
-    if (!isNaN(euros)) {
-      const monto5 = euros * 0.05;
-      const monto10 = euros * 0.1;
-      const montoDevolver = euros + monto10;
-      setCalculatedMonto5(monto5.toFixed(2));
-      setCalculatedMonto10(monto10.toFixed(2));
-      setCalculatedMontoDevolver(montoDevolver.toFixed(2));
-    } else {
-      setCalculatedMonto5("0.00");
-      setCalculatedMonto10("0.00");
-      setCalculatedMontoDevolver("0.00");
-    }
-  }, [nuevonumero_contrato.monto_euros]);
+  const handleDepositoChange = (e) => {
+    const { name, value } = e.target;
+    setDepositoData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-  const fetchExchangeRate = async () => {
+  const iniciarAsignacionContrato = (empleador) => {
+    const numeroContrato = asignarNuevoContrato();
+    setAsignandoContrato(empleador);
+    setFormData((prev) => ({
+      ...prev,
+      cedulaEmprendedor: empleador.cedula,
+      numeroContrato: numeroContrato,
+    }));
+  };
+
+  const cancelarAsignacion = () => {
+    setAsignandoContrato(null);
+    setFormData((prev) => ({
+      ...prev,
+      numeroContrato: "",
+      cedulaEmprendedor: "",
+    }));
+  };
+
+  const confirmarAsignacionContrato = async () => {
+  try {
+    if (!formData.numeroContrato) {
+      alert("Por favor ingrese el número de contrato");
+      return;
+    }
+
+    // Llamada a la API para asignar contrato
+    const response = await fetch("http://localhost:5000/api/contratos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        cedula_emprendedor: formData.cedulaEmprendedor,
+        numero_contrato: formData.numeroContrato,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Error al asignar contrato");
+    }
+
+    const data = await response.json();
+
+    // Actualizar estado local
+    const updatedEmpleadores = empleadores.map((e) =>
+      e.cedula === formData.cedulaEmprendedor
+        ? {
+            ...e,
+            tieneContrato: true,
+            numeroContrato: formData.numeroContrato,
+          }
+        : e
+    );
+
+    setEmpleadores(updatedEmpleadores);
+    setContratosAsignados((prev) => ({
+      ...prev,
+      [asignandoContrato.id]: formData.numeroContrato,
+    }));
+
+    setAsignandoContrato(null);
+    setFormData((prev) => ({
+      ...prev,
+      numeroContrato: "",
+      cedulaEmprendedor: "",
+    }));
+
+    alert("Contrato asignado exitosamente");
+  } catch (error) {
+    console.error("Error asignando contrato:", error);
+    alert("Error al asignar contrato");
+  }
+};
+
+  const iniciarGestionContrato = (empleador) => {
+    setGestionandoContrato(empleador);
+    // Prellenar el formulario con datos existentes si los hay
+    const contratoExistente = contratosGestionados[empleador.id];
+    setFormData((prev) => ({
+      ...prev,
+      cedulaEmprendedor: empleador.cedula,
+      numeroContrato:
+        empleador.numeroContrato || contratosAsignados[empleador.id] || "",
+      montoAprobEuro: contratoExistente?.monto_aprob_euro || "",
+      montoBs: contratoExistente?.monto_bs || "",
+      cincoFlat: contratoExistente?.cincoflat || "",
+      diezInteres: contratoExistente?.diezinteres || "",
+      montoDevolver: contratoExistente?.monto_devolver || "",
+      fechaDesde: contratoExistente?.fecha_desde || "",
+      fechaHasta: contratoExistente?.fecha_hasta || "",
+      estatus: contratoExistente?.estatus || "Pendiente",
+    }));
+  };
+
+  const cancelarGestion = () => {
+    setGestionandoContrato(null);
+  };
+
+  const confirmarGestionContrato = async () => {
     try {
-      const response = await axios.get(
-        "https://api.exchangerate-api.com/v4/latest/EUR"
-      );
-      setExchangeRate(response.data.rates.VES);
+      if (
+        !formData.montoAprobEuro ||
+        !formData.fechaDesde ||
+        !formData.fechaHasta
+      ) {
+        alert("Por favor complete los campos obligatorios");
+        return;
+      }
+
+      // Aquí iría la llamada a la API para guardar en contrato
+      const contratoData = {
+        numero_contrato:
+          gestionandoContrato.numeroContrato ||
+          contratosAsignados[gestionandoContrato.id],
+        cedula_emprendedor: gestionandoContrato.cedula,
+        monto_aprob_euro: formData.montoAprobEuro,
+        monto_bs: formData.montoBs,
+        cincoflat: formData.cincoFlat,
+        diezinteres: formData.diezInteres,
+        monto_devolver: formData.montoDevolver,
+        fecha_desde: formData.fechaDesde,
+        fecha_hasta: formData.fechaHasta,
+        estatus: formData.estatus,
+      };
+
+      console.log("Gestionando contrato:", contratoData);
+
+      // Guardar en estado local
+      setContratosGestionados((prev) => ({
+        ...prev,
+        [gestionandoContrato.id]: contratoData,
+      }));
+
+      setGestionandoContrato(null);
+      alert("Contrato gestionado exitosamente");
     } catch (error) {
-      console.error("Error fetching exchange rate:", error);
+      console.error("Error gestionando contrato:", error);
+      alert("Error al gestionar contrato");
     }
   };
 
-  // Cargar tasa de cambio y datos de contratos
-  useEffect(() => {
-    fetchExchangeRate();
-    getContratos()
-      .then((data) => {
-        setnumero_contratos(data);
-        localStorage.setItem("numero_contratos", JSON.stringify(data));
-      })
-      .catch((err) => {
-        console.error("Error loading data from API:", err);
-        const storedData =
-          JSON.parse(localStorage.getItem("numero_contratos")) || [];
-        setnumero_contratos(storedData);
+  const iniciarEdicionBancarios = (empleador) => {
+    setEditandoBancarios(empleador);
+    // Prellenar el formulario con datos existentes si los hay
+    setFormData((prev) => ({
+      ...prev,
+      banco: empleador.datosBancarios?.banco || "",
+      cedulaTitular:
+        empleador.datosBancarios?.cedulaTitular || empleador.cedula,
+      nombreCompleto:
+        empleador.datosBancarios?.nombreCompleto || empleador.nombre,
+      numeroCuenta: empleador.datosBancarios?.numeroCuenta || "",
+    }));
+  };
+
+  const cancelarEdicionBancarios = () => {
+    setEditandoBancarios(null);
+  };
+
+  const confirmarDatosBancarios = async () => {
+    try {
+      if (
+        !formData.banco ||
+        !formData.cedulaTitular ||
+        !formData.nombreCompleto ||
+        !formData.numeroCuenta
+      ) {
+        alert("Por favor complete todos los campos bancarios");
+        return;
+      }
+
+      // Aquí iría la llamada a la API para guardar en cuenta
+      const datosBancarios = {
+        banco: formData.banco,
+        cedula_titular: formData.cedulaTitular,
+        nombre_completo: formData.nombreCompleto,
+        numero_cuenta: formData.numeroCuenta,
+      };
+
+      console.log("Guardando datos bancarios:", {
+        cedula_emprendedor: editandoBancarios.cedula,
+        ...datosBancarios,
       });
-  }, []);
 
-  useEffect(() => {
-    if (nuevonumero_contrato.fecha_desde) {
-      const fechaInicio = new Date(nuevonumero_contrato.fecha_desde);
-      const diasASumar = 20 * 7; // 20 semanas * 7 días
-      const fechaFin = new Date(fechaInicio);
-      fechaFin.setDate(fechaInicio.getDate() + diasASumar);
-      const yyyy = fechaFin.getFullYear();
-      const mm = String(fechaFin.getMonth() + 1).padStart(2, "0");
-      const dd = String(fechaFin.getDate()).padStart(2, "0");
-      const fechaFinFormateada = `${yyyy}-${mm}-${dd}`;
-      setNuevonumero_contrato((prev) => ({
-        ...prev,
-        fecha_hasta: fechaFinFormateada,
-      }));
+      // Actualizar estado local
+      const updatedEmpleadores = empleadores.map((e) =>
+        e.id === editandoBancarios.id
+          ? {
+              ...e,
+              tieneDatosBancarios: true,
+              datosBancarios: datosBancarios,
+            }
+          : e
+      );
+
+      setEmpleadores(updatedEmpleadores);
+      setEditandoBancarios(null);
+
+      alert("Datos bancarios guardados exitosamente");
+    } catch (error) {
+      console.error("Error guardando datos bancarios:", error);
+      alert("Error al guardar datos bancarios");
     }
-  }, [nuevonumero_contrato.fecha_desde]);
+  };
 
-  // Filtro por búsqueda
-  const contratosFiltrados = numero_contratos.filter((contrato) => {
-    const nombreCompleto = contrato.nombre_completo || "";
-    const cedula = contrato.cedula || "";
-    const numeroContrato = contrato.numero_contrato || "";
-    const busquedaLower = busqueda.toLowerCase();
+  const registrarDeposito = async () => {
+    try {
+      if (
+        !depositoData.emprendedorId ||
+        !depositoData.monto ||
+        !depositoData.referencia
+      ) {
+        alert("Por favor complete todos los campos obligatorios");
+        return;
+      }
+
+      const emprendedor = empleadores.find(
+        (e) => e.id === parseInt(depositoData.emprendedorId)
+      );
+
+      // Aquí iría la llamada a la API para guardar el depósito
+      const nuevoDeposito = {
+        id: Date.now(),
+        emprendedorId: parseInt(depositoData.emprendedorId),
+        emprendedorNombre: emprendedor.nombre,
+        monto: depositoData.monto,
+        fecha: depositoData.fecha,
+        referencia: depositoData.referencia,
+        estado: depositoData.estado,
+      };
+
+      console.log("Registrando depósito:", nuevoDeposito);
+
+      // Actualizar estado local
+      setDepositos((prev) => [...prev, nuevoDeposito]);
+
+      // Limpiar formulario
+      setDepositoData({
+        emprendedorId: "",
+        monto: "",
+        fecha: new Date().toISOString().split("T")[0],
+        referencia: "",
+        estado: "Completado",
+        comprobante: null,
+      });
+
+      alert("Depósito registrado exitosamente");
+    } catch (error) {
+      console.error("Error registrando depósito:", error);
+      alert("Error al registrar depósito");
+    }
+  };
+
+  const verDetalles = (empleador) => {
+    setEmpleadorModal(empleador);
+  };
+
+  const cerrarModal = () => {
+    setEmpleadorModal(null);
+  };
+
+  // Modal para ver detalles de contratos gestionados
+  const ModalDetalles = ({ empleador, onClose }) => {
+    const contratoGestionado = contratosGestionados[empleador.id];
 
     return (
-      nombreCompleto.toLowerCase().includes(busquedaLower) ||
-      cedula.toLowerCase().includes(busquedaLower) ||
-      numeroContrato.toLowerCase().includes(busquedaLower)
-    );
-  });
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg max-w-4xl w-full relative max-h-[80vh] overflow-y-auto">
+          <button
+            className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+            onClick={onClose}
+          >
+            ✖
+          </button>
+          <h2 className="text-xl font-semibold mb-4">
+            Detalles de {empleador.nombre}
+          </h2>
+          <p>
+            <strong>Cédula:</strong> {empleador.cedula}
+          </p>
+          <p>
+            <strong>Contrato:</strong>{" "}
+            {empleador.tieneContrato ? empleador.numeroContrato : "Sin asignar"}
+          </p>
+          <p>
+            <strong>Datos bancarios:</strong>{" "}
+            {empleador.tieneDatosBancarios ? "Registrados" : "No registrados"}
+          </p>
+          <p className="mt-2 mb-4">{empleador.detalle}</p>
 
-  // Agrupar contratos por cédula
-  const contratosPorCedula = Object.entries(
-    contratosFiltrados.reduce((acc, contrato) => {
-      const cedula = contrato.cedula || "sin_cedula";
-      if (!acc[cedula]) {
-        acc[cedula] = [];
-      }
-      acc[cedula].push(contrato);
-      return acc;
-    }, {})
+          {empleador.tieneDatosBancarios && (
+            <>
+              <h3 className="text-lg font-medium mb-3">Información Bancaria</h3>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="font-semibold">Banco:</p>
+                  <p>{empleador.datosBancarios.banco}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Número de Cuenta:</p>
+                  <p>{empleador.datosBancarios.numeroCuenta}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Titular:</p>
+                  <p>{empleador.datosBancarios.nombreCompleto}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Cédula del Titular:</p>
+                  <p>{empleador.datosBancarios.cedulaTitular}</p>
+                </div>
+              </div>
+            </>
+          )}
+
+          {contratoGestionado ? (
+            <>
+              <h3 className="text-lg font-medium mb-3">Contrato Gestionado</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Campo
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Valor
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Número de Contrato
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.numero_contrato}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Monto Aprobado (€)
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.monto_aprob_euro}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Monto (Bs)
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.monto_bs}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        5% Flat
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.cincoflat}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        10% Interés
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.diezinteres}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Monto a Devolver
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.monto_devolver}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Fecha Desde
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.fecha_desde}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Fecha Hasta
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.fecha_hasta}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        Estatus
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contratoGestionado.estatus}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <p className="text-gray-500 mt-4">
+              No hay contratos gestionados para este emprendedor.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Modal para gestionar contrato
+  const ModalGestionContrato = ({ empleador, onClose, onConfirm }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg max-w-2xl w-full relative max-h-[80vh] overflow-y-auto">
+        <button
+          className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+          onClick={onClose}
+        >
+          ✖
+        </button>
+        <h2 className="text-xl font-semibold mb-4">
+          Gestionar contrato de {empleador.nombre}
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Monto aprobado (€)
+            </label>
+            <input
+              type="text"
+              name="montoAprobEuro"
+              value={formData.montoAprobEuro}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Monto (Bs)
+            </label>
+            <input
+              type="text"
+              name="montoBs"
+              value={formData.montoBs}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              5% Flat
+            </label>
+            <input
+              type="text"
+              name="cincoFlat"
+              value={formData.cincoFlat}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              10% Interés
+            </label>
+            <input
+              type="text"
+              name="diezInteres"
+              value={formData.diezInteres}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Monto a devolver
+            </label>
+            <input
+              type="text"
+              name="montoDevolver"
+              value={formData.montoDevolver}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Estatus
+            </label>
+            <select
+              name="estatus"
+              value={formData.estatus}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            >
+              <option value="Pendiente">Pendiente</option>
+              <option value="Activo">Activo</option>
+              <option value="Completado">Completado</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha desde
+            </label>
+            <input
+              type="date"
+              name="fechaDesde"
+              value={formData.fechaDesde}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha hasta
+            </label>
+            <input
+              type="date"
+              name="fechaHasta"
+              value={formData.fechaHasta}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-2 mt-4">
+          <button
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={onConfirm}
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
   );
 
-  // Funciones para manejar modales y acciones
-  const handleVerListanumero_contratos = (contrato) => {
-    setnumero_contratoSeleccionado(contrato);
-    setMostrarModalDetalle(true);
-  };
+  // Modal para editar datos bancarios
+  const ModalDatosBancarios = ({ empleador, onClose, onConfirm }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg max-w-md w-full relative">
+        <button
+          className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+          onClick={onClose}
+        >
+          ✖
+        </button>
+        <h2 className="text-xl font-semibold mb-4">
+          {empleador.tieneDatosBancarios
+            ? "Actualizar datos bancarios"
+            : "Registrar datos bancarios"}{" "}
+          de {empleador.nombre}
+        </h2>
 
-  const handleCerrarModal = () => {
-    setMostrarModalDetalle(false);
-    setnumero_contratoSeleccionado(null);
-  };
+        <div className="space-y-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Banco
+            </label>
+            <input
+              type="text"
+              name="banco"
+              value={formData.banco}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Cédula del titular
+            </label>
+            <input
+              type="text"
+              name="cedulaTitular"
+              value={formData.cedulaTitular}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre completo del titular
+            </label>
+            <input
+              type="text"
+              name="nombreCompleto"
+              value={formData.nombreCompleto}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Número de cuenta
+            </label>
+            <input
+              type="text"
+              name="numeroCuenta"
+              value={formData.numeroCuenta}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            />
+          </div>
+        </div>
 
-  const handleAbrirModalDeposito = (contrato) => {
-    setnumero_contratoSeleccionado(contrato);
-    setMontoDeposito("");
-    setReferenciaDeposito("");
-    setFechaDeposito("");
-    setMostrarModalDeposito(true);
-  };
-
-  const handleCerrarModalDeposito = () => {
-    setMostrarModalDeposito(false);
-  };
-
-  const handleDepositar = () => {
-    const monto = parseFloat(montoDeposito);
-    if (!montoDeposito || isNaN(monto) || monto <= 0) {
-      alert("Ingresa un monto válido");
-      return;
-    }
-    alert(
-      `Depósito de ${montoDeposito} realizado en la cuenta del número_contrato ${numero_contratoSeleccionado?.numero_contrato}`
-    );
-    setMontoDeposito("");
-    setReferenciaDeposito("");
-    setFechaDeposito("");
-    setMostrarModalDeposito(false);
-  };
-
-  const handleAbrirModalRegistro = () => {
-    const nuevoNumero = generarNumeroContrato();
-    setNuevonumero_contrato({
-      cedula_emprendedor: "",
-      nombre_apellido: "",
-      numero_contrato: nuevoNumero,
-      estatus: "Pendiente",
-      fecha_desde: "",
-      fecha_hasta: "",
-      monto_euros: "",
-      monto_bs: "",
-      monto_flat: "",
-      monto_interes: "",
-      monto_devolver: "",
-      referencia: "",
-      banco: "",
-      numero_cuenta: "",
-      titular: "",
-    });
-    setMostrarModalRegistro(true);
-  };
-
-  const handleCerrarModalRegistro = () => {
-    setMostrarModalRegistro(false);
-  };
-
-  const handleRegistrarnumero_contrato = async () => {
-    const {
-      cedula_emprendedor,
-      nombre_apellido,
-      numero_contrato,
-      estatus,
-      fecha_desde,
-      fecha_hasta,
-      monto_euros,
-    } = nuevonumero_contrato;
-
-    if (
-      !cedula_emprendedor ||
-      !nombre_apellido ||
-      !fecha_desde ||
-      !fecha_hasta ||
-      !monto_euros
-    ) {
-      alert("Por favor, complete todos los campos requeridos");
-      return;
-    }
-
-    const contratoData = {
-      id_contrato: numero_contrato,
-      monto_aprob_euro: monto_euros,
-      cincoflat: calculatedMonto5,
-      diezinteres: calculatedMonto10,
-      monto_devolver: calculatedMontoDevolver,
-      fecha_desde: fecha_desde,
-      fecha_hasta: fecha_hasta,
-      estatus: estatus,
-      numero_cuenta: numero_cuenta,
-    };
-
-    try {
-      const response = await registrarContratoPorCedula(
-        contratoData,
-        cedula_emprendedor
-      );
-      alert(response.message || "Contrato registrado exitosamente");
-      // Agregar el nuevo contrato a la lista
-      setnumero_contratos((prev) => [...prev, response.contrato]);
-      localStorage.setItem(
-        "numero_contratos",
-        JSON.stringify([...numero_contratos, response.contrato])
-      );
-      setMostrarModalRegistro(false);
-    } catch (error) {
-      console.error("Error al registrar contrato:", error);
-      alert("Error al registrar contrato");
-    }
-  };
-
-  const generarNumeroContrato = () => {
-    const currentYear = new Date().getFullYear().toString().slice(-2);
-    const storageKey = "contador_contrato";
-
-    let contador = parseInt(localStorage.getItem(storageKey), 10);
-    if (isNaN(contador)) {
-      contador = 1;
-    } else {
-      contador += 1;
-    }
-    localStorage.setItem(storageKey, contador.toString());
-    const numeroSecuencial = String(contador).padStart(3, "0");
-    const numeroContrato = `IFEMI/CRED-${numeroSecuencial}-${currentYear}`;
-    return numeroContrato;
-  };
-
-  const handleAsignarNumero = async (contrato) => {
-    const nuevoNumeroContrato = generarNumeroContrato();
-    try {
-      const response = await asignarNumeroContratoPorCedula(
-        contrato.cedula,
-        nuevoNumeroContrato
-      );
-      alert(
-        `Número de contrato asignado correctamente: ${response.message || ""}`
-      );
-      // Actualizar contrato en la lista
-      setnumero_contratos((prev) =>
-        prev.map((c) =>
-          c.cedula === contrato.cedula &&
-          c.numero_contrato !== nuevoNumeroContrato
-            ? { ...c, numero_contrato: nuevoNumeroContrato }
-            : c
-        )
-      );
-    } catch (error) {
-      console.error("Error asignando número de contrato:", error);
-      alert("Error al asignar el número de contrato.");
-    }
-  };
+        <div className="flex justify-end space-x-2">
+          <button
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={onConfirm}
+          >
+            {empleador.tieneDatosBancarios ? "Actualizar" : "Registrar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-serif">
       {menuOpen && <Menu />}
+
       <div
         className={`flex-1 flex flex-col transition-margin duration-300 ${
           menuOpen ? "ml-64" : "ml-0"
@@ -328,550 +818,508 @@ const gestionnumero_contratos = ({ setUser }) => {
         {/* Header */}
         <Header toggleMenu={toggleMenu} />
 
-        {/* Contenido principal */}
+        {/* Contenido */}
         <main className="flex-1 p-8 bg-gray-100">
-          {/* Título y icono */}
+          {/* Encabezado */}
           <div className="flex items-center justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4">
               <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
-                <i className="bx bx-file text-3xl text-gray-700"></i>
+                <i className="bx bx-home text-3xl text-gray-700"></i>
               </div>
               <h1 className="text-3xl font-semibold text-gray-800">
                 Gestión de contratos
               </h1>
             </div>
-            {exchangeRate && (
-              <p className="text-gray-600">
-                Precio del Euro en Bs.: {exchangeRate} Bs.
-              </p>
-            )}
           </div>
 
-          {/* Buscador */}
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="Buscar por nombre, cédula o número de contrato"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          {/* Tabs de navegación */}
+          <div className="mb-6 border-b border-gray-200">
+            <nav className="flex space-x-8">
+              <button
+                onClick={() => setActiveTab("asignacion")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "asignacion"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Asignación de contrato
+              </button>
+              <button
+                onClick={() => setActiveTab("gestion")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "gestion"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Gestión de contrato
+              </button>
+              <button
+                onClick={() => setActiveTab("bancarios")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "bancarios"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Datos bancarios
+              </button>
+              <button
+                onClick={() => setActiveTab("depositos")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === "depositos"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Gestión de Depósitos
+              </button>
+            </nav>
+          </div>
+
+          {/* Modal de asignación de contrato */}
+          {asignandoContrato && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg max-w-md w-full relative">
+                <button
+                  className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+                  onClick={cancelarAsignacion}
+                >
+                  ✖
+                </button>
+                <h2 className="text-xl font-semibold mb-4">
+                  Asignar contrato a {asignandoContrato.nombre}
+                </h2>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Número de contrato
+                  </label>
+                  <input
+                    type="text"
+                    name="cedula"
+                    value={formData.cedula}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="Ej: CTO-001"
+                  />
+                  <input
+                    type="text"
+                    name="numeroContrato"
+                    value={formData.numeroContrato}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="Ej: CTO-001"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                    onClick={cancelarAsignacion}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    onClick={confirmarAsignacionContrato}
+                  >
+                    Asignar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de gestión de contrato */}
+          {gestionandoContrato && (
+            <ModalGestionContrato
+              empleador={gestionandoContrato}
+              onClose={cancelarGestion}
+              onConfirm={confirmarGestionContrato}
             />
-          </div>
+          )}
 
-          {/* Lista agrupada por cédula con estilos viejos */}
-          <section className="mb-8 px-6 bg-gray-50 min-h-screen font-sans">
-            {contratosPorCedula.length === 0 ? (
-              <p className="text-center text-gray-600 text-lg mt-10">
-                No hay contratos para mostrar.
-              </p>
-            ) : (
-              contratosPorCedula.map(([cedula, contratos]) => (
-                <div key={cedula} className="mb-8">
-                  <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 transition-transform hover:scale-105 duration-300 hover:shadow-xl">
-                    {/* Encabezado */}
-                    <h3 className="text-2xl font-semibold mb-3 text-blue-900 border-b border-gray-200 pb-2">
-                      Cédula: {cedula}
-                    </h3>
-                    {/* Info del primer contrato */}
-                    <p className="mb-2 text-gray-700">
-                      <strong>Nombre:</strong>{" "}
-                      {contratos[0]?.nombre_completo || "N/A"}
-                    </p>
-                    <p className="mb-4 text-gray-700">
-                      <strong>N° de contratos:</strong> {contratos.length}
-                    </p>
-                    {/* Lista de contratos */}
-                    {contratos.map((contrato) => (
+          {/* Modal de datos bancarios */}
+          {editandoBancarios && (
+            <ModalDatosBancarios
+              empleador={editandoBancarios}
+              onClose={cancelarEdicionBancarios}
+              onConfirm={confirmarDatosBancarios}
+            />
+          )}
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-gray-500">Cargando emprendedores...</p>
+            </div>
+          ) : (
+            <>
+              {/* Contenido según pestaña activa */}
+              {activeTab === "asignacion" && (
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {empleadores.length === 0 ? (
+                    <div className="col-span-full text-center py-8">
+                      <p className="text-gray-500">
+                        No hay emprendedores registrados.
+                      </p>
+                    </div>
+                  ) : (
+                    empleadores.map((empleador) => (
                       <div
-                        key={contrato.numero_contrato}
-                        className="border-t border-gray-200 pt-3 mb-3"
+                        key={empleador.id}
+                        className="bg-white rounded-xl shadow-lg p-4 border-t-4 relative"
+                        style={{ borderColor: "#0F3C5B" }}
                       >
-                        <div className="flex justify-between items-center mb-2">
-                          <p className="font-semibold text-gray-800">
-                            Contrato: {contrato.numero_contrato}
-                          </p>
-                          {/* Estado opcional */}
-                          {/* <span className="text-sm text-green-500">Activo</span> */}
-                        </div>
-                        {/* Botones con efecto institucional */}
-                        <div className="flex flex-wrap gap-3 justify-start">
-                          <button
-                            className="flex items-center space-x-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
-                            onClick={() =>
-                              handleVerListanumero_contratos(contrato)
-                            }
-                          >
-                            <span>🔍</span>
-                            <span className="font-medium">Ver detalles</span>
-                          </button>
+                        <h2 className="text-xl font-semibold mb-2">
+                          {empleador.nombre}
+                        </h2>
+                        <h2 className="text-xl font-semibold mb-2">
+                          {empleador.cedula}
+                        </h2>
 
-                          {!contrato.numero_asignado && (
+                        {/* Estado del contrato */}
+                        <div className="mb-4">
+                          {contratosAsignados[empleador.id] ||
+                          empleador.tieneContrato ? (
+                            <div className="bg-green-100 text-green-800 px-3 py-2 rounded-md">
+                              <p className="font-semibold">
+                                Contrato asignado:
+                              </p>
+                              <p>
+                                {contratosAsignados[empleador.id] ||
+                                  empleador.numeroContrato}
+                              </p>
+                            </div>
+                          ) : (
                             <button
-                              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
-                              onClick={() => handleAsignarNumero(contrato)}
+                              className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                              onClick={() =>
+                                iniciarAsignacionContrato(empleador)
+                              }
                             >
-                              <span>📝</span>
-                              <span className="font-medium">
-                                Asignar numero de contrato
-                              </span>
+                              Asignar número de contrato
                             </button>
                           )}
+                        </div>
 
+                        {/* Botón para ver detalles */}
+                        <button
+                          className="w-full bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
+                          onClick={() => verDetalles(empleador)}
+                        >
+                          Ver detalles
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </section>
+              )}
+
+              {activeTab === "gestion" && (
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {empleadores.filter(
+                    (e) => e.tieneContrato || contratosAsignados[e.id]
+                  ).length === 0 ? (
+                    <div className="col-span-full text-center py-8">
+                      <p className="text-gray-500">
+                        No hay emprendedores con contratos asignados.
+                      </p>
+                    </div>
+                  ) : (
+                    empleadores
+                      .filter(
+                        (e) => e.tieneContrato || contratosAsignados[e.id]
+                      )
+                      .map((empleador) => (
+                        <div
+                          key={empleador.id}
+                          className="bg-white rounded-xl shadow-lg p-4 border-t-4 relative"
+                          style={{ borderColor: "#0F3C5B" }}
+                        >
+                          <h2 className="text-xl font-semibold mb-2">
+                            {empleador.nombre}
+                          </h2>
+                          <p className="text-sm text-gray-600 mb-3">
+                            Cédula: {empleador.cedula}
+                          </p>
+
+                          <div className="mb-4 bg-green-100 text-green-800 px-3 py-2 rounded-md">
+                            <p className="font-semibold">Contrato asignado:</p>
+                            <p>
+                              {contratosAsignados[empleador.id] ||
+                                empleador.numeroContrato}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col space-y-2">
+                            <button
+                              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                              onClick={() => iniciarGestionContrato(empleador)}
+                            >
+                              Gestionar contrato
+                            </button>
+                            <button
+                              className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
+                              onClick={() => verDetalles(empleador)}
+                            >
+                              Ver detalles
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </section>
+              )}
+
+              {activeTab === "bancarios" && (
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {empleadores.length === 0 ? (
+                    <div className="col-span-full text-center py-8">
+                      <p className="text-gray-500">
+                        No hay emprendedores registrados.
+                      </p>
+                    </div>
+                  ) : (
+                    empleadores.map((empleador) => (
+                      <div
+                        key={empleador.id}
+                        className="bg-white rounded-xl shadow-lg p-4 border-t-4 relative"
+                        style={{ borderColor: "#0F3C5B" }}
+                      >
+                        <h2 className="text-xl font-semibold mb-2">
+                          {empleador.nombre}
+                        </h2>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Cédula: {empleador.cedula}
+                        </p>
+
+                        {/* Estado datos bancarios */}
+                        <div className="mb-4">
+                          {empleador.tieneDatosBancarios ? (
+                            <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-md">
+                              <p className="font-semibold">
+                                Datos bancarios registrados
+                              </p>
+                              <p className="text-sm mt-1">
+                                <strong>Banco:</strong>{" "}
+                                {empleador.datosBancarios.banco}
+                              </p>
+                              <p className="text-sm">
+                                <strong>Cuenta:</strong>{" "}
+                                {empleador.datosBancarios.numeroCuenta}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-md">
+                              <p className="font-semibold">
+                                Sin datos bancarios
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col space-y-2">
                           <button
-                            className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
-                            onClick={() => {
-                              setNuevonumero_contrato({
-                                ...nuevonumero_contrato,
-                                cedula_emprendedor: contrato.cedula,
-                                nombre_apellido:
-                                  contrato.nombre_completo ||
-                                  "Nombre no disponible",
-                              });
-                              setMostrarModalRegistro(true);
-                            }}
+                            className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm hover:bg-purple-700 transition-colors"
+                            onClick={() => iniciarEdicionBancarios(empleador)}
                           >
-                            <span>✍️</span>
-                            <span className="font-medium">
-                              Registrar contrato
-                            </span>
+                            {empleador.tieneDatosBancarios
+                              ? "Actualizar datos"
+                              : "Registrar datos"}
                           </button>
-
                           <button
-                            className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md transition duration-300"
-                            onClick={() => handleAbrirModalDeposito(contrato)}
+                            className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
+                            onClick={() => verDetalles(empleador)}
                           >
-                            <span>💰</span>
-                            <span className="font-medium">Depositar</span>
+                            Ver detalles
                           </button>
                         </div>
                       </div>
-                    ))}
+                    ))
+                  )}
+                </section>
+              )}
+
+              {activeTab === "depositos" && (
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Formulario de registro de depósitos */}
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Registrar nuevo depósito
+                    </h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Emprendedor
+                        </label>
+                        <select
+                          name="emprendedorId"
+                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          value={depositoData.emprendedorId}
+                          onChange={handleDepositoChange}
+                        >
+                          <option value="">Seleccionar emprendedor</option>
+                          {empleadores
+                            .filter((e) => e.tieneDatosBancarios)
+                            .map((emp) => (
+                              <option key={emp.id} value={emp.id}>
+                                {emp.nombre} - {emp.cedula}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Monto del depósito (Bs)
+                        </label>
+                        <input
+                          type="number"
+                          name="monto"
+                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          value={depositoData.monto}
+                          onChange={handleDepositoChange}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Fecha
+                        </label>
+                        <input
+                          type="date"
+                          name="fecha"
+                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          value={depositoData.fecha}
+                          onChange={handleDepositoChange}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Número de referencia
+                        </label>
+                        <input
+                          type="text"
+                          name="referencia"
+                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          value={depositoData.referencia}
+                          onChange={handleDepositoChange}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          Estado
+                        </label>
+                        <select
+                          name="estado"
+                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                          value={depositoData.estado}
+                          onChange={handleDepositoChange}
+                        >
+                          <option value="Completado">Completado</option>
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Rechazado">Rechazado</option>
+                        </select>
+                      </div>
+
+                      <button
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        onClick={registrarDeposito}
+                      >
+                        Registrar Depósito
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </section>
+
+                  {/* Historial de depósitos */}
+                  <div className="bg-white p-6 rounded-lg shadow">
+                    <h3 className="text-lg font-semibold mb-4">
+                      Historial de Depósitos
+                    </h3>
+
+                    {depositos.length === 0 ? (
+                      <p className="text-gray-500">
+                        No hay depósitos registrados.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                Emprendedor
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                Monto
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                Fecha
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                Referencia
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                Estado
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {depositos.map((deposito) => (
+                              <tr key={deposito.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {deposito.emprendedorNombre}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {deposito.monto} Bs
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {deposito.fecha}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {deposito.referencia}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-xs ${
+                                      deposito.estado === "Completado"
+                                        ? "bg-green-100 text-green-800"
+                                        : deposito.estado === "Pendiente"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    {deposito.estado}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+            </>
+          )}
         </main>
 
-        {/* Pie de página */}
+        {/* Pie */}
         <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
           © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos
           reservados.
         </footer>
       </div>
 
-      {/* Modal detalles */}
-      {mostrarModalDetalle && (
-        <div className="bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 flex items-start justify-center z-50 overflow-y-auto p-4">
-          <div className="bg-white p-6 rounded-lg max-w-9xl w-full relative shadow-lg overflow-y-auto max-h-full">
-            {/* Botón cerrar */}
-            <button
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-              onClick={handleCerrarModal}
-            >
-              ✖
-            </button>
-            {/* Contenido detalles */}
-            <h2 className="text-xl font-semibold mb-4">
-              Detalles de {numero_contratoSeleccionado?.nombre_completo}
-            </h2>
-            {numero_contratoSeleccionado && (
-              <div>
-                {/* Información general */}
-                <p>
-                  <strong>Número:</strong>{" "}
-                  {numero_contratoSeleccionado.numero_contrato}
-                </p>
-                <p>
-                  <strong>Estatus:</strong>{" "}
-                  {numero_contratoSeleccionado.estatus_contrato}
-                </p>
-                <p>
-                  <strong>Fecha inicio:</strong>{" "}
-                  {numero_contratoSeleccionado.fecha_desde}
-                </p>
-                <p>
-                  <strong>Fecha fin:</strong>{" "}
-                  {numero_contratoSeleccionado.fecha_hasta}
-                </p>
-                <p>
-                  <strong>Monto aprobado en euros:</strong>{" "}
-                  {numero_contratoSeleccionado.monto_aprob_euro}
-                </p>
-                <p>
-                  <strong>Monto 5% FLAT:</strong>{" "}
-                  {numero_contratoSeleccionado.cincoflat}
-                </p>
-                <p>
-                  <strong>Monto 10% Interes:</strong>{" "}
-                  {numero_contratoSeleccionado.diezinteres}
-                </p>
-                <p>
-                  <strong>Monto a devolver:</strong>{" "}
-                  {numero_contratoSeleccionado.monto_devolver}
-                </p>
-                <p>
-                  <strong>Referencia:</strong>{" "}
-                  {numero_contratoSeleccionado.referencia}
-                </p>
-                {/* Datos de cuenta bancaria */}
-                <h4 className="font-semibold mt-4 mb-2">
-                  Datos de la cuenta bancaria
-                </h4>
-                {/* Datos de cuenta bancaria */}
-                <h4 className="font-semibold mt-4 mb-2">
-                  Datos de la cuenta bancaria
-                </h4>
-                <table className="min-w-full divide-y divide-gray-200 table-auto mb-4">
-                  <thead className="bg-gray-100 text-gray-700 uppercase text-xs font-semibold">
-                    <tr>
-                      <th className="px-4 py-2 border-b border-gray-200">
-                        Banco
-                      </th>
-                      <th className="px-4 py-2 border-b border-gray-200">
-                        Número de cuenta
-                      </th>
-                      <th className="px-4 py-2 border-b border-gray-200">
-                        Titular
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200 text-sm text-gray-800">
-                    <tr align="center">
-                      <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.banco || "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.numero_cuenta || "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.nombre_completo || "N/A"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                {/* Detalles del depósito */}
-                <h4 className="font-semibold mb-2">Detalles del depósito</h4>
-                <table className="min-w-full divide-y divide-gray-200 table-auto mb-4">
-                  <thead className="bg-gray-100 text-gray-700 uppercase text-xs font-semibold">
-                    <tr>
-                      <th className="px-4 py-2 border-b border-gray-200">
-                        Referencia
-                      </th>
-                      <th className="px-4 py-2 border-b border-gray-200">
-                        Fecha
-                      </th>
-                      <th className="px-4 py-2 border-b border-gray-200">
-                        Medio
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200 text-sm text-gray-800">
-                    <tr>
-                      <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.detalle_deposito
-                          ?.referencia || "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.detalle_deposito?.fecha ||
-                          "N/A"}
-                      </td>
-                      <td className="px-4 py-2 border-b border-gray-200">
-                        {numero_contratoSeleccionado.detalle_deposito?.medio ||
-                          "N/A"}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Modal registrar nuevo contrato */}
-      {mostrarModalRegistro && (
-        <div className="bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 flex items-start justify-center z-50 overflow-y-auto p-4">
-          <div className="bg-white p-6 rounded-lg max-w-3xl w-full relative shadow-lg overflow-y-auto max-h-full">
-            {/* Botón cerrar */}
-            <button
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-              onClick={handleCerrarModalRegistro}
-              aria-label="Cerrar"
-            >
-              ✖
-            </button>
-            {/* Título */}
-            <h2 className="text-xl font-semibold mb-4">
-              Registrar Nuevo Número Contrato
-            </h2>
-            {/* Formulario */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleRegistrarnumero_contrato();
-              }}
-            >
-              {/* Campos del formulario */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {/* Cédula */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="cedula_emprendedor"
-                  >
-                    Cédula
-                  </label>
-                  <input
-                    id="cedula_emprendedor"
-                    type="text"
-                    placeholder="Cédula"
-                    value={nuevonumero_contrato.cedula_emprendedor}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({
-                        ...nuevonumero_contrato,
-                        cedula_emprendedor: e.target.value,
-                      })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
-                    required
-                  />
-                </div>
-                {/* Nombre y Apellido */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="nombre_apellido"
-                  >
-                    Nombre y Apellido
-                  </label>
-                  <input
-                    id="nombre_apellido"
-                    type="text"
-                    placeholder="Nombre y Apellido"
-                    value={nuevonumero_contrato.nombre_apellido}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({
-                        ...nuevonumero_contrato,
-                        nombre_apellido: e.target.value,
-                      })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
-                    required
-                  />
-                </div>
-                {/* Fecha Inicio */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="fecha_desde"
-                  >
-                    Fecha Inicio
-                  </label>
-                  <input
-                    id="fecha_desde"
-                    type="date"
-                    value={nuevonumero_contrato.fecha_desde}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({
-                        ...nuevonumero_contrato,
-                        fecha_desde: e.target.value,
-                      })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
-                    required
-                  />
-                </div>
-                {/* Fecha Fin */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="fecha_hasta"
-                  >
-                    Fecha Fin (calculada)
-                  </label>
-                  <input
-                    id="fecha_hasta"
-                    type="date"
-                    value={nuevonumero_contrato.fecha_hasta}
-                    readOnly
-                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-                {/* Monto en Euros */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="monto_euros"
-                  >
-                    Monto en Euros
-                  </label>
-                  <input
-                    id="monto_euros"
-                    type="text"
-                    placeholder="Monto en Euros"
-                    value={nuevonumero_contrato.monto_euros}
-                    onChange={(e) =>
-                      setNuevonumero_contrato({
-                        ...nuevonumero_contrato,
-                        monto_euros: e.target.value,
-                      })
-                    }
-                    className="border border-gray-300 rounded px-3 py-2 w-full"
-                    required
-                  />
-                </div>
-                {/* Monto en Bs.S */}
-                <div>
-                  <label className="block mb-1 font-medium" htmlFor="monto_bs">
-                    Monto en Bs.S
-                  </label>
-                  <input
-                    id="monto_bs"
-                    type="text"
-                    placeholder="Monto en Bs.S"
-                    value={monto_bs_calculado}
-                    readOnly
-                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-                {/* Monto 5% FLAT */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="monto_flat"
-                  >
-                    Monto 5% FLAT
-                  </label>
-                  <input
-                    id="monto_flat"
-                    type="text"
-                    value={calculatedMonto5}
-                    readOnly
-                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-
-                {/* Monto 10% de Interés */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="monto_interes"
-                  >
-                    Monto 10% de Interés
-                  </label>
-                  <input
-                    id="monto_interes"
-                    type="text"
-                    value={calculatedMonto10}
-                    readOnly
-                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-
-                {/* Monto a devolver */}
-                <div>
-                  <label
-                    className="block mb-1 font-medium"
-                    htmlFor="monto_devolver"
-                  >
-                    Monto a devolver
-                  </label>
-                  <input
-                    id="monto_devolver"
-                    type="text"
-                    value={calculatedMontoDevolver}
-                    readOnly
-                    className="border border-gray-300 rounded px-3 py-2 w-full bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-              </div>
-
-              {/* Botones de acción */}
-              <div className="flex justify-end space-x-2 mt-4">
-                <button
-                  type="submit"
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Registrar
-                </button>
-                <button
-                  type="button"
-                  className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
-                  onClick={handleCerrarModalRegistro}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal realizar depósito */}
-      {mostrarModalDeposito && (
-        <div className="bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 flex items-start justify-center z-50 overflow-y-auto p-4">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full relative shadow-lg overflow-y-auto max-h-full">
-            {/* Botón cerrar */}
-            <button
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-              onClick={handleCerrarModalDeposito}
-            >
-              ✖
-            </button>
-            {/* Título */}
-            <h2 className="text-xl font-semibold mb-4">Realizar Depósito</h2>
-            {/* Formulario */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const monto = parseFloat(montoDeposito);
-                if (!montoDeposito || isNaN(monto) || monto <= 0) {
-                  alert("Ingresa un monto válido");
-                  return;
-                }
-                alert(
-                  `Depósito de ${monto} realizado en la cuenta del número_contrato ${numero_contratoSeleccionado?.numero_contrato}`
-                );
-                setReferenciaDeposito("");
-                setFechaDeposito("");
-                setMostrarModalDeposito(false);
-              }}
-              className="flex flex-col gap-4"
-            >
-              {/* Referencia */}
-              <input
-                type="text"
-                placeholder="Referencia"
-                value={referenciaDeposito}
-                onChange={(e) => setReferenciaDeposito(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 w-full"
-                required
-              />
-              {/* Fecha */}
-              <input
-                type="date"
-                placeholder="Fecha"
-                value={fechaDeposito}
-                onChange={(e) => setFechaDeposito(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 w-full"
-                required
-              />
-              {/* Botón */}
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="submit"
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                >
-                  Depositar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Mostrar modal si hay un empleador seleccionado */}
+      {empleadorModal && (
+        <ModalDetalles empleador={empleadorModal} onClose={cerrarModal} />
       )}
     </div>
   );
 };
 
-export default gestionnumero_contratos;
+export default Gestion;
