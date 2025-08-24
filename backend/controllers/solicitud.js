@@ -30,9 +30,10 @@ router.get("/:cedula_emprendedor", async (req, res) => {
 router.get("/estatus/aprobada", async (req, res) => {
   try {
     const resultado = await query(
-      `SELECT p.nombre_completo
+      `SELECT p.nombre_completo, p.cedula, nc.numero_contrato
        FROM solicitud s
        JOIN persona p ON s.cedula_emprendedor = p.cedula
+       LEFT JOIN n_contrato nc ON p.cedula = nc.cedula_emprendedor
        WHERE s.estatus = 'Aprobada'`
     );
     res.json(resultado.rows);

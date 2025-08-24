@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
+import { asignarNumeroContrato } from "../services/api_contrato";
 
 const Gestion = ({ user, setUser }) => {
   const navigate = useNavigate();
@@ -61,7 +62,6 @@ const Gestion = ({ user, setUser }) => {
     return nuevoNumero;
   };
 
-  
   const getAnoActual = () => {
     const year = new Date().getFullYear();
     return year.toString().slice(-2);
@@ -80,10 +80,10 @@ const Gestion = ({ user, setUser }) => {
       const data = await response.json();
       console.log("Datos recibidos:", data);
       return data.map((emprendedor) => ({
-        id: emprendedor.id || emprendedor.cedula,
+        id: emprendedor.cedula,
         nombre: `${emprendedor.nombre_completo}`,
         detalle: emprendedor.detalle_proyecto || "Sin detalles",
-        cedula: emprendedor.cedula_emprendedor,
+        cedula: emprendedor.cedula,
         tieneContrato: !!emprendedor.numero_contrato,
         numeroContrato: emprendedor.numero_contrato || null,
         tieneDatosBancarios: false,
@@ -188,60 +188,60 @@ const Gestion = ({ user, setUser }) => {
   };
 
   const confirmarAsignacionContrato = async () => {
-  try {
-    if (!formData.numeroContrato) {
-      alert("Por favor ingrese el número de contrato");
-      return;
+    try {
+      if (!formData.numeroContrato) {
+        alert("Por favor ingrese el número de contrato");
+        return;
+      }
+
+      // Llamada a la API para asignar contrato
+      const response = await fetch("http://localhost:5000/api/contratos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cedula_emprendedor: formData.cedulaEmprendedor,
+          numero_contrato: formData.numeroContrato,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al asignar contrato");
+      }
+
+      const data = await response.json();
+
+      // Actualizar estado local
+      const updatedEmpleadores = empleadores.map((e) =>
+        e.cedula === formData.cedulaEmprendedor
+          ? {
+              ...e,
+              tieneContrato: true,
+              numeroContrato: formData.numeroContrato,
+            }
+          : e
+      );
+
+      setEmpleadores(updatedEmpleadores);
+      setContratosAsignados((prev) => ({
+        ...prev,
+        [asignandoContrato.id]: formData.numeroContrato,
+      }));
+
+      setAsignandoContrato(null);
+      setFormData((prev) => ({
+        ...prev,
+        numeroContrato: "",
+        cedulaEmprendedor: "",
+      }));
+
+      alert("Contrato asignado exitosamente");
+    } catch (error) {
+      console.error("Error asignando contrato:", error);
+      alert("Error al asignar contrato");
     }
-
-    // Llamada a la API para asignar contrato
-    const response = await fetch("http://localhost:5000/api/contratos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        cedula_emprendedor: formData.cedulaEmprendedor,
-        numero_contrato: formData.numeroContrato,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Error al asignar contrato");
-    }
-
-    const data = await response.json();
-
-    // Actualizar estado local
-    const updatedEmpleadores = empleadores.map((e) =>
-      e.cedula === formData.cedulaEmprendedor
-        ? {
-            ...e,
-            tieneContrato: true,
-            numeroContrato: formData.numeroContrato,
-          }
-        : e
-    );
-
-    setEmpleadores(updatedEmpleadores);
-    setContratosAsignados((prev) => ({
-      ...prev,
-      [asignandoContrato.id]: formData.numeroContrato,
-    }));
-
-    setAsignandoContrato(null);
-    setFormData((prev) => ({
-      ...prev,
-      numeroContrato: "",
-      cedulaEmprendedor: "",
-    }));
-
-    alert("Contrato asignado exitosamente");
-  } catch (error) {
-    console.error("Error asignando contrato:", error);
-    alert("Error al asignar contrato");
-  }
-};
+  };
 
   const iniciarGestionContrato = (empleador) => {
     setGestionandoContrato(empleador);
@@ -831,7 +831,6 @@ const Gestion = ({ user, setUser }) => {
               </h1>
             </div>
           </div>
-
           {/* Tabs de navegación */}
           <div className="mb-6 border-b border-gray-200">
             <nav className="flex space-x-8">
@@ -877,7 +876,6 @@ const Gestion = ({ user, setUser }) => {
               </button>
             </nav>
           </div>
-
           {/* Modal de asignación de contrato */}
           {asignandoContrato && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -891,18 +889,25 @@ const Gestion = ({ user, setUser }) => {
                 <h2 className="text-xl font-semibold mb-4">
                   Asignar contrato a {asignandoContrato.nombre}
                 </h2>
+                <div style={{ display: "none" }} className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cédula del emprendedor
+                  </label>
+                  <input
+                    type="text"
+                    name="cedulaEmprendedor"
+                    value={formData.cedulaEmprendedor}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="Cédula"
+                  />
+                </div>
+
+                {/* Campo para el número de contrato */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Número de contrato
                   </label>
-                  <input
-                    type="text"
-                    name="cedula"
-                    value={formData.cedula}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="Ej: CTO-001"
-                  />
                   <input
                     type="text"
                     name="numeroContrato"
@@ -912,6 +917,7 @@ const Gestion = ({ user, setUser }) => {
                     placeholder="Ej: CTO-001"
                   />
                 </div>
+
                 <div className="flex justify-end space-x-2">
                   <button
                     className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
@@ -929,7 +935,6 @@ const Gestion = ({ user, setUser }) => {
               </div>
             </div>
           )}
-
           {/* Modal de gestión de contrato */}
           {gestionandoContrato && (
             <ModalGestionContrato
@@ -938,7 +943,6 @@ const Gestion = ({ user, setUser }) => {
               onConfirm={confirmarGestionContrato}
             />
           )}
-
           {/* Modal de datos bancarios */}
           {editandoBancarios && (
             <ModalDatosBancarios
@@ -947,7 +951,6 @@ const Gestion = ({ user, setUser }) => {
               onConfirm={confirmarDatosBancarios}
             />
           )}
-
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <p className="text-gray-500">Cargando emprendedores...</p>
@@ -973,22 +976,16 @@ const Gestion = ({ user, setUser }) => {
                         <h2 className="text-xl font-semibold mb-2">
                           {empleador.nombre}
                         </h2>
-                        <h2 className="text-xl font-semibold mb-2">
-                          {empleador.cedula}
-                        </h2>
 
                         {/* Estado del contrato */}
                         <div className="mb-4">
-                          {contratosAsignados[empleador.id] ||
+                          {contratosAsignados[empleador.cedulaEmprendedor] ||
                           empleador.tieneContrato ? (
                             <div className="bg-green-100 text-green-800 px-3 py-2 rounded-md">
                               <p className="font-semibold">
                                 Contrato asignado:
                               </p>
-                              <p>
-                                {contratosAsignados[empleador.id] ||
-                                  empleador.numeroContrato}
-                              </p>
+                              {empleador.numeroContrato}
                             </div>
                           ) : (
                             <button
