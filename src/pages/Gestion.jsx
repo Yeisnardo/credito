@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
+import { registrarContrato } from "../services/api_contrato"; // ajusta la ruta según
 
 const Gestion = ({ user, setUser }) => {
   const navigate = useNavigate();
@@ -14,15 +15,15 @@ const Gestion = ({ user, setUser }) => {
   const [secuencia, setSecuencia] = useState(1);
   const [empleadorModal, setEmpleadorModal] = useState(null);
   const [formData, setFormData] = useState({
-    numeroContrato: "",
-    cedulaEmprendedor: "",
-    montoAprobEuro: "",
-    montoBs: "",
-    cincoFlat: "",
-    diezInteres: "",
-    montoDevolver: "",
-    fechaDesde: "",
-    fechaHasta: "",
+    numero_contrato: "",
+    cedula_emprendedor: "",
+    monto_aprob_euro: "",
+    monto_bs: "",
+    cincoflat: "",
+    diezinteres: "",
+    monto_devolver: "",
+    fecha_desde: "",
+    fecha_hasta: "",
     estatus: "Pendiente",
     banco: "",
     cedulaTitular: "",
@@ -47,9 +48,93 @@ const Gestion = ({ user, setUser }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedEmpleadorId, setSelectedEmpleadorId] = React.useState("");
 
+
+  // Función para calcular fechas
+  const calcularFechas = (fechaInicioStr) => {
+    const fechaInicio = new Date(fechaInicioStr);
+    const fechahasta = new Date(fechaInicio);
+    // Sumamos 20 semanas (20 * 7 días)
+    fechahasta.setDate(fechahasta.getDate() + 20 * 7);
+    // Formatear fechas (ejemplo: YYYY-MM-DD)
+    const formatDate = (date) => date.toISOString().split("T")[0];
+
+    return {
+      desde: formatDate(fechaInicio),
+      hasta: formatDate(fechahasta),
+    };
+  };
+
+  // Cuando la fechaDesde cambie, actualizar fechahasta
+  useEffect(() => {
+    if (formData.fechaDesde) {
+      const { desde, hasta } = calcularFechas(formData.fechaDesde);
+      setFormData((prev) => ({
+        ...prev,
+        fechaDesde: desde,
+        fechahasta: hasta,
+      }));
+    }
+  }, [formData.fechaDesde]);
+
+  // Solo para ejemplo, si quieres usar la fecha actual como inicial
+  useEffect(() => {
+    const hoy = new Date();
+    const formatDate = hoy.toISOString().split("T")[0];
+    setFormData((prev) => ({
+      ...prev,
+      fechaDesde: formatDate,
+    }));
+  }, []);
+
+  useEffect(() => {
+    const montoEuro = parseFloat(formData.montoAprobEuro);
+    if (!isNaN(montoEuro)) {
+      const flat5 = (montoEuro * 0.05).toFixed(2);
+      const interes10 = (montoEuro * 0.1).toFixed(2);
+      const montoDevolverCalc = (montoEuro + parseFloat(interes10)).toFixed(2);
+
+      setFormData((prev) => ({
+        ...prev,
+        cincoFlat: flat5,
+        diezInteres: interes10,
+        montoDevolver: montoDevolverCalc,
+      }));
+    } else {
+      // Limpia los campos si el valor no es válido
+      setFormData((prev) => ({
+        ...prev,
+        cincoFlat: "",
+        diezInteres: "",
+        montoDevolver: "",
+      }));
+    }
+  }, [formData.montoAprobEuro]);
+
   // 2. Función para manejar cambio en el select
   const handleEmpleadorChange = (e) => {
-    setSelectedEmpleadorId(e.target.value);
+    const selectedId = e.target.value;
+    setSelectedEmpleadorId(selectedId);
+
+    // Buscar el empleador en la lista
+    const empleadorSeleccionado = empleadores.find((e) => e.id === selectedId);
+
+    // Si tiene un número de contrato, actualizar el formData
+    if (empleadorSeleccionado && empleadorSeleccionado.numeroContrato) {
+      setFormData((prev) => ({
+        ...prev,
+        cedulaEmprendedor: empleadorSeleccionado.cedula,
+        numeroContrato: empleadorSeleccionado.numeroContrato,
+      }));
+    } else {
+      // Si no tiene, limpiar ese campo
+      setFormData((prev) => ({
+        ...prev,
+        cedulaEmprendedor: empleadorSeleccionado
+          ? empleadorSeleccionado.cedula
+          : "",
+        numeroContrato: "",
+      }));
+    }
   };
 
   // 2. Función para manejar cambios en el buscador
@@ -140,6 +225,8 @@ const Gestion = ({ user, setUser }) => {
         numeroContrato: emprendedor.numero_contrato || null,
         tieneDatosBancarios: false,
         datosBancarios: null,
+        cedula_emprendedor: formData.cedulaEmprendedor,
+        numero_contrato: formData.numeroContrato,
       }));
     } catch (error) {
       console.error("Error en obtenerEmprendedoresAprobados:", error);
@@ -312,8 +399,15 @@ const Gestion = ({ user, setUser }) => {
     });
   };
 
-  const handleGuardarContrato = () => {
-    confirmarGestionContrato();
+  const handleGuardarContrato = async () => {
+    try {
+      const respuesta = await registrarContrato(formData);
+      // Aquí puedes mostrar una notificación o actualizar el estado
+      alert("Contrato registrado con éxito");
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      alert("Hubo un error al guardar el contrato");
+    }
   };
 
   const cancelarGestion = () => {
@@ -333,19 +427,17 @@ const Gestion = ({ user, setUser }) => {
 
       // Aquí iría la llamada a la API para guardar en contrato
       const contratoData = {
-        numero_contrato:
-          gestionandoContrato.numeroContrato ||
-          contratosAsignados[gestionandoContrato.cedula],
-        cedula_emprendedor: gestionandoContrato.cedula,
-        monto_aprob_euro: formData.montoAprobEuro,
-        monto_bs: formData.montoBs,
-        cincoflat: formData.cincoFlat,
-        diezinteres: formData.diezInteres,
-        monto_devolver: formData.montoDevolver,
-        fecha_desde: formData.fechaDesde,
-        fecha_hasta: formData.fechaHasta,
-        estatus: formData.estatus,
-      };
+  numero_contrato: formData.numero_contrato,
+  cedula_emprendedor: formData.cedula_emprendedor,
+  monto_aprob_euro: formData.monto_aprob_euro,
+  monto_bs: formData.monto_bs,
+  cincoflat: formData.cincoflat,
+  diezinteres: formData.diezinteres,
+  monto_devolver: formData.monto_devolver,
+  fecha_desde: formData.fecha_desde,
+  fecha_hasta: formData.fecha_hasta,
+  estatus: formData.estatus,
+};
 
       console.log("Gestionando contrato:", contratoData);
 
@@ -748,7 +840,7 @@ const Gestion = ({ user, setUser }) => {
                   </label>
                   <input
                     type="text"
-                    name="numeroContrato"
+                    name="numero_contrato"
                     value={formData.numeroContrato}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -845,166 +937,207 @@ const Gestion = ({ user, setUser }) => {
               )}
 
               {activeTab === "gestion" && (
-                <div className="flex flex-col md:flex-row gap-4 mb-8 max-w-6xl mx-auto p-4">
+                <div className="flex flex-col md:flex-row max-h-3xl gap-4 mb-8 max-w-6xl mx-auto p-4">
                   {/* Formulario */}
-                  <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg">
-                    <h2 className="text-xl font-semibold mb-4">
-                      Gestión de Contrato
-                    </h2>
+                  <form
+  onSubmit={(e) => {
+    e.preventDefault();
+    handleGuardarContrato();
+  }}
+  className="w-full md:w-1/2"
+>
+  <div className="bg-white p-6 rounded-lg shadow-lg h-full flex flex-col">
+    <h2 className="text-xl font-semibold mb-4">Gestión de contrato</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto">
+      
+      {/* Seleccionar empleador */}
+      <div className="mb-4 col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Seleccionar empleador
+        </label>
+        <select
+          value={selectedEmpleadorId}
+          onChange={handleEmpleadorChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        >
+          <option value="">-- Selecciona un empleador --</option>
+          {empleadores.map((empleador) => (
+            <option key={empleador.id} value={empleador.id}>
+              {empleador.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      {/* Cédula del Emprendedor */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Cédula del Emprendedor
+        </label>
+        <input
+          type="text"
+          value={formData.cedula_emprendedor}
+          readOnly
+          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+        />
+      </div>
+      
+      {/* Número de contrato */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Número de contrato
+        </label>
+        <input
+          type="text"
+          name="numero_contrato"
+          value={formData.numero_contrato}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          placeholder="Ingresa el número de contrato"
+        />
+      </div>
+      
+      {/* Monto aprobado (€) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Monto aprobado (€)
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          name="monto_aprob_euro"
+          value={formData.monto_aprob_euro}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      {/* Monto (Bs) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Monto (Bs)
+        </label>
+        <input
+          type="text"
+          name="monto_bs"
+          value={formData.monto_bs}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      {/* 5% Flat (€) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          5% Flat (€)
+        </label>
+        <input
+          type="text"
+          name="cincoflat"
+          value={formData.cincoflat}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      {/* 10% Interés (€) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          10% Interés (€)
+        </label>
+        <input
+          type="text"
+          name="diezinteres"
+          value={formData.diezinteres}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      {/* Monto a devolver (€) */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Monto a devolver (€)
+        </label>
+        <input
+          type="text"
+          name="monto_devolver"
+          value={formData.monto_devolver}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      {/* Fecha desde */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Fecha desde
+        </label>
+        <input
+          type="date"
+          name="fecha_desde"
+          value={formData.fecha_desde}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      {/* Fecha hasta */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Fecha hasta
+        </label>
+        <input
+          type="date"
+          name="fecha_hasta"
+          value={formData.fecha_hasta}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+      </div>
+      
+      {/* Estatus */}
+      <div className="col-span-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Estatus
+        </label>
+        <select
+          name="estatus"
+          value={formData.estatus}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        >
+          <option value="Pendiente">Pendiente</option>
+          <option value="Activo">Activo</option>
+          <option value="Completado">Completado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+      
+    </div>
+    {/* Botones */}
+    <div className="flex justify-end space-x-2 mt-4">
+      <button
+        type="button"
+        className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+        onClick={cancelarGestion}
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Guardar
+      </button>
+    </div>
+  </div>
+</form>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Seleccionar Empleador
-                        </label>
-                        <select
-                          value={selectedEmpleadorId}
-                          onChange={handleEmpleadorChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        >
-                          <option value="">
-                            -- Selecciona un empleador --
-                          </option>
-                          {empleadores.map((empleador) => (
-                            <option key={empleador.id} value={empleador.id}>
-                              {empleador.nombre}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {/* Monto aprobado (€) */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Monto aprobado (€)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          name="montoAprobEuro"
-                          value={formData.montoAprobEuro}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      {/* Monto (Bs) */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Monto (Bs)
-                        </label>
-                        <input
-                          type="text"
-                          name="montoBs"
-                          value={formData.montoBs}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      {/* Flat 5% */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          5% Flat
-                        </label>
-                        <input
-                          type="text"
-                          name="cincoFlat"
-                          value={formData.cincoFlat}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      {/* 10% Interés */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          10% Interés
-                        </label>
-                        <input
-                          type="text"
-                          name="diezInteres"
-                          value={formData.diezInteres}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      {/* Monto a devolver */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Monto a devolver
-                        </label>
-                        <input
-                          type="text"
-                          name="montoDevolver"
-                          value={formData.montoDevolver}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      {/* Fecha desde */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Fecha desde
-                        </label>
-                        <input
-                          type="date"
-                          name="fechaDesde"
-                          value={formData.fechaDesde}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      {/* Fecha hasta */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Fecha hasta
-                        </label>
-                        <input
-                          type="date"
-                          name="fechaHasta"
-                          value={formData.fechaHasta}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        />
-                      </div>
-                      {/* Estatus */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Estatus
-                        </label>
-                        <select
-                          name="estatus"
-                          value={formData.estatus}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        >
-                          <option value="Pendiente">Pendiente</option>
-                          <option value="Activo">Activo</option>
-                          <option value="Completado">Completado</option>
-                          <option value="Cancelado">Cancelado</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Botones */}
-                    <div className="flex justify-end space-x-2 mt-4">
-                      <button
-                        className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                        onClick={cancelarGestion}
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        onClick={handleGuardarContrato}
-                      >
-                        Guardar
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Tarjetas o lista de empleadores a la derecha */}
-
-                  <section className="w-full md:w-1/2 grid grid-cols-1 gap-4">
+                  {/* Lista de tarjetas a la derecha */}
+                  <section className="w-full md:w-1/2 flex flex-col overflow-y-auto space-y-4">
                     {/* Buscador */}
-                    <div className="mb-4">
+                    <div>
                       <input
                         type="text"
                         placeholder="Buscar empleador..."
@@ -1013,7 +1146,6 @@ const Gestion = ({ user, setUser }) => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-
                     {/* Lista filtrada */}
                     {empleadores
                       .filter(
@@ -1024,10 +1156,8 @@ const Gestion = ({ user, setUser }) => {
                           .toLowerCase()
                           .includes(searchTerm.toLowerCase())
                       ).length === 0 ? (
-                      <div className="col-span-full text-center py-8">
-                        <p className="text-gray-500">
-                          No hay emprendedores con contratos asignados.
-                        </p>
+                      <div className="text-center py-8 text-gray-500">
+                        No hay emprendedores con contratos asignados.
                       </div>
                     ) : (
                       empleadores

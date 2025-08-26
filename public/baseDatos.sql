@@ -97,7 +97,7 @@ CREATE TABLE clasificacion (
 
 CREATE TABLE n_contrato(
   cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
-  numero_contrato VARCHAR(20) NOT NULL UNIQUE
+  numero_contrato VARCHAR(20) NOT NULL
 );
 
 CREATE TABLE contrato (
@@ -112,7 +112,7 @@ CREATE TABLE contrato (
     fecha_desde DATE,
     fecha_hasta DATE,
     estatus VARCHAR(20),
-    FOREIGN KEY (numero_contrato) REFERENCES n_contrato (numero_contrato)
+    FOREIGN KEY (cedula_emprendedor) REFERENCES n_contrato (cedula_emprendedor)
 ); 
 
 CREATE TABLE deposito(
