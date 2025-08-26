@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import { asignarNumeroContrato } from "../services/api_contrato";
 
 const Gestion = ({ user, setUser }) => {
   const navigate = useNavigate();
@@ -43,6 +43,58 @@ const Gestion = ({ user, setUser }) => {
   const [contratosAsignados, setContratosAsignados] = useState({});
   const [contratosGestionados, setContratosGestionados] = useState({});
   const [depositos, setDepositos] = useState([]);
+  const [rateEuroToVES, setRateEuroToVES] = useState(null);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [selectedEmpleadorId, setSelectedEmpleadorId] = React.useState("");
+
+  // 2. Función para manejar cambio en el select
+  const handleEmpleadorChange = (e) => {
+    setSelectedEmpleadorId(e.target.value);
+  };
+
+  // 2. Función para manejar cambios en el buscador
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const fetchEuroToVESRate = async () => {
+    try {
+      const response = await axios.get(
+        "https://api.exchangerate-api.com/v4/latest/EUR"
+      );
+      const rate = response.data.rates["VES"];
+      setRateEuroToVES(rate);
+    } catch (error) {
+      console.error("Error al obtener la tasa EUR a VES:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (rateEuroToVES && formData.montoAprobEuro) {
+      const montoEuro = parseFloat(formData.montoAprobEuro);
+      if (!isNaN(montoEuro)) {
+        const montoBolivares = (montoEuro * rateEuroToVES).toFixed(2);
+        setFormData((prev) => ({
+          ...prev,
+          montoBs: montoBolivares,
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          montoBs: "",
+        }));
+      }
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        montoBs: "",
+      }));
+    }
+  }, [formData.montoAprobEuro, rateEuroToVES]);
+
+  useEffect(() => {
+    fetchEuroToVESRate();
+  }, []);
 
   useEffect(() => {
     cargarEmpleadores();
@@ -243,15 +295,12 @@ const Gestion = ({ user, setUser }) => {
     }
   };
 
+  // Cuando inicies la gestión de contrato:
   const iniciarGestionContrato = (empleador) => {
     setGestionandoContrato(empleador);
-    // Prellenar el formulario con datos existentes si los hay
-    const contratoExistente = contratosGestionados[empleador.id];
-    setFormData((prev) => ({
-      ...prev,
-      cedulaEmprendedor: empleador.cedula,
-      numeroContrato:
-        empleador.numeroContrato || contratosAsignados[empleador.id] || "",
+    // Cargar datos existentes o vacíos en formData
+    const contratoExistente = contratosGestionados[empleador.cedula];
+    setFormData({
       montoAprobEuro: contratoExistente?.monto_aprob_euro || "",
       montoBs: contratoExistente?.monto_bs || "",
       cincoFlat: contratoExistente?.cincoflat || "",
@@ -260,7 +309,11 @@ const Gestion = ({ user, setUser }) => {
       fechaDesde: contratoExistente?.fecha_desde || "",
       fechaHasta: contratoExistente?.fecha_hasta || "",
       estatus: contratoExistente?.estatus || "Pendiente",
-    }));
+    });
+  };
+
+  const handleGuardarContrato = () => {
+    confirmarGestionContrato();
   };
 
   const cancelarGestion = () => {
@@ -282,7 +335,7 @@ const Gestion = ({ user, setUser }) => {
       const contratoData = {
         numero_contrato:
           gestionandoContrato.numeroContrato ||
-          contratosAsignados[gestionandoContrato.id],
+          contratosAsignados[gestionandoContrato.cedula],
         cedula_emprendedor: gestionandoContrato.cedula,
         monto_aprob_euro: formData.montoAprobEuro,
         monto_bs: formData.montoBs,
@@ -585,227 +638,6 @@ const Gestion = ({ user, setUser }) => {
     );
   };
 
-  // Modal para gestionar contrato
-  const ModalGestionContrato = ({ empleador, onClose, onConfirm }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg max-w-2xl w-full relative max-h-[80vh] overflow-y-auto">
-        <button
-          className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-          onClick={onClose}
-        >
-          ✖
-        </button>
-        <h2 className="text-xl font-semibold mb-4">
-          Gestionar contrato de {empleador.nombre}
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Monto aprobado (€)
-            </label>
-            <input
-              type="text"
-              name="montoAprobEuro"
-              value={formData.montoAprobEuro}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Monto (Bs)
-            </label>
-            <input
-              type="text"
-              name="montoBs"
-              value={formData.montoBs}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              5% Flat
-            </label>
-            <input
-              type="text"
-              name="cincoFlat"
-              value={formData.cincoFlat}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              10% Interés
-            </label>
-            <input
-              type="text"
-              name="diezInteres"
-              value={formData.diezInteres}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Monto a devolver
-            </label>
-            <input
-              type="text"
-              name="montoDevolver"
-              value={formData.montoDevolver}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estatus
-            </label>
-            <select
-              name="estatus"
-              value={formData.estatus}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            >
-              <option value="Pendiente">Pendiente</option>
-              <option value="Activo">Activo</option>
-              <option value="Completado">Completado</option>
-              <option value="Cancelado">Cancelado</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha desde
-            </label>
-            <input
-              type="date"
-              name="fechaDesde"
-              value={formData.fechaDesde}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha hasta
-            </label>
-            <input
-              type="date"
-              name="fechaHasta"
-              value={formData.fechaHasta}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end space-x-2 mt-4">
-          <button
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-            onClick={onClose}
-          >
-            Cancelar
-          </button>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={onConfirm}
-          >
-            Guardar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Modal para editar datos bancarios
-  const ModalDatosBancarios = ({ empleador, onClose, onConfirm }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg max-w-md w-full relative">
-        <button
-          className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-          onClick={onClose}
-        >
-          ✖
-        </button>
-        <h2 className="text-xl font-semibold mb-4">
-          {empleador.tieneDatosBancarios
-            ? "Actualizar datos bancarios"
-            : "Registrar datos bancarios"}{" "}
-          de {empleador.nombre}
-        </h2>
-
-        <div className="space-y-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Banco
-            </label>
-            <input
-              type="text"
-              name="banco"
-              value={formData.banco}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cédula del titular
-            </label>
-            <input
-              type="text"
-              name="cedulaTitular"
-              value={formData.cedulaTitular}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre completo del titular
-            </label>
-            <input
-              type="text"
-              name="nombreCompleto"
-              value={formData.nombreCompleto}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Número de cuenta
-            </label>
-            <input
-              type="text"
-              name="numeroCuenta"
-              value={formData.numeroCuenta}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end space-x-2">
-          <button
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-            onClick={onClose}
-          >
-            Cancelar
-          </button>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={onConfirm}
-          >
-            {empleador.tieneDatosBancarios ? "Actualizar" : "Registrar"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="flex min-h-screen bg-gray-100 font-serif">
       {menuOpen && <Menu />}
@@ -842,7 +674,7 @@ const Gestion = ({ user, setUser }) => {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Asignación de contrato
+                Asignación de numero de contrato
               </button>
               <button
                 onClick={() => setActiveTab("gestion")}
@@ -876,6 +708,12 @@ const Gestion = ({ user, setUser }) => {
               </button>
             </nav>
           </div>
+
+          {rateEuroToVES ? (
+            <p>Precio del euro en bolívares: {rateEuroToVES} VES</p>
+          ) : (
+            <p>Cargando tasa del euro en bolívares...</p>
+          )}
           {/* Modal de asignación de contrato */}
           {asignandoContrato && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -941,6 +779,8 @@ const Gestion = ({ user, setUser }) => {
               empleador={gestionandoContrato}
               onClose={cancelarGestion}
               onConfirm={confirmarGestionContrato}
+              formData={formData}
+              handleInputChange={handleInputChange}
             />
           )}
           {/* Modal de datos bancarios */}
@@ -998,14 +838,6 @@ const Gestion = ({ user, setUser }) => {
                             </button>
                           )}
                         </div>
-
-                        {/* Botón para ver detalles */}
-                        <button
-                          className="w-full bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
-                          onClick={() => verDetalles(empleador)}
-                        >
-                          Ver detalles
-                        </button>
                       </div>
                     ))
                   )}
@@ -1013,59 +845,235 @@ const Gestion = ({ user, setUser }) => {
               )}
 
               {activeTab === "gestion" && (
-                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {empleadores.filter(
-                    (e) => e.tieneContrato || contratosAsignados[e.id]
-                  ).length === 0 ? (
-                    <div className="col-span-full text-center py-8">
-                      <p className="text-gray-500">
-                        No hay emprendedores con contratos asignados.
-                      </p>
+                <div className="flex flex-col md:flex-row gap-4 mb-8 max-w-6xl mx-auto p-4">
+                  {/* Formulario */}
+                  <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-lg">
+                    <h2 className="text-xl font-semibold mb-4">
+                      Gestión de Contrato
+                    </h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Seleccionar Empleador
+                        </label>
+                        <select
+                          value={selectedEmpleadorId}
+                          onChange={handleEmpleadorChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">
+                            -- Selecciona un empleador --
+                          </option>
+                          {empleadores.map((empleador) => (
+                            <option key={empleador.id} value={empleador.id}>
+                              {empleador.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* Monto aprobado (€) */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Monto aprobado (€)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          name="montoAprobEuro"
+                          value={formData.montoAprobEuro}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      {/* Monto (Bs) */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Monto (Bs)
+                        </label>
+                        <input
+                          type="text"
+                          name="montoBs"
+                          value={formData.montoBs}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      {/* Flat 5% */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          5% Flat
+                        </label>
+                        <input
+                          type="text"
+                          name="cincoFlat"
+                          value={formData.cincoFlat}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      {/* 10% Interés */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          10% Interés
+                        </label>
+                        <input
+                          type="text"
+                          name="diezInteres"
+                          value={formData.diezInteres}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      {/* Monto a devolver */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Monto a devolver
+                        </label>
+                        <input
+                          type="text"
+                          name="montoDevolver"
+                          value={formData.montoDevolver}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      {/* Fecha desde */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha desde
+                        </label>
+                        <input
+                          type="date"
+                          name="fechaDesde"
+                          value={formData.fechaDesde}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      {/* Fecha hasta */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Fecha hasta
+                        </label>
+                        <input
+                          type="date"
+                          name="fechaHasta"
+                          value={formData.fechaHasta}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+                      </div>
+                      {/* Estatus */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Estatus
+                        </label>
+                        <select
+                          name="estatus"
+                          value={formData.estatus}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Activo">Activo</option>
+                          <option value="Completado">Completado</option>
+                          <option value="Cancelado">Cancelado</option>
+                        </select>
+                      </div>
                     </div>
-                  ) : (
-                    empleadores
+
+                    {/* Botones */}
+                    <div className="flex justify-end space-x-2 mt-4">
+                      <button
+                        className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                        onClick={cancelarGestion}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        onClick={handleGuardarContrato}
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tarjetas o lista de empleadores a la derecha */}
+
+                  <section className="w-full md:w-1/2 grid grid-cols-1 gap-4">
+                    {/* Buscador */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        placeholder="Buscar empleador..."
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Lista filtrada */}
+                    {empleadores
                       .filter(
                         (e) => e.tieneContrato || contratosAsignados[e.id]
                       )
-                      .map((empleador) => (
-                        <div
-                          key={empleador.id}
-                          className="bg-white rounded-xl shadow-lg p-4 border-t-4 relative"
-                          style={{ borderColor: "#0F3C5B" }}
-                        >
-                          <h2 className="text-xl font-semibold mb-2">
-                            {empleador.nombre}
-                          </h2>
-                          <p className="text-sm text-gray-600 mb-3">
-                            Cédula: {empleador.cedula}
-                          </p>
-
-                          <div className="mb-4 bg-green-100 text-green-800 px-3 py-2 rounded-md">
-                            <p className="font-semibold">Contrato asignado:</p>
-                            <p>
-                              {contratosAsignados[empleador.id] ||
-                                empleador.numeroContrato}
+                      .filter((e) =>
+                        e.nombre
+                          .toLowerCase()
+                          .includes(searchTerm.toLowerCase())
+                      ).length === 0 ? (
+                      <div className="col-span-full text-center py-8">
+                        <p className="text-gray-500">
+                          No hay emprendedores con contratos asignados.
+                        </p>
+                      </div>
+                    ) : (
+                      empleadores
+                        .filter(
+                          (e) => e.tieneContrato || contratosAsignados[e.id]
+                        )
+                        .filter((e) =>
+                          e.nombre
+                            .toLowerCase()
+                            .includes(searchTerm.toLowerCase())
+                        )
+                        .map((empleador) => (
+                          <div
+                            key={empleador.id}
+                            className="bg-white rounded-xl shadow-lg p-4 border-t-4 relative"
+                            style={{ borderColor: "#0F3C5B" }}
+                          >
+                            <h2 className="text-xl font-semibold mb-2">
+                              {empleador.nombre}
+                            </h2>
+                            <p className="text-sm text-gray-600 mb-3">
+                              Cédula: {empleador.cedula}
                             </p>
+                            <div className="mb-4 bg-green-100 text-green-800 px-3 py-2 rounded-md">
+                              <p className="font-semibold">
+                                Contrato asignado:
+                              </p>
+                              <p>
+                                {contratosAsignados[empleador.id] ||
+                                  empleador.numeroContrato}
+                              </p>
+                            </div>
+                            {/* Botón */}
+                            <div className="flex flex-col space-y-2">
+                              <button
+                                className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
+                                onClick={() => verDetalles(empleador)}
+                              >
+                                Ver detalles
+                              </button>
+                            </div>
                           </div>
-
-                          <div className="flex flex-col space-y-2">
-                            <button
-                              className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors"
-                              onClick={() => iniciarGestionContrato(empleador)}
-                            >
-                              Gestionar contrato
-                            </button>
-                            <button
-                              className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
-                              onClick={() => verDetalles(empleador)}
-                            >
-                              Ver detalles
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </section>
+                        ))
+                    )}
+                  </section>
+                </div>
               )}
 
               {activeTab === "bancarios" && (
@@ -1113,23 +1121,6 @@ const Gestion = ({ user, setUser }) => {
                               </p>
                             </div>
                           )}
-                        </div>
-
-                        <div className="flex flex-col space-y-2">
-                          <button
-                            className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm hover:bg-purple-700 transition-colors"
-                            onClick={() => iniciarEdicionBancarios(empleador)}
-                          >
-                            {empleador.tieneDatosBancarios
-                              ? "Actualizar datos"
-                              : "Registrar datos"}
-                          </button>
-                          <button
-                            className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-700 transition-colors"
-                            onClick={() => verDetalles(empleador)}
-                          >
-                            Ver detalles
-                          </button>
                         </div>
                       </div>
                     ))
