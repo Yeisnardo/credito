@@ -31,24 +31,29 @@ router.get("/estatus/aprobada", async (req, res) => {
   try {
     const resultado = await query(
       `SELECT 
-    p.nombre_completo, 
-    p.cedula, 
-    nc.numero_contrato,
-    c.id_contrato,
-    c.numero_contrato AS numero_contrato_tabla,
-    c.monto_aprob_euro,
-    c.monto_bs,
-    c.cincoflat,
-    c.diezinteres,
-    c.monto_devolver,
-    c.fecha_desde,
-    c.fecha_hasta,
-    c.estatus
-FROM solicitud s
-JOIN persona p ON s.cedula_emprendedor = p.cedula
-LEFT JOIN n_contrato nc ON p.cedula = nc.cedula_emprendedor
-LEFT JOIN contrato c ON nc.numero_contrato = c.numero_contrato
-WHERE s.estatus = 'Aprobada';`
+        p.nombre_completo, 
+        p.cedula, 
+        nc.numero_contrato,
+        c.id_contrato,
+        c.numero_contrato AS numero_contrato_tabla,
+        c.monto_aprob_euro,
+        c.monto_bs,
+        c.cincoflat,
+        c.diezinteres,
+        c.monto_devolver,
+        c.fecha_desde,
+        c.fecha_hasta,
+        c.estatus,
+        ct.banco,
+        ct.cedula_titular,
+        ct.nombre_completo AS nombre_completo_cuenta,
+        ct.numero_cuenta
+      FROM solicitud s
+      JOIN persona p ON s.cedula_emprendedor = p.cedula
+      LEFT JOIN n_contrato nc ON p.cedula = nc.cedula_emprendedor
+      LEFT JOIN contrato c ON nc.numero_contrato = c.numero_contrato
+      LEFT JOIN cuenta ct ON p.cedula = ct.cedula_emprendedor
+      WHERE s.estatus = 'Aprobada';`
     );
     res.json(resultado.rows);
   } catch (error) {

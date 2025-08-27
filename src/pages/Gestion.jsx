@@ -232,6 +232,11 @@ const Gestion = ({ user, setUser }) => {
         fecha_desde: emprendedor.fecha_desde || null,
         fecha_hasta: emprendedor.fecha_hasta || null,
         estatus: emprendedor.estatus || null,
+
+        cedula_titular: emprendedor.cedula_titular || null,
+        nombre_completo_cuenta: emprendedor.nombre_completo_cuenta || null,
+        banco: emprendedor.banco || null,
+        numero_cuenta: emprendedor.numero_cuenta || null,
       }));
     } catch (error) {
       console.error("Error en obtenerEmprendedoresAprobados:", error);
@@ -1218,24 +1223,29 @@ const Gestion = ({ user, setUser }) => {
                         <h2 className="text-xl font-semibold mb-2">
                           {empleador.nombre}
                         </h2>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Cédula: {empleador.cedula}
-                        </p>
 
                         {/* Estado datos bancarios */}
                         <div className="mb-4">
-                          {empleador.tieneDatosBancarios ? (
+                          {empleador ? (
                             <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-md">
                               <p className="font-semibold">
                                 Datos bancarios registrados
                               </p>
                               <p className="text-sm mt-1">
+                                <strong>C.I titular:</strong>{" "}
+                                {empleador.cedula_titular}
+                              </p>
+                              <p className="text-sm mt-1">
                                 <strong>Banco:</strong>{" "}
-                                {empleador.datosBancarios.banco}
+                                {empleador.banco}
                               </p>
                               <p className="text-sm">
-                                <strong>Cuenta:</strong>{" "}
-                                {empleador.datosBancarios.numeroCuenta}
+                                <strong>Titular:</strong>{" "}
+                                {empleador.nombre_completo_cuenta}
+                              </p>
+                              <p className="text-sm">
+                                <strong>N° Cuenta:</strong>{" "}
+                                {empleador.numero_cuenta}
                               </p>
                             </div>
                           ) : (
