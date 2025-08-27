@@ -48,89 +48,91 @@ const Gestion = ({ user, setUser }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedEmpleadorId, setSelectedEmpleadorId] = React.useState("");
 
-// Función para calcular fechas
-const calcularFechas = (fechaInicioStr) => {
-  const fechaInicio = new Date(fechaInicioStr);
-  const fechahasta = new Date(fechaInicio);
-  // Sumamos 20 semanas (20 * 7 días)
-  fechahasta.setDate(fechahasta.getDate() + 20 * 7);
-  // Formatear fechas (ejemplo: YYYY-MM-DD)
-  const formatDate = (date) => date.toISOString().split("T")[0];
+  // Función para calcular fechas
+  const calcularFechas = (fechaInicioStr) => {
+    const fechaInicio = new Date(fechaInicioStr);
+    const fechahasta = new Date(fechaInicio);
+    // Sumamos 20 semanas (20 * 7 días)
+    fechahasta.setDate(fechahasta.getDate() + 20 * 7);
+    // Formatear fechas (ejemplo: YYYY-MM-DD)
+    const formatDate = (date) => date.toISOString().split("T")[0];
 
-  return {
-    desde: formatDate(fechaInicio),
-    hasta: formatDate(fechahasta),
+    return {
+      desde: formatDate(fechaInicio),
+      hasta: formatDate(fechahasta),
+    };
   };
-};
 
-// Cuando la fechaDesde cambie, actualizar fecha_hasta
-React.useEffect(() => {
-  if (formData.fecha_desde) {
-    const { desde, hasta } = calcularFechas(formData.fecha_desde);
+  // Cuando la fechaDesde cambie, actualizar fecha_hasta
+  React.useEffect(() => {
+    if (formData.fecha_desde) {
+      const { desde, hasta } = calcularFechas(formData.fecha_desde);
+      setFormData((prev) => ({
+        ...prev,
+        fecha_hasta: hasta,
+      }));
+    }
+  }, [formData.fecha_desde]);
+
+  // Inicializar la fecha desde con la fecha actual
+  React.useEffect(() => {
+    const hoy = new Date();
+    const formatDate = hoy.toISOString().split("T")[0];
     setFormData((prev) => ({
       ...prev,
-      fecha_hasta: hasta,
+      fecha_desde: formatDate,
     }));
-  }
-}, [formData.fecha_desde]);
+  }, []);
 
-// Inicializar la fecha desde con la fecha actual
-React.useEffect(() => {
-  const hoy = new Date();
-  const formatDate = hoy.toISOString().split("T")[0];
-  setFormData((prev) => ({
-    ...prev,
-    fecha_desde: formatDate,
-  }));
-}, []);
+  // Actualizar montos y cálculos cuando monto_aprob_euro cambie
+  React.useEffect(() => {
+    const montoEuro = parseFloat(formData.monto_aprob_euro);
+    if (!isNaN(montoEuro)) {
+      const flat5 = (montoEuro * 0.05).toFixed(2);
+      const interes10 = (montoEuro * 0.1).toFixed(2);
+      const montoDevolverCalc = (montoEuro + parseFloat(interes10)).toFixed(2);
 
-// Actualizar montos y cálculos cuando monto_aprob_euro cambie
-React.useEffect(() => {
-  const montoEuro = parseFloat(formData.monto_aprob_euro);
-  if (!isNaN(montoEuro)) {
-    const flat5 = (montoEuro * 0.05).toFixed(2);
-    const interes10 = (montoEuro * 0.10).toFixed(2);
-    const montoDevolverCalc = (montoEuro + parseFloat(interes10)).toFixed(2);
+      setFormData((prev) => ({
+        ...prev,
+        cincoflat: flat5,
+        diezinteres: interes10,
+        monto_devolver: montoDevolverCalc,
+      }));
+    } else {
+      // Limpia si no es válido
+      setFormData((prev) => ({
+        ...prev,
+        cincoflat: "",
+        diezinteres: "",
+        monto_devolver: "",
+      }));
+    }
+  }, [formData.monto_aprob_euro]);
 
-    setFormData((prev) => ({
-      ...prev,
-      cincoflat: flat5,
-      diezinteres: interes10,
-      monto_devolver: montoDevolverCalc,
-    }));
-  } else {
-    // Limpia si no es válido
-    setFormData((prev) => ({
-      ...prev,
-      cincoflat: "",
-      diezinteres: "",
-      monto_devolver: "",
-    }));
-  }
-}, [formData.monto_aprob_euro]);
+  // Función para manejar el cambio en el select de empleadores
+  const handleEmpleadorChange = (e) => {
+    const selectedId = e.target.value;
+    setSelectedEmpleadorId(selectedId);
 
-// Función para manejar el cambio en el select de empleadores
-const handleEmpleadorChange = (e) => {
-  const selectedId = e.target.value;
-  setSelectedEmpleadorId(selectedId);
+    const empleadorSeleccionado = empleadores.find(
+      (emp) => emp.id === selectedId
+    );
 
-  const empleadorSeleccionado = empleadores.find((emp) => emp.id === selectedId);
-
-  if (empleadorSeleccionado) {
-    setFormData((prev) => ({
-      ...prev,
-      cedula_emprendedor: empleadorSeleccionado.cedula || "",
-      numero_contrato: empleadorSeleccionado.numeroContrato || "",
-    }));
-  } else {
-    // Si no encuentra, limpiar campos relacionados
-    setFormData((prev) => ({
-      ...prev,
-      cedula_emprendedor: "",
-      numero_contrato: "",
-    }));
-  }
-};
+    if (empleadorSeleccionado) {
+      setFormData((prev) => ({
+        ...prev,
+        cedula_emprendedor: empleadorSeleccionado.cedula || "",
+        numero_contrato: empleadorSeleccionado.numeroContrato || "",
+      }));
+    } else {
+      // Si no encuentra, limpiar campos relacionados
+      setFormData((prev) => ({
+        ...prev,
+        cedula_emprendedor: "",
+        numero_contrato: "",
+      }));
+    }
+  };
 
   // 2. Función para manejar cambios en el buscador
   const handleSearchChange = (e) => {
@@ -149,28 +151,28 @@ const handleEmpleadorChange = (e) => {
     }
   };
 
-React.useEffect(() => {
-  if (rateEuroToVES && formData.monto_aprob_euro) {
-    const montoEuro = parseFloat(formData.monto_aprob_euro);
-    if (!isNaN(montoEuro)) {
-      const montoBolivares = (montoEuro * rateEuroToVES).toFixed(2);
-      setFormData((prev) => ({
-        ...prev,
-        monto_bs: montoBolivares,
-      }));
+  React.useEffect(() => {
+    if (rateEuroToVES && formData.monto_aprob_euro) {
+      const montoEuro = parseFloat(formData.monto_aprob_euro);
+      if (!isNaN(montoEuro)) {
+        const montoBolivares = (montoEuro * rateEuroToVES).toFixed(2);
+        setFormData((prev) => ({
+          ...prev,
+          monto_bs: montoBolivares,
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          monto_bs: "",
+        }));
+      }
     } else {
       setFormData((prev) => ({
         ...prev,
         monto_bs: "",
       }));
     }
-  } else {
-    setFormData((prev) => ({
-      ...prev,
-      monto_bs: "",
-    }));
-  }
-}, [formData.monto_aprob_euro, rateEuroToVES]);
+  }, [formData.monto_aprob_euro, rateEuroToVES]);
 
   useEffect(() => {
     fetchEuroToVESRate();
@@ -220,8 +222,16 @@ React.useEffect(() => {
         numeroContrato: emprendedor.numero_contrato || null,
         tieneDatosBancarios: false,
         datosBancarios: null,
-        cedula_emprendedor: formData.cedulaEmprendedor,
-        numero_contrato: formData.numeroContrato,
+        cedula_emprendedor: formData.cedula_emprendedor,
+        numero_contrato: emprendedor.numero_contrato,
+        monto_aprob_euro: emprendedor.monto_aprob_euro || null,
+        monto_bs: emprendedor.monto_bs || null,
+        cincoflat: emprendedor.cincoflat || null,
+        diezinteres: emprendedor.diezinteres || null,
+        monto_devolver: emprendedor.monto_devolver || null,
+        fecha_desde: emprendedor.fecha_desde || null,
+        fecha_hasta: emprendedor.fecha_hasta || null,
+        estatus: emprendedor.estatus || null,
       }));
     } catch (error) {
       console.error("Error en obtenerEmprendedoresAprobados:", error);
@@ -348,11 +358,11 @@ React.useEffect(() => {
 
       // Actualizar estado local
       const updatedEmpleadores = empleadores.map((e) =>
-        e.cedula === formData.cedulaEmprendedor
+        e.cedula === formData.cedula_emprendedor
           ? {
               ...e,
               tieneContrato: true,
-              numeroContrato: formData.numeroContrato,
+              numeroContrato: formData.numero_contrato,
             }
           : e
       );
@@ -572,11 +582,11 @@ React.useEffect(() => {
 
   // Modal para ver detalles de contratos gestionados
   const ModalDetalles = ({ empleador, onClose }) => {
-    const contratoGestionado = contratosGestionados[empleador.id];
+    const contratoGestionado = contratosGestionados[empleador.cedula_emprendedor];
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg max-w-4xl w-full relative max-h-[80vh] overflow-y-auto">
+      <div className="bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className=" bg-white p-6 rounded-lg max-w-7xl w-full relative h-[600px] overflow-y-auto">
           <button
             className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
             onClick={onClose}
@@ -593,12 +603,6 @@ React.useEffect(() => {
             <strong>Contrato:</strong>{" "}
             {empleador.tieneContrato ? empleador.numeroContrato : "Sin asignar"}
           </p>
-          <p>
-            <strong>Datos bancarios:</strong>{" "}
-            {empleador.tieneDatosBancarios ? "Registrados" : "No registrados"}
-          </p>
-          <p className="mt-2 mb-4">{empleador.detalle}</p>
-
           {empleador.tieneDatosBancarios && (
             <>
               <h3 className="text-lg font-medium mb-3">Información Bancaria</h3>
@@ -623,95 +627,67 @@ React.useEffect(() => {
             </>
           )}
 
-          {contratoGestionado ? (
+          {empleador ? (
             <>
               <h3 className="text-lg font-medium mb-3">Contrato Gestionado</h3>
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Campo
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Valor
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Número de Contrato
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.numero_contrato}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Monto Aprobado (€)
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.monto_aprob_euro}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Monto (Bs)
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.monto_bs}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        5% Flat
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.cincoflat}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        10% Interés
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.diezinteres}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Monto a Devolver
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.monto_devolver}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Fecha Desde
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.fecha_desde}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Fecha Hasta
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.fecha_hasta}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        Estatus
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contratoGestionado.estatus}
-                      </td>
-                    </tr>
-                  </tbody>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Monto en euros
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Monto en Bolívares
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                5% FLAT
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                10% Interés
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Monto a devolver
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Desde
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Hasta
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Estatus
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {empleador.monto_aprob_euro} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {empleador.monto_bs} Bs
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {empleador.cincoflat} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {empleador.diezinteres} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                                {empleador.monto_devolver} €
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {empleador.fecha_desde}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {empleador.fecha_hasta}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {empleador.estatus}
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
               </div>
             </>
@@ -742,13 +718,35 @@ React.useEffect(() => {
           {/* Encabezado */}
           <div className="flex items-center justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4">
-              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
+              <div className="bg-white p-3 rounded-full shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer">
                 <i className="bx bx-home text-3xl text-gray-700"></i>
               </div>
               <h1 className="text-3xl font-semibold text-gray-800">
                 Gestión de contratos
               </h1>
             </div>
+
+            {/* Tarjeta con icono de Boxicons representando euro con bx bx-dollar */}
+            {rateEuroToVES ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-sm w-full shadow-sm hover:shadow-md transition-shadow duration-300">
+                <div className="flex items-center justify-center space-x-3">
+                  <i className="bx bx-dollar text-3xl text-indigo-500"></i>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">
+                      Precio del euro en bolívares
+                    </p>
+                    <p className="text-xl font-semibold text-gray-800">
+                      <span className="text-indigo-600">€</span> {rateEuroToVES}{" "}
+                      VES
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-sm w-full shadow-sm animate-pulse">
+                <div className="h-6 w-3/4 mx-auto bg-gray-300 rounded-full"></div>
+              </div>
+            )}
           </div>
           {/* Tabs de navegación */}
           <div className="mb-6 border-b border-gray-200">
@@ -796,11 +794,6 @@ React.useEffect(() => {
             </nav>
           </div>
 
-          {rateEuroToVES ? (
-            <p>Precio del euro en bolívares: {rateEuroToVES} VES</p>
-          ) : (
-            <p>Cargando tasa del euro en bolívares...</p>
-          )}
           {/* Modal de asignación de contrato */}
           {asignandoContrato && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -968,7 +961,7 @@ React.useEffect(() => {
                         </div>
 
                         {/* Cédula del Emprendedor */}
-                        <div style={{ display: 'none' }} className="mb-4">
+                        <div style={{ display: "none" }} className="mb-4">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Cédula del Emprendedor
                           </label>
@@ -981,7 +974,7 @@ React.useEffect(() => {
                         </div>
 
                         {/* Número de contrato */}
-                        <div style={{ display: 'none' }} className="mb-4">
+                        <div style={{ display: "none" }} className="mb-4">
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Número de contrato
                           </label>
@@ -1021,6 +1014,7 @@ React.useEffect(() => {
                             value={formData.monto_bs}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            readOnly
                           />
                         </div>
 
@@ -1035,6 +1029,7 @@ React.useEffect(() => {
                             value={formData.cincoflat}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            readOnly
                           />
                         </div>
 
@@ -1063,6 +1058,7 @@ React.useEffect(() => {
                             value={formData.monto_devolver}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            readOnly
                           />
                         </div>
 
@@ -1091,6 +1087,7 @@ React.useEffect(() => {
                             value={formData.fecha_hasta}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            readOnly
                           />
                         </div>
 
