@@ -32,11 +32,11 @@ const Gestion = ({ user, setUser }) => {
   });
   const [depositoData, setDepositoData] = useState({
     emprendedorId: "",
-    monto: "",
-    fecha: new Date().toISOString().split("T")[0],
-    referencia: "",
-    estado: "Completado",
+    cedula_emprendedor: "",
+    estado: "Pendiente",
     comprobante: null,
+    comprobantePreview: null,
+    sizeError: "",
   });
   const [asignandoContrato, setAsignandoContrato] = useState(null);
   const [gestionandoContrato, setGestionandoContrato] = useState(null);
@@ -47,6 +47,78 @@ const Gestion = ({ user, setUser }) => {
   const [rateEuroToVES, setRateEuroToVES] = useState(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedEmpleadorId, setSelectedEmpleadorId] = React.useState("");
+  const [comprobanteModal, setComprobanteModal] = useState(null);
+
+  const handleVerComprobante = (url) => {
+    setComprobanteModal(url);
+  };
+
+  const cerrarModalComprobante = () => {
+    setComprobanteModal(null);
+  };
+
+  // Función para formatear el tamaño del archivo
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // Manejar selección de archivo
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+
+    // Limpiar error previo
+    setDepositoData((prev) => ({
+      ...prev,
+      sizeError: "",
+    }));
+
+    if (file) {
+      // Validar tipo de archivo
+      const validTypes = ["image/jpeg", "image/png", "image/gif"];
+      if (!validTypes.includes(file.type)) {
+        setDepositoData((prev) => ({
+          ...prev,
+          sizeError: "Formato no válido. Solo se aceptan JPG, PNG o GIF.",
+        }));
+        return;
+      }
+
+      // Validar tamaño (máximo 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB en bytes
+      if (file.size > maxSize) {
+        const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+        setDepositoData((prev) => ({
+          ...prev,
+          sizeError: `La imagen es demasiado grande (${sizeInMB} MB). El tamaño máximo permitido es 5MB.`,
+        }));
+        return;
+      }
+
+      // Crear preview si la imagen es válida
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setDepositoData((prev) => ({
+          ...prev,
+          comprobante: file,
+          comprobantePreview: e.target.result,
+          sizeError: "", // Limpiar error si todo está bien
+        }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Si no hay archivo, limpiar todo
+      setDepositoData((prev) => ({
+        ...prev,
+        comprobante: null,
+        comprobantePreview: null,
+        sizeError: "",
+      }));
+    }
+  };
 
   // Función para calcular fechas
   const calcularFechas = (fechaInicioStr) => {
@@ -110,6 +182,7 @@ const Gestion = ({ user, setUser }) => {
   }, [formData.monto_aprob_euro]);
 
   // Función para manejar el cambio en el select de empleadores
+  // En handleEmpleadorChange
   const handleEmpleadorChange = (e) => {
     const selectedId = e.target.value;
     setSelectedEmpleadorId(selectedId);
@@ -124,12 +197,18 @@ const Gestion = ({ user, setUser }) => {
         cedula_emprendedor: empleadorSeleccionado.cedula || "",
         numero_contrato: empleadorSeleccionado.numeroContrato || "",
       }));
+      setDepositoData((prev) => ({
+        ...prev,
+        cedula_emprendedor: empleadorSeleccionado.cedula || "",
+      }));
     } else {
-      // Si no encuentra, limpiar campos relacionados
       setFormData((prev) => ({
         ...prev,
         cedula_emprendedor: "",
-        numero_contrato: "",
+      }));
+      setDepositoData((prev) => ({
+        ...prev,
+        cedula_emprendedor: "",
       }));
     }
   };
@@ -285,13 +364,26 @@ const Gestion = ({ user, setUser }) => {
 
   const cargarDepositos = async () => {
     try {
-      // Aquí se conectaría a la API real para cargar depósitos
-      // const response = await fetch('/api/depositos');
-      // const data = await response.json();
-      // setDepositos(data);
+      const response = await axios.get("http://localhost:5000/api/deposito");
+      // La respuesta debe ser un array de depósitos
+      const depositosData = response.data;
 
-      // Por ahora, inicializamos con array vacío
-      setDepositos([]);
+      const depositosConDatos = depositosData.map((deposito) => {
+        const empleador = empleadores.find(
+          (e) => e.cedula === deposito.cedula_emprendedor
+        );
+        const comprobanteUrl = deposito.comprobante
+          ? `http://localhost:5000${deposito.comprobante}`
+          : null;
+
+        return {
+          ...deposito,
+          nombre: deposito.nombre_completo || "Nombre desconocido",
+          comprobante: comprobanteUrl,
+        };
+      });
+
+      setDepositos(depositosConDatos);
     } catch (error) {
       console.error("Error cargando depósitos:", error);
     }
@@ -309,6 +401,7 @@ const Gestion = ({ user, setUser }) => {
     }));
   };
 
+  // Manejar cambios en los campos
   const handleDepositoChange = (e) => {
     const { name, value } = e.target;
     setDepositoData((prev) => ({
@@ -529,46 +622,59 @@ const Gestion = ({ user, setUser }) => {
     }
   };
 
+  // Registrar depósito
   const registrarDeposito = async () => {
     try {
-      if (
-        !depositoData.emprendedorId ||
-        !depositoData.monto ||
-        !depositoData.referencia
-      ) {
-        alert("Por favor complete todos los campos obligatorios");
+      if (!depositoData.comprobante) {
+        alert("Adjunta el comprobante");
         return;
       }
 
+      // Crear FormData para enviar archivo
+      const formData = new FormData();
+      formData.append("emprendedorId", depositoData.emprendedorId);
+      formData.append("cedula_emprendedor", depositoData.cedula_emprendedor);
+      formData.append("estado", depositoData.estado);
+      formData.append("comprobante", depositoData.comprobante);
+
+      // Enviar a la API
+      const response = await fetch("http://localhost:5000/api/deposito", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al registrar depósito");
+      }
+
+      const data = await response.json();
+
+      // Actualizar estado local
       const emprendedor = empleadores.find(
         (e) => e.id === parseInt(depositoData.emprendedorId)
       );
 
-      // Aquí iría la llamada a la API para guardar el depósito
       const nuevoDeposito = {
-        id: Date.now(),
+        id: data.id || Date.now(),
         emprendedorId: parseInt(depositoData.emprendedorId),
-        emprendedorNombre: emprendedor.nombre,
-        monto: depositoData.monto,
-        fecha: depositoData.fecha,
-        referencia: depositoData.referencia,
+        fecha: new Date().toISOString().split("T")[0],
         estado: depositoData.estado,
+        comprobante: data.comprobante,
       };
 
-      console.log("Registrando depósito:", nuevoDeposito);
-
-      // Actualizar estado local
       setDepositos((prev) => [...prev, nuevoDeposito]);
 
       // Limpiar formulario
       setDepositoData({
         emprendedorId: "",
-        monto: "",
-        fecha: new Date().toISOString().split("T")[0],
-        referencia: "",
         estado: "Completado",
         comprobante: null,
+        comprobantePreview: null,
       });
+
+      // Limpiar input de archivo
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = "";
 
       alert("Depósito registrado exitosamente");
     } catch (error) {
@@ -587,7 +693,8 @@ const Gestion = ({ user, setUser }) => {
 
   // Modal para ver detalles de contratos gestionados
   const ModalDetalles = ({ empleador, onClose }) => {
-    const contratoGestionado = contratosGestionados[empleador.cedula_emprendedor];
+    const contratoGestionado =
+      contratosGestionados[empleador.cedula_emprendedor];
 
     return (
       <div className="bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -637,62 +744,62 @@ const Gestion = ({ user, setUser }) => {
               <h3 className="text-lg font-medium mb-3">Contrato Gestionado</h3>
               <div className="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Monto en euros
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Monto en Bolívares
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                5% FLAT
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                10% Interés
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Monto a devolver
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Desde
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Hasta
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Estatus
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {empleador.monto_aprob_euro} €
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {empleador.monto_bs} Bs
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {empleador.cincoflat} €
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {empleador.diezinteres} €
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                                {empleador.monto_devolver} €
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {empleador.fecha_desde}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {empleador.fecha_hasta}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {empleador.estatus}
-                            </td>
-                        </tr>
-                    </tbody>
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto en euros
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto en Bolívares
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        5% FLAT
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        10% Interés
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto a devolver
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Desde
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Hasta
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estatus
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <tr>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {empleador.monto_aprob_euro} €
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {empleador.monto_bs} Bs
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {empleador.cincoflat} €
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {empleador.diezinteres} €
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                        {empleador.monto_devolver} €
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {empleador.fecha_desde}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {empleador.fecha_hasta}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {empleador.estatus}
+                      </td>
+                    </tr>
+                  </tbody>
                 </table>
               </div>
             </>
@@ -799,6 +906,24 @@ const Gestion = ({ user, setUser }) => {
             </nav>
           </div>
 
+          {comprobanteModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-4 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-auto relative">
+                <button
+                  className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+                  onClick={cerrarModalComprobante}
+                >
+                  ✖
+                </button>
+                <img
+                  src={comprobanteModal}
+                  alt="Comprobante de pago"
+                  className="w-full h-auto max-h-[80vh] object-contain"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Modal de asignación de contrato */}
           {asignandoContrato && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -858,6 +983,7 @@ const Gestion = ({ user, setUser }) => {
               </div>
             </div>
           )}
+
           {/* Modal de gestión de contrato */}
           {gestionandoContrato && (
             <ModalGestionContrato
@@ -972,7 +1098,8 @@ const Gestion = ({ user, setUser }) => {
                           </label>
                           <input
                             type="text"
-                            value={formData.cedula_emprendedor}
+                            name="cedula_emprendedor"
+                            value={depositoData.cedula_emprendedor}
                             readOnly
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                           />
@@ -1236,8 +1363,7 @@ const Gestion = ({ user, setUser }) => {
                                 {empleador.cedula_titular}
                               </p>
                               <p className="text-sm mt-1">
-                                <strong>Banco:</strong>{" "}
-                                {empleador.banco}
+                                <strong>Banco:</strong> {empleador.banco}
                               </p>
                               <p className="text-sm">
                                 <strong>Titular:</strong>{" "}
@@ -1271,64 +1397,84 @@ const Gestion = ({ user, setUser }) => {
                     </h3>
 
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Emprendedor
+                      <div className="mb-4 col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Seleccionar empleador
                         </label>
                         <select
-                          name="emprendedorId"
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                          value={depositoData.emprendedorId}
-                          onChange={handleDepositoChange}
+                          value={selectedEmpleadorId}
+                          onChange={handleEmpleadorChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         >
-                          <option value="">Seleccionar emprendedor</option>
-                          {empleadores
-                            .filter((e) => e.tieneDatosBancarios)
-                            .map((emp) => (
-                              <option key={emp.id} value={emp.id}>
-                                {emp.nombre} - {emp.cedula}
-                              </option>
-                            ))}
+                          <option value="">
+                            -- Selecciona un empleador --
+                          </option>
+                          {empleadores.map((empleador) => (
+                            <option key={empleador.id} value={empleador.id}>
+                              {empleador.nombre}
+                            </option>
+                          ))}
                         </select>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Monto del depósito (Bs)
-                        </label>
-                        <input
-                          type="number"
-                          name="monto"
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                          value={depositoData.monto}
-                          onChange={handleDepositoChange}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Fecha
-                        </label>
-                        <input
-                          type="date"
-                          name="fecha"
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                          value={depositoData.fecha}
-                          onChange={handleDepositoChange}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Número de referencia
+                      {/* Cédula del Emprendedor */}
+                      <div style={{ display: "none" }} className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Cédula del Emprendedor
                         </label>
                         <input
                           type="text"
-                          name="referencia"
-                          className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                          value={depositoData.referencia}
+                          name="cedula_emprendedor"
+                          value={depositoData.cedula_emprendedor}
                           onChange={handleDepositoChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                         />
+                      </div>
+
+                      {/* Campo para comprobante */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Comprobante de pago (Imagen)
+                        </label>
+
+                        <div className="mb-2 text-xs text-gray-500">
+                          Formatos aceptados: JPG, PNG, GIF. Tamaño máximo: 5MB
+                        </div>
+
+                        {/* Input de archivo */}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif"
+                          onChange={handleFileChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        />
+
+                        {/* Alerta de tamaño */}
+                        {depositoData.sizeError && (
+                          <div className="mt-2 p-2 bg-red-100 border border-red-200 text-red-700 rounded-md text-sm">
+                            <i className="bx bx-error-circle align-middle mr-1"></i>
+                            {depositoData.sizeError}
+                          </div>
+                        )}
+
+                        {/* Preview de la imagen */}
+                        {depositoData.comprobantePreview && (
+                          <div className="mt-3">
+                            <p className="text-sm text-gray-600 mb-2">
+                              Vista previa:
+                            </p>
+                            <img
+                              src={depositoData.comprobantePreview}
+                              alt="Comprobante de pago"
+                              className="w-full h-48 object-contain border rounded-md"
+                            />
+                            {/* LÍNEA ACTUALIZADA AQUÍ */}
+                            <p className="text-xs text-gray-500 mt-1">
+                              {depositoData.comprobante.name} -
+                              {formatFileSize(depositoData.comprobante.size)}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -1340,18 +1486,18 @@ const Gestion = ({ user, setUser }) => {
                           className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                           value={depositoData.estado}
                           onChange={handleDepositoChange}
+                          readOnly
                         >
-                          <option value="Completado">Completado</option>
                           <option value="Pendiente">Pendiente</option>
-                          <option value="Rechazado">Rechazado</option>
                         </select>
                       </div>
 
                       <button
-                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                         onClick={registrarDeposito}
                       >
-                        Registrar Depósito
+                        <i className="bx bx-check-circle mr-1"></i> Registrar
+                        Depósito
                       </button>
                     </div>
                   </div>
@@ -1375,16 +1521,10 @@ const Gestion = ({ user, setUser }) => {
                                 Emprendedor
                               </th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                Monto
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                Fecha
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                                Referencia
-                              </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                 Estado
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                Comprobante
                               </th>
                             </tr>
                           </thead>
@@ -1392,29 +1532,39 @@ const Gestion = ({ user, setUser }) => {
                             {depositos.map((deposito) => (
                               <tr key={deposito.id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  {deposito.emprendedorNombre}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  {deposito.monto} Bs
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  {deposito.fecha}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  {deposito.referencia}
+                                  {deposito.nombre}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs ${
-                                      deposito.estado === "Completado"
+                                      deposito.estado === "Verificado"
                                         ? "bg-green-100 text-green-800"
                                         : deposito.estado === "Pendiente"
-                                        ? "bg-yellow-100 text-yellow-800"
+                                        ? "bg-red-100 text-red-800"
                                         : "bg-red-100 text-red-800"
                                     }`}
                                   >
                                     {deposito.estado}
                                   </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {deposito.comprobante ? (
+                                    <button
+                                      onClick={() =>
+                                        handleVerComprobante(
+                                          deposito.comprobante
+                                        )
+                                      }
+                                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center focus:outline-none"
+                                    >
+                                      <i className="bx bx-image-alt mr-1"></i>{" "}
+                                      Ver comprobante
+                                    </button>
+                                  ) : (
+                                    <span className="text-gray-500 text-sm">
+                                      Sin comprobante
+                                    </span>
+                                  )}
                                 </td>
                               </tr>
                             ))}

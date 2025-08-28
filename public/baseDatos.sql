@@ -119,6 +119,7 @@ CREATE TABLE deposito(
   id_deposito SERIAL PRIMARY KEY,
   cedula_emprendedor VARCHAR (20) NOT NULL,
   comprobante text,
+  estado VARCHAR,
   FOREIGN KEY (id_deposito) REFERENCES contrato (id_contrato)
 );
 
