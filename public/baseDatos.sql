@@ -123,6 +123,24 @@ CREATE TABLE deposito(
   FOREIGN KEY (id_deposito) REFERENCES contrato (id_contrato)
 );
 
+CREATE TABLE cuota (
+  id_cuota INT PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) NOT NULL,
+  numeroCuota INT NOT NULL,
+  fecha DATE NOT NULL,
+  comprobante VARCHAR(20) NOT NULL,
+  estado VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE morosidad (
+  id_morosidad INT PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) NOT NULL,
+  dias_mora DATE,
+  dias_morosidad INT,
+  intereses_mora TEXT,
+  estado_mora VARCHAR(20),
+  FOREIGN KEY (cedula_emprendedor) REFERENCES cuota(cedula_emprendedor)
+);
 
 
 ----------------------------------------------------------------------------------
