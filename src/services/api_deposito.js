@@ -23,7 +23,7 @@ export const getDepositosPorCedula = async (cedula_emprendedor) => {
 };
 
 // Función para actualizar el estado de todos los depósitos por cédula
-export const updateDepositosPorCedula = async (cedula, estado) => {
-  const response = await api.put(`/api/deposito/cedula/${cedula}`, { estado });
+export const updateDepositoPorId = async (id_deposito, estado) => {
+  const response = await api.put(`/api/deposito/${id_deposito}`, { estado });
   return response.data;
 };

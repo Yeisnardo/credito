@@ -81,11 +81,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Ruta para actualizar el estado de todos los depósitos por cédula_emprendedor
-router.put('/cedula/:cedula_emprendedor', async (req, res) => {
+// Ruta para actualizar estado de depósito por id_deposito
+router.put('/:id_deposito', async (req, res) => {
   try {
-    const { cedula_emprendedor } = req.params;
-    const { estado } = req.body; // solo el campo estado
+    const { id_deposito } = req.params;
+    const { estado } = req.body;
 
     if (!estado) {
       return res.status(400).json({ error: 'El campo estado es obligatorio' });
@@ -94,18 +94,18 @@ router.put('/cedula/:cedula_emprendedor', async (req, res) => {
     const resultado = await query(
       `UPDATE deposito
        SET estado = $1
-       WHERE cedula_emprendedor = $2
+       WHERE id_deposito = $2
        RETURNING *`,
-      [estado, cedula_emprendedor]
+      [estado, id_deposito]
     );
 
     if (resultado.rows.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron depósitos con esa cédula' });
+      return res.status(404).json({ error: 'Depósito no encontrado' });
     }
 
-    res.json({ message: 'Depósitos actualizados', deposits: resultado.rows });
+    res.json({ message: 'Depósito actualizado', deposito: resultado.rows[0] });
   } catch (error) {
-    console.error('Error al actualizar depósitos por cédula:', error);
+    console.error('Error al actualizar depósito por id:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });

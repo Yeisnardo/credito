@@ -7,7 +7,7 @@ import Menu from "../components/Menu";
 import { getUsuarioPorCedula } from "../services/api_usuario";
 import {
   getDepositosPorCedula,
-  updateDepositosPorCedula,
+  updateDepositoPorId,
 } from "../services/api_deposito";
 
 const Deposito = ({ setUser }) => {
@@ -49,13 +49,6 @@ const Deposito = ({ setUser }) => {
     setDepositoSeleccionado(deposito);
     Swal.fire({
       title: "¿Estás seguro de confirmar este depósito?",
-      html: `
-        <p><strong>Cliente:</strong> ${deposito.cliente}</p>
-        <p><strong>Monto:</strong> $${Number(deposito.monto || 0).toFixed(
-          2
-        )}</p>
-        <p><strong>Referencia:</strong> ${deposito.referencia}</p>
-      `,
       icon: "question",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -71,27 +64,29 @@ const Deposito = ({ setUser }) => {
 
   // Función que confirma el depósito
   const confirmarDeposito = async () => {
-    try {
-      console.log("Confirmando depósito:", depositoSeleccionado);
-      if (!depositoSeleccionado) return;
+  try {
+    console.log("Confirmando depósito:", depositoSeleccionado);
+    if (!depositoSeleccionado) return;
 
-      // Actualizar el estado del depósito en la API a "Recibido"
-      await updateDepositosPorCedula(user.cedula, "Recibido");
+    // Actualizar el estado del depósito en la API a "Recibido" usando id_deposito
+    await updateDepositoPorId(depositoSeleccionado.id_deposito, "Recibido");
 
-      // Opcional: actualizar localmente la lista para reflejar el cambio
-      setDepositosPendientes((prevDepositos) =>
-        prevDepositos.map((d) =>
-          d.cedula === depositoSeleccionado.cedula ? { ...d, estado: "Recibido" } : d
-        )
-      );
+    // Actualizar localmente la lista
+    setDepositosPendientes((prevDepositos) =>
+      prevDepositos.map((d) =>
+        d.id_deposito === depositoSeleccionado.id_deposito
+          ? { ...d, estado: "Recibido" }
+          : d
+      )
+    );
 
-      Swal.fire("¡Éxito!", "Depósito confirmado como recibido", "success");
-      setDepositoSeleccionado(null);
-    } catch (error) {
-      console.error("Error al confirmar el depósito:", error);
-      Swal.fire("Error", "Error al confirmar el depósito", "error");
-    }
-  };
+    Swal.fire("¡Éxito!", "Depósito confirmado como recibido", "success");
+    setDepositoSeleccionado(null);
+  } catch (error) {
+    console.error("Error al confirmar el depósito:", error);
+    Swal.fire("Error", "Error al confirmar el depósito", "error");
+  }
+};
 
   // Función para abrir modal de comprobante
   const handleVerComprobante = (url) => {
@@ -127,86 +122,6 @@ const Deposito = ({ setUser }) => {
               </h1>
             </div>
           </div>
-
-          {/* Tarjetas de información */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            {/* Resumen de usuario */}
-            <div className="bg-white rounded-xl shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out border-t-4 border-[#0F3C5B]">
-              <div className="p-6 flex items-center space-x-4">
-                <div className="bg-[#0F3C5B] p-3 rounded-full">
-                  <i className="bx bx-user-circle text-4xl text-white"></i>
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold mb-2 text-gray-700">
-                    Resumen de usuario
-                  </h2>
-                  <p className="text-gray-600 mb-1">
-                    <strong>Nombre:</strong>{" "}
-                    {user?.nombre_completo || "Cargando..."}
-                  </p>
-                  <p className="text-gray-600">
-                    <strong>Estatus:</strong>{" "}
-                    <span className="font-semibold text-green-600">
-                      {user?.estatus || "Cargando..."}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Depósitos pendientes */}
-            <div className="bg-white rounded-xl shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out border-t-4 border-[#FF6B00]">
-              <div className="p-6 flex items-center space-x-4">
-                <div className="bg-[#FF6B00] p-3 rounded-full">
-                  <i className="bx bx-money text-4xl text-white"></i>
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold mb-2 text-gray-700">
-                    Depósitos Pendientes
-                  </h2>
-                  <div className="space-y-2 text-gray-600">
-                    <p>
-                      <strong>Cantidad:</strong>{" "}
-                      <span className="font-semibold">
-                        {depositosPendientes.length}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Total pendiente:</strong>{" "}
-                      <span className="font-semibold">
-                        $
-                        {Number(
-                          depositosPendientes.reduce(
-                            (total, d) => total + d.monto,
-                            0
-                          ) || 0
-                        ).toFixed(2)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Configuraciones */}
-            <div className="bg-white rounded-xl shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out border-t-4 border-[#008000]">
-              <div className="p-6 flex items-center space-x-4">
-                <div className="bg-[#008000] p-3 rounded-full">
-                  <i className="bx bx-cog text-4xl text-white"></i>
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold mb-2 text-gray-700">
-                    Configuraciones
-                  </h2>
-                  <ul className="list-disc list-inside text-gray-600 space-y-1">
-                    <li>Perfil</li>
-                    <li>Seguridad</li>
-                    <li>Notificaciones</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
 
           {/* Tabla de depósitos por confirmar */}
           <section className="bg-white rounded-xl shadow-lg p-6 mb-8">
