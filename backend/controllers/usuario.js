@@ -4,7 +4,7 @@ const verificarEstatusUsuario = require('../middlewares/verificarEstatus'); // M
 
 const router = express.Router();
 
-const rolesValidos = ['Administrador', 'Emprendedor', 'usuario', 'supervisor'];
+const rolesValidos = ['Administrador', 'Emprendedor', 'Credito1', 'Credito2'];
 
 // Validar los campos obligatorios de un usuario
 const validarUsuario = (usuario) => {
