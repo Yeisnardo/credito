@@ -238,7 +238,7 @@ const Menu = ({ onClose }) => {
             )}
 
             {/* Revisión y aprobación - solo roles */}
-            {puedeVer(["Asist. creditos y cobranzas", "Administrador"]) && (
+            {puedeVer(["credito2", "Administrador"]) && (
               <div ref={setLinkRef("/Aprobacion")}>
                 <NavLink
                   to="/Aprobacion"
@@ -258,7 +258,7 @@ const Menu = ({ onClose }) => {
             )}
 
             {/* Gestión de contratos - solo Administrador */}
-            {puedeVer(["Admin. Credito y cobranzas", "Administrador"]) && (
+            {puedeVer(["credito1", "Administrador"]) && (
               <div ref={setLinkRef("/Gestion")}>
                 <NavLink
                   to="/Gestion"
@@ -298,7 +298,7 @@ const Menu = ({ onClose }) => {
             )}
 
             {/* Supervisión de cuotas - solo Administrador */}
-            {puedeVer(["Admin. Credito y cobranzas", "Administrador"]) && (
+            {puedeVer(["credito1", "Administrador"]) && (
               <div ref={setLinkRef("/confirmacionCuota")}>
                 <NavLink
                   to="/confirmacionCuota"

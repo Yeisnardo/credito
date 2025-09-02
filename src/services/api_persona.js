@@ -4,6 +4,12 @@ const api = axios.create({
   baseURL: 'http://localhost:5000',
 });
 
+// Crear otra persona (crearPersona2)
+const createPersona2 = async (persona) => {
+  const response = await api.post('/api/persona', persona);
+  return response.data;
+};
+
 // Crear una nueva persona
 const createPersona = async (persona) => {
   const response = await api.post('/api/persona', persona);
@@ -29,6 +35,7 @@ const deletePersona = async (cedula) => {
 };
 
 export default {
+  createPersona2,
   createPersona,
   getPersona,
   updatePersona,

@@ -1,16 +1,38 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api_usuario";
+import api from '../services/api_usuario';
 import Header from "../components/Header";
 import Menu from "../components/Menu";
+import personaApi from '../services/api_persona'; // o el path correcto
+import usuarioApi from '../services/api_usuario';
+
+// Componente Modal reutilizable
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className=" bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 z-50 flex items-center justify-center  bg-opacity-90 p-4">
+      <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 relative">
+        <h2 className="text-2xl font-semibold mb-4 text-center">{title}</h2>
+        <div className="mb-4">{children}</div>
+        <button
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+          onClick={onClose}
+          aria-label="Cerrar"
+        >
+          ✖
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const Usuario = () => {
   const navigate = useNavigate();
 
+  // Estados de control
   const [modalOpen, setModalOpen] = useState({
     personal: false,
     usuario: false,
-    confirm: false,
     edit: false,
     delete: false,
     toggle: false,
@@ -19,19 +41,20 @@ const Usuario = () => {
   const [personaData, setPersonaData] = useState({
     cedula: "",
     nombre_completo: "",
-    edad: "",
     telefono: "",
     email: "",
   });
 
   const [usuarioData, setUsuarioData] = useState({
+    cedula_usuario: "",
     usuario: "",
     clave: "",
     rol: "",
+    estatus: "",
   });
 
   const [userToEdit, setUserToEdit] = useState(null);
-  const [editableUser, setEditableUser] = useState(null); // Nuevo estado para editar
+  const [editableUser, setEditableUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
   const [userToToggle, setUserToToggle] = useState(null);
 
@@ -39,45 +62,43 @@ const Usuario = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(true);
 
+  const handleNombreCompletoChange = (e) => {
+    const valor = e.target.value
+      .split(" ")
+      .map(
+        (palabra) =>
+          palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase()
+      )
+      .join(" ");
+    setPersonaData({ ...personaData, nombre_completo: valor });
+  };
+
+  // Función para permitir solo números
+  const handleCedulaChange = (e) => {
+    const valor = e.target.value.replace(/\D/g, "");
+    setPersonaData({ ...personaData, cedula: valor });
+  };
+
+  // Funciones para abrir/cerrar modales
   const openModal = (type) =>
     setModalOpen((prev) => ({ ...prev, [type]: true }));
   const closeModal = (type) =>
     setModalOpen((prev) => ({ ...prev, [type]: false }));
 
-  // Componente Modal
-  const Modal = ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-90 p-4 transition-opacity duration-300 ease-in-out">
-        <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 relative transform transition-transform duration-300 ease-in-out hover:scale-105">
-          <h2 className="text-2xl font-semibold mb-4 text-center">{title}</h2>
-          <div className="mb-4">{children}</div>
-          <button
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-            onClick={onClose}
-            aria-label="Cerrar"
-          >
-            ✖
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Carga usuarios
+  // Cargar usuarios
   useEffect(() => {
     const fetchData = async () => {
       try {
         const usuarios = await api.getUsuarios();
         setData(Array.isArray(usuarios) ? usuarios : []);
-      } catch (error) {
+      } catch {
         alert("No se pudo cargar la lista de usuarios.");
       }
     };
     fetchData();
   }, []);
 
-  // Filtrado
+  // Filtrado de datos
   const filteredData = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return data.filter(
@@ -88,56 +109,30 @@ const Usuario = () => {
     );
   }, [data, searchTerm]);
 
+  // Funciones para abrir componentes específicos
   const toggleMenu = () => setMenuOpen(!menuOpen);
-
-  // Funciones para abrir modales
   const handleNuevoPersonal = () => {
     setPersonaData({
       cedula: "",
       nombre_completo: "",
-      edad: "",
       telefono: "",
       email: "",
     });
     openModal("personal");
   };
 
-  const handleNuevoUsuario = () => {
-    setUsuarioData({ usuario: "", clave: "", rol: "" });
-    openModal("usuario");
-  };
-
-  const handleConfirmarRegistro = (persona, usuario) => {
-    setPersonaData(persona);
-    setUsuarioData(usuario);
-    openModal("confirm");
-  };
-
-  const handleEditarUsuario = (user) => {
-    setUserToEdit(user);
-    setEditableUser({ ...user }); // Copia en modo edición
-    openModal("edit");
-  };
-
-  const handleEliminarUsuario = (user) => {
-    setUserToDelete(user);
-    openModal("delete");
-  };
-
-  const handleCambiarEstatus = (user) => {
-    setUserToToggle(user);
-    openModal("toggle");
-  };
-
-  // Guardar y confirmar acciones
+  // Cuando el usuario guarda datos personales, abre modal del usuario
   const handleGuardarPersona = () => {
     if (!personaData.cedula.trim()) {
       alert("Ingresa la cédula");
       return;
     }
     closeModal("personal");
+    setUsuarioData({ usuario: "", clave: "", rol: "", estatus: "" });
+    openModal("usuario");
   };
 
+  // Cuando el usuario guarda datos del usuario
   const handleGuardarUsuario = () => {
     if (!usuarioData.usuario.trim()) {
       alert("Ingresa el nombre de usuario");
@@ -155,26 +150,83 @@ const Usuario = () => {
       alert("Selecciona un rol");
       return;
     }
-    closeModal("usuario");
+    // Aquí directamente se crea el usuario sin modal de confirmación
+    handleCrearRegistro();
   };
 
-  const handleCrearRegistro = () => {
-    api
-      .createPersona(personaData)
-      .then(() => {
-        return api.createUsuario({
-          cedula_usuario: personaData.cedula,
-          usuario: usuarioData.usuario,
-          clave: usuarioData.clave,
-          rol: usuarioData.rol,
-          estatus: "Activo",
-        });
-      })
-      .then((resultadoUsuario) => {
-        setData((prev) => [...prev, resultadoUsuario]);
-        closeModal("confirm");
-      })
-      .catch(() => alert("Error al crear usuario."));
+  // Crear registro de persona y usuario
+  const handleCrearRegistro = async () => {
+  try {
+    const { cedula, nombre_completo, telefono, email } = personaData;
+
+    // Asigna cedula a cedula_usuario antes de llamar API
+    const cedula_usuario = cedula;
+
+    // Actualiza usuarioData con cedula_usuario
+    setUsuarioData((prev) => ({ ...prev, cedula_usuario }));
+
+    // Espera a que se actualice el estado antes de continuar
+    // (opcional, para asegurarse)
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const { usuario, clave, rol, estatus } = {
+      usuario: usuarioData.usuario,
+      clave: usuarioData.clave,
+      rol: usuarioData.rol,
+      estatus: usuarioData.estatus,
+    };
+
+    // Enviar datos a API
+    const resPersona =  await personaApi.createPersona2({ cedula, nombre_completo, telefono, email });
+    console.log('Respuesta Persona:', resPersona);
+    const resUsuario = await usuarioApi.createUsuario({ cedula_usuario, usuario, clave, rol, estatus });
+    console.log('Respuesta Usuario:', resUsuario);
+
+    // Refrescar lista
+    const nuevosUsuarios = await api.getUsuarios();
+    setData(nuevosUsuarios);
+
+    // Limpiar y cerrar modales
+    closeModal("personal");
+    closeModal("usuario");
+    setPersonaData({
+      cedula: "",
+      nombre_completo: "",
+      telefono: "",
+      email: "",
+    });
+    setUsuarioData({
+      cedula_usuario: "",
+      usuario: "",
+      clave: "",
+      rol: "",
+      estatus: "",
+    });
+
+    alert("Usuario y persona creados con éxito");
+  } catch (error) {
+    console.error("Error al crear usuario y persona:", error);
+    alert(
+      "Hubo un error al crear el usuario. Verifica los datos y vuelve a intentarlo."
+    );
+  }
+};
+
+  // Funciones para editar, eliminar y cambiar estatus
+  const handleEditarUsuario = (user) => {
+    setUserToEdit(user);
+    setEditableUser({ ...user });
+    openModal("edit");
+  };
+
+  const handleEliminarUsuario = (user) => {
+    setUserToDelete(user);
+    openModal("delete");
+  };
+
+  const handleCambiarEstatus = (user) => {
+    setUserToToggle(user);
+    openModal("toggle");
   };
 
   const handleGuardarEdicion = () => {
@@ -238,8 +290,8 @@ const Usuario = () => {
 
         {/* Encabezado y botón */}
         <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
+          {/* Título y botón de nuevo */}
           <div className="flex items-center justify-between mb-8 mt-10">
-            {/* Título y icono */}
             <div className="flex items-center space-x-4">
               <div className="bg-[#D1D5DB] p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300">
                 <i className="bx bx-user text-3xl text-[#374151]"></i>
@@ -248,7 +300,6 @@ const Usuario = () => {
                 Gestión de usuario
               </h1>
             </div>
-            {/* Botón para nuevo usuario */}
             <button
               className="bg-[#374151] hover:bg-[#111827] text-white px-6 py-3 rounded-full shadow-md flex items-center space-x-2 transform hover:scale-105 transition duration-300"
               onClick={handleNuevoPersonal}
@@ -287,7 +338,7 @@ const Usuario = () => {
             </div>
           </div>
 
-          {/* Tabla */}
+          {/* Tabla de usuarios */}
           <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 bg-white max-w-7xl mx-auto mb-12 transition-shadow duration-300 hover:shadow-xl">
             <table className="min-w-full divide-y divide-gray-200 rounded-xl">
               <thead className="bg-[#F9FAFB] rounded-t-xl">
@@ -386,7 +437,7 @@ const Usuario = () => {
           </div>
         </div>
 
-        {/* Pie */}
+        {/* Pie de página */}
         <footer
           className="mt-auto p-4"
           style={{
@@ -407,176 +458,178 @@ const Usuario = () => {
 
       {/* Datos Personales */}
       <Modal
+        className="bg-black/50 backdrop backdrop-opacity-60"
         isOpen={modalOpen.personal}
         onClose={() => closeModal("personal")}
         title="Datos Personales"
       >
-        <div className="flex flex-col space-y-2">
-          <label>Cédula</label>
-          <input
-            className="border p-2 rounded"
-            value={personaData.cedula}
-            onChange={(e) =>
-              setPersonaData({ ...personaData, cedula: e.target.value })
-            }
-          />
-
-          <label>Nombre Completo</label>
-          <input
-            className="border p-2 rounded"
-            value={personaData.nombre_completo}
-            onChange={(e) =>
-              setPersonaData({
-                ...personaData,
-                nombre_completo: e.target.value,
-              })
-            }
-          />
-          <label>Edad</label>
-          <input
-            className="border p-2 rounded"
-            type="number"
-            value={personaData.edad}
-            onChange={(e) =>
-              setPersonaData({ ...personaData, edad: e.target.value })
-            }
-          />
-          <label>Teléfono</label>
-          <input
-            className="border p-2 rounded"
-            value={personaData.telefono}
-            onChange={(e) =>
-              setPersonaData({ ...personaData, telefono: e.target.value })
-            }
-          />
-          <label>Email</label>
-          <input
-            className="border p-2 rounded"
-            value={personaData.email}
-            onChange={(e) =>
-              setPersonaData({ ...personaData, email: e.target.value })
-            }
-          />
+        <div className="flex flex-col space-y-4 p-4">
+          {[
+            {
+              label: "Cédula",
+              value: personaData.cedula,
+              onChange: (e) => {
+                const valor = e.target.value.replace(/\D/g, "");
+                setPersonaData({ ...personaData, cedula: valor });
+              },
+            },
+            {
+              label: "Nombre Completo",
+              value: personaData.nombre_completo,
+              onChange: (e) => {
+                const valor = e.target.value
+                  .split(" ")
+                  .map(
+                    (palabra) =>
+                      palabra.charAt(0).toUpperCase() +
+                      palabra.slice(1).toLowerCase()
+                  )
+                  .join(" ");
+                setPersonaData({ ...personaData, nombre_completo: valor });
+              },
+            },
+            {
+              label: "Teléfono",
+              value: personaData.telefono,
+              onChange: (e) =>
+                setPersonaData({ ...personaData, telefono: e.target.value }),
+            },
+            {
+              label: "Email",
+              value: personaData.email,
+              onChange: (e) =>
+                setPersonaData({ ...personaData, email: e.target.value }),
+            },
+          ].map(({ label, value, onChange, type = "text" }) => (
+            <div key={label} className="flex flex-col">
+              <label className="mb-1 text-sm font-medium text-gray-700">
+                {label}
+              </label>
+              <input
+                className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200"
+                value={value}
+                type={type}
+                onChange={onChange}
+              />
+            </div>
+          ))}
         </div>
-        <div className="mt-4 flex justify-end space-x-2">
+        <div className="mt-6 flex justify-end space-x-3 px-4">
           <button
-            className="bg-gray-300 px-4 py-2 rounded"
+            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded-lg transition"
             onClick={() => closeModal("personal")}
           >
             Cancelar
           </button>
           <button
-            className="bg-blue-500 text-white px-4 py-2 rounded"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition"
             onClick={handleGuardarPersona}
           >
-            Guardar
+            Siguiente
           </button>
         </div>
       </Modal>
 
-      {/* Registro de Usuario */}
       <Modal
         isOpen={modalOpen.usuario}
         onClose={() => closeModal("usuario")}
         title="Registro de Usuario"
       >
-        <div className="flex flex-col space-y-2">
-          <label>Nombre de Usuario</label>
-          <input
-            className="border p-2 rounded"
-            value={usuarioData.usuario}
-            onChange={(e) =>
-              setUsuarioData({ ...usuarioData, usuario: e.target.value })
-            }
-          />
-          <label>Contraseña</label>
-          <input
-            type="password"
-            className="border p-2 rounded"
-            value={usuarioData.clave}
-            onChange={(e) =>
-              setUsuarioData({ ...usuarioData, clave: e.target.value })
-            }
-          />
-          <label>Rol</label>
-          <select
-            className="border p-2 rounded"
-            value={usuarioData.rol}
-            onChange={(e) =>
-              setUsuarioData({ ...usuarioData, rol: e.target.value })
-            }
-          >
-            <option value="">Selecciona Rol</option>
-            <option value="Administrador">Administrador</option>
-            <option value="Credito y Cobranza 1">
-              Admin. Credito y Cobranza
-            </option>
-            <option value="Credito y Cobranza 2">
-              Asist. Credito y Cobranza
-            </option>
-          </select>
+        <div className="flex flex-col space-y-4 p-4">
+          {/* Cédula */}
+          <div className="flex flex-col">
+            <label className="mb-1 text-sm font-medium text-gray-700">
+              Cédula
+            </label>
+            <input
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              value={personaData.cedula}
+              onChange={(e) =>
+                setUsuarioData({
+                  ...usuarioData,
+                  cedula_usuario: e.target.value,
+                })
+              }
+            />
+          </div>
+          {/* Nombre de Usuario */}
+          <div className="flex flex-col">
+            <label className="mb-1 text-sm font-medium text-gray-700">
+              Nombre de Usuario
+            </label>
+            <input
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              value={usuarioData.usuario}
+              onChange={(e) =>
+                setUsuarioData({ ...usuarioData, usuario: e.target.value })
+              }
+            />
+          </div>
+          {/* Contraseña */}
+          <div className="flex flex-col">
+            <label className="mb-1 text-sm font-medium text-gray-700">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              value={usuarioData.clave}
+              onChange={(e) =>
+                setUsuarioData({ ...usuarioData, clave: e.target.value })
+              }
+            />
+          </div>
+          {/* Rol */}
+          <div className="flex flex-col">
+            <label className="mb-1 text-sm font-medium text-gray-700">
+              Rol
+            </label>
+            <select
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              value={usuarioData.rol}
+              onChange={(e) =>
+                setUsuarioData({ ...usuarioData, rol: e.target.value })
+              }
+            >
+              <option value="">Selecciona Rol</option>
+              <option value="Administrador">Administrador</option>
+              <option value="Credito1">
+                Admin. Credito y Cobranza
+              </option>
+              <option value="Credito2">
+                Asist. Credito y Cobranza
+              </option>
+            </select>
+          </div>
+          {/* Estatus */}
+          <div className="flex flex-col">
+            <label className="mb-1 text-sm font-medium text-gray-700">
+              Estatus
+            </label>
+            <select
+              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              value={usuarioData.estatus}
+              onChange={(e) =>
+                setUsuarioData({ ...usuarioData, estatus: e.target.value })
+              }
+            >
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+          </div>
         </div>
-        <div className="mt-4 flex justify-end space-x-2">
+        <div className="mt-6 flex justify-end space-x-3 px-4">
           <button
-            className="bg-gray-300 px-4 py-2 rounded"
+            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded-lg transition"
             onClick={() => closeModal("usuario")}
           >
             Cancelar
           </button>
           <button
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-            onClick={handleGuardarUsuario}
-          >
-            Guardar
-          </button>
-        </div>
-      </Modal>
-
-      {/* Confirmar creación */}
-      <Modal
-        isOpen={modalOpen.confirm}
-        onClose={() => closeModal("confirm")}
-        title="¿Confirmar registro?"
-      >
-        {/* Muestra los datos a confirmar */}
-        <div>
-          <h4>Persona</h4>
-          <p>
-            <strong>Cédula:</strong> {personaData.cedula}
-          </p>
-          <p>
-            <strong>Nombre:</strong> {personaData.nombre_completo}
-          </p>
-          <p>
-            <strong>Edad:</strong> {personaData.edad}
-          </p>
-          <p>
-            <strong>Teléfono:</strong> {personaData.telefono}
-          </p>
-          <p>
-            <strong>Email:</strong> {personaData.email}
-          </p>
-          <hr />
-          <h4>Usuario</h4>
-          <p>
-            <strong>Usuario:</strong> {usuarioData.usuario}
-          </p>
-          <p>
-            <strong>Rol:</strong> {usuarioData.rol}
-          </p>
-        </div>
-        <div className="mt-4 flex justify-end space-x-2">
-          <button
-            className="bg-gray-300 px-4 py-2 rounded"
-            onClick={() => closeModal("confirm")}
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-green-500 text-white px-4 py-2 rounded"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition"
             onClick={handleCrearRegistro}
           >
-            Crear
+            Guardar
           </button>
         </div>
       </Modal>
@@ -640,10 +693,10 @@ const Usuario = () => {
             >
               <option value="">Selecciona un tipo de usuario</option>
               <option value="Administrador">Administrador</option>
-              <option value="Credito y Cobranza 1">
+              <option value="Admin. Credito y Cobranza">
                 Admin. Credito y Cobranza
               </option>
-              <option value="Credito y Cobranza 2">
+              <option value="Asist. Credito y Cobranza">
                 Asist. Credito y Cobranza
               </option>
             </select>
@@ -692,7 +745,7 @@ const Usuario = () => {
         </div>
       </Modal>
 
-      {/* Modal Activar/Desactivar */}
+      {/* Modal Activar / Desactivar */}
       <Modal
         isOpen={modalOpen.toggle}
         onClose={() => closeModal("toggle")}

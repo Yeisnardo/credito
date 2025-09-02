@@ -34,7 +34,7 @@ CREATE TABLE usuario (
   cedula_usuario VARCHAR(20) NOT NULL PRIMARY KEY,
   usuario VARCHAR(20) NOT NULL,
   clave VARCHAR(20) NOT NULL,
-  rol VARCHAR(20) NOT NULL,
+  rol VARCHAR(100) NOT NULL,
   estatus VARCHAR(20),
   CONSTRAINT fk_usuario_persona FOREIGN KEY (cedula_usuario) REFERENCES persona(cedula)
 );
@@ -139,7 +139,7 @@ CREATE TABLE morosidad (
   dias_morosidad INT,
   intereses_mora TEXT,
   estado_mora VARCHAR(20),
-  FOREIGN KEY (cedula_emprendedor) REFERENCES cuota(cedula_emprendedor)
+  FOREIGN KEY (id_morosidad) REFERENCES cuota(id_cuota)
 );
 
 
