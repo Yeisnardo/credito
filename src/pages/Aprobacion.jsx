@@ -301,7 +301,7 @@ const Aprobacion = () => {
 
         {/* Modal detalles */}
         {modalOpen && personaSeleccionada && (
-          <div className=" bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 bg-black bg-opacity-100 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 bg-black z-50 flex items-center justify-center p-4 overflow-y-auto">
             <div className="bg-white rounded-xl max-w-6xl w-full p-6 relative shadow-xl overflow-y-auto max-h-[90vh]">
               {/* Botón cerrar */}
               <button

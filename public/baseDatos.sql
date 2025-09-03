@@ -1,10 +1,14 @@
 --Nombre de la base de datos: siccee
 
+----------------------------------------------------------------------------------
+--  Registro emprededor ----------------------------------------------------------
+----------------------------------------------------------------------------------
+
 -- Tabla de persona
 CREATE TABLE persona (
   cedula VARCHAR(20) PRIMARY KEY,  
   nombre_completo VARCHAR(100),
-  edad DATE,
+  edad VARCHAR (20),
   telefono VARCHAR(20),
   email VARCHAR(100),
   estado VARCHAR(50),
@@ -30,7 +34,7 @@ CREATE TABLE usuario (
   cedula_usuario VARCHAR(20) NOT NULL PRIMARY KEY,
   usuario VARCHAR(20) NOT NULL,
   clave VARCHAR(20) NOT NULL,
-  rol VARCHAR(20) NOT NULL,
+  rol VARCHAR(100) NOT NULL,
   estatus VARCHAR(20),
   CONSTRAINT fk_usuario_persona FOREIGN KEY (cedula_usuario) REFERENCES persona(cedula)
 );
@@ -44,13 +48,21 @@ CREATE TABLE cuenta (
   numero_cuenta VARCHAR (50) NOT NULL
 );
 
---TABLA DE REQUERIMIENTOS Y SOLICITUD
+
+----------------------------------------------------------------------------------
+--  Administrador ----------------------------------------------------------------
+----------------------------------------------------------------------------------
 
 --TABLAS DE REQUEIMIENTOS
 CREATE TABLE requerimientos (
     id_requerimientos SERIAL PRIMARY KEY,
     nombre_requerimiento VARCHAR (100)
 );
+
+
+----------------------------------------------------------------------------------
+--  Emprededor -------------------------------------------------------------------
+----------------------------------------------------------------------------------
 
 -- Tabla intermedia para relacionar requerimientos y emprendedores
 CREATE TABLE requerimiento_emprendedor (
@@ -71,6 +83,11 @@ CREATE TABLE solicitud (
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
 );
 
+
+----------------------------------------------------------------------------------
+--  Administrador ----------------------------------------------------------------
+----------------------------------------------------------------------------------
+
 --TABLA DE CLASIFICACION
 CREATE TABLE clasificacion (
   id_clasificacion SERIAL PRIMARY KEY,
@@ -79,34 +96,57 @@ CREATE TABLE clasificacion (
 );
 
 CREATE TABLE n_contrato(
-  id_n_ontrato SERIAL PRIMARY KEY,
-  cedula_emprendedor VARCHAR (20) NOT NULL,
-  numero_contrato VARCHAR (20) NOT NULL
+  cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
+  numero_contrato VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE contrato(
-  id_contrato SERIAL PRIMARY KEY,
-  id_sol INTEGER,
-  cedula_emprendedor VARCHAR(20),
-  monto_aprob_euro TEXT,
-  cincoflat TEXT,
-  diezinteres TEXT,
-  monto_devolver TEXT,
-  fecha_desde DATE,
-  fecha_hasta DATE,
-  estatus VARCHAR(20),
-  FOREIGN KEY (id_contrato) REFERENCES n_contrato(id_n_ontrato),
-  FOREIGN KEY (id_sol) REFERENCES solicitud(id_contrato)
+CREATE TABLE contrato (
+    id_contrato INT PRIMARY KEY,
+    numero_contrato VARCHAR(20) NOT NULL,
+    cedula_emprendedor VARCHAR(20),
+    monto_aprob_euro TEXT,
+    monto_bs TEXT,
+    cincoflat TEXT,
+    diezinteres TEXT,
+    monto_devolver TEXT,
+    fecha_desde DATE,
+    fecha_hasta DATE,
+    estatus VARCHAR(20),
+    FOREIGN KEY (cedula_emprendedor) REFERENCES n_contrato (cedula_emprendedor)
 ); 
 
 CREATE TABLE deposito(
   id_deposito SERIAL PRIMARY KEY,
   cedula_emprendedor VARCHAR (20) NOT NULL,
-  referencia VARCHAR (5) NOT NULL,
-  fecha DATE NOT NULL,
-  estatus VARCHAR (20) NOT null,
+  comprobante text,
+  estado VARCHAR,
   FOREIGN KEY (id_deposito) REFERENCES contrato (id_contrato)
 );
+
+CREATE TABLE cuota (
+  id_cuota INT PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) NOT NULL,
+  numeroCuota INT NOT NULL,
+  fecha DATE NOT NULL,
+  comprobante VARCHAR(20) NOT NULL,
+  estado VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE morosidad (
+  id_morosidad INT PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) NOT NULL,
+  dias_mora DATE,
+  dias_morosidad INT,
+  intereses_mora TEXT,
+  estado_mora VARCHAR(20),
+  FOREIGN KEY (id_morosidad) REFERENCES cuota(id_cuota)
+);
+
+
+----------------------------------------------------------------------------------
+--  Inserciones ----------------------------------------------------------------
+----------------------------------------------------------------------------------
+
 
 INSERT INTO requerimientos (nombre_requerimiento) VALUES
 ('Carta de Motivo para Solicitar Crédito'),
@@ -119,10 +159,6 @@ INSERT INTO requerimientos (nombre_requerimiento) VALUES
 ('Fotos del emprendimiento'),
 ('RIF de emprendimiento'),
 ('Referencia bancaria');
-
-
--- Insertar en persona
-
 
 INSERT INTO clasificacion (sector, negocio) VALUES
 -- Sector Primario
@@ -217,41 +253,16 @@ INSERT INTO clasificacion (sector, negocio) VALUES
 ('Economía Colaborativa', 'Servicios de coworking'),
 ('Economía Colaborativa', 'Intercambio de bienes y servicios');
 
+
+
+
+----------------------------------------------------------------------------------
+--  Datos del Administrador ------------------------------------------------------
+----------------------------------------------------------------------------------
+
+
 INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona)
-VALUES ('30608696', 'Yeisnardo Eliander Bravo Colina', 30, '555-1234', 'admin@example.com', 'Activo', 'Ciudad', 'Dirección 123', 'Administrador');
+VALUES ('31234567', 'Carlos Alberto Mendoza Ruiz', '1990-03-25', '555-9876', 'carlos.mendoza@example.com', 'Activo', 'MunicipioY', 'Calle Luna 456', 'Administrador');
 
--- Insertar en usuario
 INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
-VALUES ('30608696', 'Administrador', 'admin123', 'Administrador', 'Activo');
-
-INSERT INTO persona (cedula, nombre_completo, edad, telefono, email, estado, municipio, direccion_actual, tipo_persona) VALUES
-('1234567890', 'Juan Perez', 35, '3001234567', 'juan.perez@example.com', 'Activo', 'Bogotá', 'Calle 123 #45-67', 'Emprendedor'),
-('0987654321', 'Maria Lopez', 28, '3107654321', 'maria.lopez@example.com', 'Activo', 'Medellín', 'Carrera 89 #12-34', 'Emprendedora');
-
-INSERT INTO emprendimientos (cedula_emprendedor, tipo_sector, tipo_negocio, nombre_emprendimiento, consejo_nombre, comuna, direccion_emprendimiento) VALUES
-('1234567890', 'Tecnología', 'Software', 'SoftTech SAS', 'Juan Pérez', 'Chapinería', 'Avenida Siempre Viva 742'),
-('0987654321', 'Artesanía', 'Manualidades', 'ArtisanCraft', 'Maria Lopez', 'Laureles', 'Calle 34 #56-78');
-
-INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus) VALUES
-('1234567890', 'juanp', 'pass123', 'Administrador', 'Activo'),
-('0987654321', 'marial', 'pass456', 'Emprendedor', 'Activo');
-
-INSERT INTO cuenta (cedula_titular, nombre_completo, numero_cuenta) VALUES
-('1234567890', 'Juan Perez', '1234567890-001'),
-('0987654321', 'Maria Lopez', '0987654321-002');
-
-INSERT INTO requerimiento_emprendedor (cedula_emprendedor, opt_requerimiento) VALUES
-('1234567890', '[1,2,3,4,5,6]'),
-('0987654321', '[1,2,3,4]');
-
-INSERT INTO solicitud (cedula_emprendedor, motivo, estatus, motivo_rechazo) VALUES
-('1234567890', 'Necesito financiamiento para ampliar mi negocio', 'En proceso', NULL),
-('0987654321', 'Requiere fondos para compra de maquinaria', 'En proceso', NULL);
-
-INSERT INTO contrato (cedula_emprendedor, numero_contrato, monto_aprob_euro, cincoflat, diezinteres, monto_devolver, fecha_desde, fecha_hasta, estatus) VALUES
-('1234567890', 'CONTRATO001', '5000', '100', '10%', '5500', '2024-01-01', '2024-12-31', 'Activo'),
-('0987654321', 'CONTRATO002', '3000', '50', '8%', '3240', '2024-02-01', '2024-11-30', 'Activo');
-
-INSERT INTO deposito (cedula_emprendedor, referencia, fecha, estatus) VALUES
-('1234567890', 'REF01', '2024-01-15', 'Completado'),
-('0987654321', 'REF02', '2024-02-20', 'Pendiente');
+VALUES ('31234567', 'CarlosMendoza', 'carlos2024', 'Administrador', 'Activo');

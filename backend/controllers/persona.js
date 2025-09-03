@@ -3,13 +3,6 @@ const { query } = require('../config/conexion'); // Conexión a la base de datos
 
 const router = express.Router();
 
-// Validar los campos obligatorios de una persona
-const validarPersona = (persona) => {
-  const { cedula, nombre_completo, edad, tipo_persona, estado, municipio, direccion_actual } = persona;
-  if (!cedula || !nombre_completo || edad == null || !tipo_persona || !estado || !municipio || !direccion_actual) {
-    throw new Error("Campos obligatorios incompletos");
-  }
-};
 
 // Obtener todas las personas
 router.get('/', async (req, res) => {
@@ -34,6 +27,32 @@ router.get('/:cedula', async (req, res) => {
   } catch (err) {
     console.error('Error en getUnaPersona:', err);
     res.status(500).json({ error: 'Error al obtener la persona' });
+  }
+});
+
+// Crear otra persona con campos limitados
+router.post('/', async (req, res) => {
+  try {
+    const { cedula, nombre_completo, telefono, email } = req.body;
+
+    // Validar solo los campos necesarios
+    if (!cedula || !nombre_completo || !telefono || !email) {
+      return res.status(400).json({ message: 'Campos obligatorios incompletos' });
+    }
+
+    const resultado = await query(
+      `INSERT INTO persona (
+        cedula,
+        nombre_completo,
+        telefono,
+        email
+      ) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [cedula, nombre_completo, telefono, email]
+    );
+    res.status(201).json(resultado.rows[0]);
+  } catch (error) {
+    console.error('Error en createPersona2:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

@@ -1,105 +1,88 @@
-const express = require("express");
-const { query } = require("../config/conexion"); // Conexión a la base de datos
+const express = require('express');
+const { query } = require('../config/conexion'); // Conexión a la base de datos
+
 const router = express.Router();
 
-// =======================
-// Obtener todos los registros de personas con solicitud aprobada
-// =======================
-router.get("/", async (req, res) => {
-  try {
-    const resultado = await query(`
-      SELECT 
-        p.cedula, 
-        p.nombre_completo, 
-        p.edad, 
-        p.telefono, 
-        p.email, 
-        p.estado, 
-        p.municipio, 
-        p.direccion_actual, 
-        p.tipo_persona,
-        c.monto_aprob_euro,
-        c.cincoflat,
-        c.diezinteres,
-        c.monto_devolver,
-        c.fecha_desde,
-        c.fecha_hasta,
-        c.estatus AS estatus_contrato,
-        nc.numero_contrato
-      FROM persona p
-      LEFT JOIN solicitud s ON p.cedula = s.cedula_emprendedor
-      LEFT JOIN contrato c ON s.id_contrato = c.id_contrato
-      LEFT JOIN n_contrato nc ON c.id_contrato = nc.id_n_ontrato
-      WHERE s.estatus = 'Aprobada';
-    `);
-    res.json(resultado.rows);
-  } catch (err) {
-    console.error("Error al obtener solicitud en estatus de Aprobada:", err);
-    res.status(500).json({ message: "Error al obtener solicitud en estatus de Aprobada" });
-  }
-});
+let lastId = 0; // Variable para mantener el último ID utilizado
 
-// =======================
-// Ruta para asignar número de contrato usando la cédula del emprendedor
-// =======================
-router.post("/asignarNumeroPorCedula", async (req, res) => {
-  const { cedula_emprendedor, numero_contrato } = req.body;
-
+// Ruta para insertar en n_contrato
+router.post('/', async (req, res) => {
   try {
+    const { cedula_emprendedor, numero_contrato } = req.body;
+
     const resultado = await query(
-      `INSERT INTO n_contrato (cedula_emprendedor, numero_contrato) VALUES ($1, $2) RETURNING *`,
+      `INSERT INTO n_contrato (cedula_emprendedor, numero_contrato)
+       VALUES ($1, $2)
+       RETURNING *`,
       [cedula_emprendedor, numero_contrato]
     );
-    res.json({ message: "Contrato asignado correctamente", contrato: resultado.rows[0] });
-  } catch (err) {
-    console.error("Error al asignar contrato por cédula:", err);
-    res.status(500).json({ message: "Error al asignar contrato" });
+
+    res.status(201).json(resultado.rows[0]);
+  } catch (error) {
+    console.error('Error al registrar en n_contrato:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// =======================
-// Ruta para registrar un contrato usando la cédula del emprendedor
-// =======================
-router.post("/registrarContratoPorCedula", async (req, res) => {
-  const {
-    monto_aprob_euro,
-    cincoflat,
-    diezinteres,
-    monto_devolver,
-    fecha_desde,
-    fecha_hasta,
-    cedula_emprendedor
-  } = req.body;
-
+// Ruta para insertar en la tabla 'contrato'
+router.post('/contrato', async (req, res) => {
   try {
+    let {
+      numero_contrato,
+      cedula_emprendedor,
+      monto_aprob_euro,
+      monto_bs,
+      cincoflat,
+      diezinteres,
+      monto_devolver,
+      fecha_desde,
+      fecha_hasta,
+      estatus
+    } = req.body;
+
+    // Validar fechas
+    fecha_desde = fecha_desde && fecha_desde.trim() !== '' ? fecha_desde : null;
+    fecha_hasta = fecha_hasta && fecha_hasta.trim() !== '' ? fecha_hasta : null;
+
+    // Incrementar el ID
+    lastId += 1;
+    const id_contrato = lastId;
+
     const resultado = await query(
-      `INSERT INTO Contrato (
+      `INSERT INTO contrato (
+        id_contrato,
+        numero_contrato,
+        cedula_emprendedor,
         monto_aprob_euro,
+        monto_bs,
         cincoflat,
         diezinteres,
         monto_devolver,
         fecha_desde,
         fecha_hasta,
-        estatus,
-        cedula_emprendedor
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'Pendiente', $7) RETURNING *`,
+        estatus
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+      ) RETURNING *`,
       [
+        id_contrato,
+        numero_contrato,
+        cedula_emprendedor,
         monto_aprob_euro,
+        monto_bs,
         cincoflat,
         diezinteres,
         monto_devolver,
         fecha_desde,
         fecha_hasta,
-        cedula_emprendedor 
+        estatus
       ]
     );
-    res.json({
-      message: "Contrato registrado correctamente",
-      contrato: resultado.rows[0],
-    });
-  } catch (err) {
-    console.error("Error al registrar contrato:", err);
-    res.status(500).json({ message: "Error al registrar contrato" });
+
+    res.status(201).json(resultado.rows[0]);
+  } catch (error) {
+    console.error('Error al registrar en contrato:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

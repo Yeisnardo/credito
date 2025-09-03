@@ -1,35 +1,51 @@
+// server.js o tu archivo principal
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 
-// Importamos todos los archivos consolidados
+// Importa tus routers
+const depositoRouter = require('./controllers/deposito');
+// Importa tus demás routers
 const personaAPI = require('./controllers/persona');
+const emprendimientoAPI = require('./controllers/empredimiento');
 const usuarioAPI = require('./controllers/usuario');
+const solicitudAPI = require('./controllers/solicitud');
+const cuentaAPI = require('./controllers/banco');
 const fondoAPI = require('./controllers/fondo');
 const contratoAPI = require('./controllers/contrato');
-const cuentaAPI = require('./controllers/banco');
 const clasificacion_requerimientoAPI = require('./controllers/clasificacion_requerimiento');
-const solicitudAPI = require('./controllers/solicitud');
-const emprendimientoAPI = require('./controllers/empredimiento');
 const requerimientoEmprendedorAPI = require('./controllers/requerimiento');
 const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasificacion_emprendimiento');
 
 const app = express();
 
-// Middlewares básicos
+// Middlewares
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
+// Configuración de la carpeta uploads
+const uploadsPath = path.join(__dirname, 'uploads');
 
-// Rutas consolidadas
+// Crear la carpeta uploads si no existe
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath);
+}
+
+// Servir archivos estáticos en /uploads
+app.use('/uploads', express.static(uploadsPath));
+
+// Rutas principales
 app.use('/api/persona', personaAPI);
 app.use('/api/usuarios', usuarioAPI);
 app.use('/api/fondos', fondoAPI);
-app.use('/api/contrato', contratoAPI);
 app.use('/api/cuenta', cuentaAPI);
-app.use('/api/requerimientos', clasificacion_requerimientoAPI); 
+app.use('/api/requerimientos', clasificacion_requerimientoAPI);
 app.use('/api/emprendimientos', emprendimientoAPI);
-app.use('/api/solicitudes', solicitudAPI); 
-app.use('/api/requerimiento_emprendedor', requerimientoEmprendedorAPI); 
+app.use('/api/solicitudes', solicitudAPI);
+app.use('/api/contratos', contratoAPI);
+app.use('/api/deposito', depositoRouter);
+app.use('/api/requerimiento_emprendedor', requerimientoEmprendedorAPI);
 app.use('/api/clasificacion', clasificacionEmprendimientoEmprendedorAPI);
 
 // Middleware de errores
@@ -43,14 +59,15 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
   console.log('🔍 Endpoints disponibles:');
-  console.log('   /api/personas');
+  console.log('   /api/persona');
   console.log('   /api/usuarios');
   console.log('   /api/fondos');
-  console.log('   /api/contrato');
-  console.log('   /api/banco');
+  console.log('   /api/cuenta');
   console.log('   /api/requerimientos');
   console.log('   /api/emprendimientos');
   console.log('   /api/solicitudes');
+  console.log('   /api/contratos');
+  console.log('   /api/deposito');
   console.log('   /api/requerimiento_emprendedor');
   console.log('   /api/clasificacion');
 });
