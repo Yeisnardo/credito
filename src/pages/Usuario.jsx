@@ -159,30 +159,22 @@ const Usuario = () => {
   try {
     const { cedula, nombre_completo, telefono, email } = personaData;
 
-    // Asigna cedula a cedula_usuario antes de llamar API
-    const cedula_usuario = cedula;
-
-    // Actualiza usuarioData con cedula_usuario
-    setUsuarioData((prev) => ({ ...prev, cedula_usuario }));
-
-    // Espera a que se actualice el estado antes de continuar
-    // (opcional, para asegurarse)
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const { usuario, clave, rol, estatus } = {
+    // Construye directamente el objeto que enviarás
+    const usuarioPayload = {
+      cedula_usuario: cedula,
       usuario: usuarioData.usuario,
       clave: usuarioData.clave,
       rol: usuarioData.rol,
       estatus: usuarioData.estatus,
     };
 
-    // Enviar datos a API
-    const resPersona =  await personaApi.createPersona2({ cedula, nombre_completo, telefono, email });
+    // Enviar datos a las APIs
+    const resPersona = await personaApi.createPersona2({ cedula, nombre_completo, telefono, email });
     console.log('Respuesta Persona:', resPersona);
-    const resUsuario = await usuarioApi.createUsuario({ cedula_usuario, usuario, clave, rol, estatus });
+    const resUsuario = await usuarioApi.createUsuario(usuarioPayload);
     console.log('Respuesta Usuario:', resUsuario);
 
-    // Refrescar lista
+    // Refrescar la lista
     const nuevosUsuarios = await api.getUsuarios();
     setData(nuevosUsuarios);
 
@@ -206,9 +198,7 @@ const Usuario = () => {
     alert("Usuario y persona creados con éxito");
   } catch (error) {
     console.error("Error al crear usuario y persona:", error);
-    alert(
-      "Hubo un error al crear el usuario. Verifica los datos y vuelve a intentarlo."
-    );
+    alert("Hubo un error al crear el usuario. Verifica los datos y vuelve a intentarlo.");
   }
 };
 

@@ -6,17 +6,6 @@ const router = express.Router();
 
 const rolesValidos = ['Administrador', 'Emprendedor', 'Credito1', 'Credito2'];
 
-// Validar los campos obligatorios de un usuario
-const validarUsuario = (usuario) => {
-  const { cedula_usuario, usuario: nombreUsuario, clave, rol, estatus } = usuario;
-  if (!cedula_usuario || !nombreUsuario || !clave || !rol || !estatus) {
-    throw new Error('Campos obligatorios incompletos');
-  }
-  if (!rolesValidos.includes(rol)) {
-    throw new Error(`Rol inválido. Los roles permitidos son: ${rolesValidos.join(', ')}`);
-  }
-};
-
 // Obtener todos los usuarios
 router.get('/', async (req, res) => {
   try {
@@ -82,7 +71,6 @@ router.get('/:cedula_usuario', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const usuarioData = req.body;
-    validarUsuario(usuarioData);
     const { cedula_usuario, usuario: nombreUsuario, clave, rol, estatus } = usuarioData;
 
     const resultado = await query(`
