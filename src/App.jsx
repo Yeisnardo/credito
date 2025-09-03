@@ -27,6 +27,7 @@ import ConfirmacionCuota from "./pages/ConfirmacionCuota";
 import Amortizacion from "./pages/Amortizacion";
 import Credito from "./pages/Credito";
 import Requerimientos from "./pages/Requerimientos";
+import Bitacora from './pages/Bitacora';
 
 
 // Importación de componentes adicionales
@@ -67,6 +68,7 @@ function App() {
         <Route path="/Amortizacion" element={<Amortizacion />} />
         <Route path="/Credito" element={<Credito />} />
         <Route path="/Requerimientos" element={<Requerimientos />} />
+        <Route path='/Bitacora' element={<Bitacora />} />
       </Routes>
     </Router>
   );

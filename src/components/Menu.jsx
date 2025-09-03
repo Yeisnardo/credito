@@ -33,7 +33,10 @@ const Menu = ({ onClose }) => {
 
   // Persistir estados de los submenús en localStorage
   useEffect(() => {
-    localStorage.setItem("isRequerimientosOpen", JSON.stringify(isRequerimientosOpen));
+    localStorage.setItem(
+      "isRequerimientosOpen",
+      JSON.stringify(isRequerimientosOpen)
+    );
   }, [isRequerimientosOpen]);
 
   useEffect(() => {
@@ -41,7 +44,10 @@ const Menu = ({ onClose }) => {
   }, [isHistorialOpen]);
 
   useEffect(() => {
-    localStorage.setItem("isGestionEmprendOpen", JSON.stringify(isGestionEmprendOpen));
+    localStorage.setItem(
+      "isGestionEmprendOpen",
+      JSON.stringify(isGestionEmprendOpen)
+    );
   }, [isGestionEmprendOpen]);
 
   // Cerrar submenús al hacer clic fuera
@@ -72,9 +78,11 @@ const Menu = ({ onClose }) => {
     if (el) linkRefs.current[path] = el;
   };
 
-  const toggleRequerimientos = () => setIsRequerimientosOpen(!isRequerimientosOpen);
+  const toggleRequerimientos = () =>
+    setIsRequerimientosOpen(!isRequerimientosOpen);
   const toggleHistorial = () => setIsHistorialOpen(!isHistorialOpen);
-  const toggleGestionEmprend = () => setIsGestionEmprendOpen(!isGestionEmprendOpen);
+  const toggleGestionEmprend = () =>
+    setIsGestionEmprendOpen(!isGestionEmprendOpen);
 
   return (
     <aside
@@ -298,23 +306,40 @@ const Menu = ({ onClose }) => {
             )}
 
             {/* Supervisión de cuotas - solo Administrador */}
-            {puedeVer(["Credito1", "Administrador"]) && (
-              <div ref={setLinkRef("/confirmacionCuota")}>
-                <NavLink
-                  to="/confirmacionCuota"
-                  className={({ isActive }) =>
-                    `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
-                      isActive ? activeClassName : "hover:bg-gray-100"
-                    }`
-                  }
-                  onClick={onClose}
-                >
-                  <i className="bx bx-credit-card text-2xl mr-3"></i>
-                  <span className="text-md font-semibold">
-                    Módulo de supervisión de cuotas
-                  </span>
-                </NavLink>
-              </div>
+            {puedeVer(["Credito2", "Administrador"]) && (
+              <>
+                <div ref={setLinkRef("/Aprobacion")}>
+                  <NavLink
+                    to="/Aprobacion"
+                    className={({ isActive }) =>
+                      `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                        isActive ? activeClassName : "hover:bg-gray-100"
+                      }`
+                    }
+                    onClick={onClose}
+                  >
+                    <i className="bx bx-check-circle text-2xl mr-3"></i>
+                    <span className="text-md font-semibold">
+                      Modulo de revisión y aprobación
+                    </span>
+                  </NavLink>
+                </div>
+
+                <div ref={setLinkRef("/Bitacora")}>
+                  <NavLink
+                    to="/Bitacora"
+                    className={({ isActive }) =>
+                      `flex items-center px-1 py-3 rounded-lg transition-all duration-200 cursor-pointer ${
+                        isActive ? activeClassName : "hover:bg-gray-100"
+                      }`
+                    }
+                    onClick={onClose}
+                  >
+                    <i className="bx bx-book-alt text-2xl mr-3"></i>
+                    <span className="text-md font-semibold">Bitácora</span>
+                  </NavLink>
+                </div>
+              </>
             )}
 
             {/* Configuración - solo Administrador */}
@@ -394,7 +419,8 @@ const Menu = ({ onClose }) => {
 
         {/* Pie de página */}
         <div className="mt-8 text-center text-sm text-gray-500 italic">
-          © {new Date().getFullYear()} TuInstitución. Todos los derechos reservados.
+          © {new Date().getFullYear()} TuInstitución. Todos los derechos
+          reservados.
         </div>
       </div>
     </aside>
