@@ -16,11 +16,7 @@ const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasifi
 const app = express();
 
 // Middlewares básicos
-<<<<<<< HEAD
-app.use(cors({ origin: 'https://localhost:5173' }));
-=======
 app.use(cors({ origin: 'http://localhost:5173' }));
->>>>>>> cb419f779517fd06fe5b905e7466e2bd0d1b1f64
 app.use(express.json());
 
 

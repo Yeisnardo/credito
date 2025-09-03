@@ -35,7 +35,7 @@ function App() {
           { href: "#inicio", label: "Inicio" },
           { href: "#sobre-nosotros", label: "Sobre Nosotros" },
           { href: "#servicios", label: "Servicios" },
-          { href: "#programas", label: "Programas" },
+          { href: "#programas", label: "Proveemos" },
           { href: "#contacto", label: "Contacto" },
         ].map((link, index) => (
           <a
@@ -253,13 +253,13 @@ function App() {
         className="max-w-7xl mx-auto p-4 md:p-8 my-12 md:my-20 bg-white/95 rounded-3xl shadow-xl"
       >
         <h2 className="text-3xl md:text-4xl font-bold mb-8 border-b-4 border-indigo-500 pb-3 text-center text-gray-800">
-          Programas y Cursos
+          Proveemos
         </h2>
         <ul className="list-disc list-inside space-y-2 md:space-y-4 text-gray-700 text-sm md:text-base mb-8">
           {[
             "Formación en Gestión Empresarial",
-            "Innovación y Creatividad",
-            "Marketing Digital",
+            "Asesoría Legal y Financiera",
+            "Mentoría para Emprendedores",
             "Finanzas para Emprendedores",
           ].map((item, index) => (
             <motion.li
