@@ -107,7 +107,7 @@ const Menu = ({ onClose }) => {
             <i className="bx bx-user text-white"></i>
           </div>
           <div className="overflow-hidden">
-            <p className="font-medium truncate text-gray-800">{usuarioLogueado.nombre || "Usuario"}</p>
+            <p className="font-medium truncate text-gray-800">{usuarioLogueado.nombre_completo || "Usuario"}</p>
             <p className="text-blue-500 text-xs capitalize">{usuarioLogueado.rol || "Rol"}</p>
           </div>
         </div>

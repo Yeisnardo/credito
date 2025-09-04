@@ -3,24 +3,36 @@ import { useNavigate } from "react-router-dom";
 import api from '../services/api_usuario';
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import personaApi from '../services/api_persona'; // o el path correcto
+import personaApi from '../services/api_persona';
 import usuarioApi from '../services/api_usuario';
 
 // Componente Modal reutilizable
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   if (!isOpen) return null;
+  
+  const sizeClasses = {
+    sm: "max-w-md",
+    md: "max-w-xl",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl"
+  };
+
   return (
-    <div className=" bg-black/50 backdrop backdrop-opacity-60 fixed inset-0 z-50 flex items-center justify-center  bg-opacity-90 p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 relative">
-        <h2 className="text-2xl font-semibold mb-4 text-center">{title}</h2>
-        <div className="mb-4">{children}</div>
-        <button
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-          onClick={onClose}
-          aria-label="Cerrar"
-        >
-          ✖
-        </button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className={`bg-white rounded-xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-semibold text-gray-800">{title}</h2>
+          <button
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+            onClick={onClose}
+            aria-label="Cerrar"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
@@ -50,7 +62,7 @@ const Usuario = () => {
     usuario: "",
     clave: "",
     rol: "",
-    estatus: "",
+    estatus: "Activo",
   });
 
   const [userToEdit, setUserToEdit] = useState(null);
@@ -61,38 +73,30 @@ const Usuario = () => {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(true);
-
-  const handleNombreCompletoChange = (e) => {
-    const valor = e.target.value
-      .split(" ")
-      .map(
-        (palabra) =>
-          palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase()
-      )
-      .join(" ");
-    setPersonaData({ ...personaData, nombre_completo: valor });
-  };
+  const [loading, setLoading] = useState(true);
 
   // Función para permitir solo números
   const handleCedulaChange = (e) => {
-    const valor = e.target.value.replace(/\D/g, "");
+    const valor = e.target.value.replace(/\D/g, "").slice(0, 8);
     setPersonaData({ ...personaData, cedula: valor });
   };
 
   // Funciones para abrir/cerrar modales
-  const openModal = (type) =>
-    setModalOpen((prev) => ({ ...prev, [type]: true }));
-  const closeModal = (type) =>
-    setModalOpen((prev) => ({ ...prev, [type]: false }));
+  const openModal = (type) => setModalOpen((prev) => ({ ...prev, [type]: true }));
+  const closeModal = (type) => setModalOpen((prev) => ({ ...prev, [type]: false }));
 
   // Cargar usuarios
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const usuarios = await api.getUsuarios();
         setData(Array.isArray(usuarios) ? usuarios : []);
-      } catch {
+      } catch (error) {
+        console.error("Error cargando usuarios:", error);
         alert("No se pudo cargar la lista de usuarios.");
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -103,14 +107,17 @@ const Usuario = () => {
     const term = searchTerm.toLowerCase();
     return data.filter(
       (u) =>
-        u.usuario.toLowerCase().includes(term) ||
-        u.estatus.toLowerCase().includes(term) ||
-        u.rol.toLowerCase().includes(term)
+        u.usuario?.toLowerCase().includes(term) ||
+        u.estatus?.toLowerCase().includes(term) ||
+        u.rol?.toLowerCase().includes(term) ||
+        u.nombre_completo?.toLowerCase().includes(term) ||
+        u.cedula_usuario?.includes(term)
     );
   }, [data, searchTerm]);
 
   // Funciones para abrir componentes específicos
   const toggleMenu = () => setMenuOpen(!menuOpen);
+  
   const handleNuevoPersonal = () => {
     setPersonaData({
       cedula: "",
@@ -127,80 +134,77 @@ const Usuario = () => {
       alert("Ingresa la cédula");
       return;
     }
+    if (!personaData.nombre_completo.trim()) {
+      alert("Ingresa el nombre completo");
+      return;
+    }
     closeModal("personal");
-    setUsuarioData({ usuario: "", clave: "", rol: "", estatus: "" });
+    setUsuarioData({ 
+      ...usuarioData, 
+      cedula_usuario: personaData.cedula,
+      estatus: "Activo"
+    });
     openModal("usuario");
-  };
-
-  // Cuando el usuario guarda datos del usuario
-  const handleGuardarUsuario = () => {
-    if (!usuarioData.usuario.trim()) {
-      alert("Ingresa el nombre de usuario");
-      return;
-    }
-    if (
-      !usuarioData.clave.trim() ||
-      usuarioData.clave.length < 6 ||
-      usuarioData.clave.length > 20
-    ) {
-      alert("Contraseña entre 6 y 20 caracteres");
-      return;
-    }
-    if (!usuarioData.rol.trim()) {
-      alert("Selecciona un rol");
-      return;
-    }
-    // Aquí directamente se crea el usuario sin modal de confirmación
-    handleCrearRegistro();
   };
 
   // Crear registro de persona y usuario
   const handleCrearRegistro = async () => {
-  try {
-    const { cedula, nombre_completo, telefono, email } = personaData;
+    try {
+      const { cedula, nombre_completo, telefono, email } = personaData;
 
-    // Construye directamente el objeto que enviarás
-    const usuarioPayload = {
-      cedula_usuario: cedula,
-      usuario: usuarioData.usuario,
-      clave: usuarioData.clave,
-      rol: usuarioData.rol,
-      estatus: usuarioData.estatus,
-    };
+      // Validaciones
+      if (!usuarioData.usuario.trim()) {
+        alert("Ingresa el nombre de usuario");
+        return;
+      }
+      if (!usuarioData.clave.trim() || usuarioData.clave.length < 6 || usuarioData.clave.length > 20) {
+        alert("La contraseña debe tener entre 6 y 20 caracteres");
+        return;
+      }
+      if (!usuarioData.rol.trim()) {
+        alert("Selecciona un rol");
+        return;
+      }
 
-    // Enviar datos a las APIs
-    const resPersona = await personaApi.createPersona2({ cedula, nombre_completo, telefono, email });
-    console.log('Respuesta Persona:', resPersona);
-    const resUsuario = await usuarioApi.createUsuario(usuarioPayload);
-    console.log('Respuesta Usuario:', resUsuario);
+      // Construye directamente el objeto que enviarás
+      const usuarioPayload = {
+        cedula_usuario: cedula,
+        usuario: usuarioData.usuario,
+        clave: usuarioData.clave,
+        rol: usuarioData.rol,
+        estatus: usuarioData.estatus,
+      };
 
-    // Refrescar la lista
-    const nuevosUsuarios = await api.getUsuarios();
-    setData(nuevosUsuarios);
+      // Enviar datos a las APIs
+      await personaApi.createPersona2({ cedula, nombre_completo, telefono, email });
+      await usuarioApi.createUsuario(usuarioPayload);
 
-    // Limpiar y cerrar modales
-    closeModal("personal");
-    closeModal("usuario");
-    setPersonaData({
-      cedula: "",
-      nombre_completo: "",
-      telefono: "",
-      email: "",
-    });
-    setUsuarioData({
-      cedula_usuario: "",
-      usuario: "",
-      clave: "",
-      rol: "",
-      estatus: "",
-    });
+      // Refrescar la lista
+      const nuevosUsuarios = await api.getUsuarios();
+      setData(nuevosUsuarios);
 
-    alert("Usuario y persona creados con éxito");
-  } catch (error) {
-    console.error("Error al crear usuario y persona:", error);
-    alert("Hubo un error al crear el usuario. Verifica los datos y vuelve a intentarlo.");
-  }
-};
+      // Limpiar y cerrar modales
+      closeModal("usuario");
+      setPersonaData({
+        cedula: "",
+        nombre_completo: "",
+        telefono: "",
+        email: "",
+      });
+      setUsuarioData({
+        cedula_usuario: "",
+        usuario: "",
+        clave: "",
+        rol: "",
+        estatus: "Activo",
+      });
+
+      alert("Usuario creado con éxito");
+    } catch (error) {
+      console.error("Error al crear usuario:", error);
+      alert("Hubo un error al crear el usuario. Verifica los datos y vuelve a intentarlo.");
+    }
+  };
 
   // Funciones para editar, eliminar y cambiar estatus
   const handleEditarUsuario = (user) => {
@@ -219,408 +223,387 @@ const Usuario = () => {
     openModal("toggle");
   };
 
-  const handleGuardarEdicion = () => {
-    api
-      .updateUsuario(userToEdit.cedula_usuario, {
+  const handleGuardarEdicion = async () => {
+    try {
+      await api.updateUsuario(editableUser.cedula_usuario, {
         usuario: editableUser.usuario,
-        password: editableUser.clave,
+        password: editableUser.clave || undefined, // Solo enviar si hay cambio
         rol: editableUser.rol,
         nombre: editableUser.nombre,
-      })
-      .then(() => {
-        setData((prev) =>
-          prev.map((u) =>
-            u.cedula_usuario === editableUser.cedula_usuario
-              ? { ...u, ...editableUser }
-              : u
-          )
-        );
-        closeModal("edit");
       });
+      
+      setData((prev) =>
+        prev.map((u) =>
+          u.cedula_usuario === editableUser.cedula_usuario
+            ? { ...u, ...editableUser }
+            : u
+        )
+      );
+      closeModal("edit");
+      alert("Usuario actualizado con éxito");
+    } catch (error) {
+      console.error("Error al actualizar usuario:", error);
+      alert("Error al actualizar el usuario");
+    }
   };
 
-  const handleConfirmarEliminar = () => {
-    api.deleteUsuario(userToDelete.cedula_usuario).then(() => {
+  const handleConfirmarEliminar = async () => {
+    try {
+      await api.deleteUsuario(userToDelete.cedula_usuario);
       setData((prev) =>
         prev.filter((u) => u.cedula_usuario !== userToDelete.cedula_usuario)
       );
       closeModal("delete");
-    });
+      alert("Usuario eliminado con éxito");
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      alert("Error al eliminar el usuario");
+    }
   };
 
-  const handleConfirmarToggle = () => {
-    const nuevoEstatus =
-      userToToggle.estatus === "Activo" ? "Inactivo" : "Activo";
-    api
-      .updateUsuarioEstatus(userToToggle.cedula_usuario, nuevoEstatus)
-      .then(() => {
-        setData((prev) =>
-          prev.map((u) =>
-            u.cedula_usuario === userToToggle.cedula_usuario
-              ? { ...u, estatus: nuevoEstatus }
-              : u
-          )
-        );
-        closeModal("toggle");
-      });
+  const handleConfirmarToggle = async () => {
+    try {
+      const nuevoEstatus = userToToggle.estatus === "Activo" ? "Inactivo" : "Activo";
+      await api.updateUsuarioEstatus(userToToggle.cedula_usuario, nuevoEstatus);
+      
+      setData((prev) =>
+        prev.map((u) =>
+          u.cedula_usuario === userToToggle.cedula_usuario
+            ? { ...u, estatus: nuevoEstatus }
+            : u
+        )
+      );
+      closeModal("toggle");
+      alert(`Usuario ${nuevoEstatus === "Activo" ? "activado" : "desactivado"} con éxito`);
+    } catch (error) {
+      console.error("Error al cambiar estatus:", error);
+      alert("Error al cambiar el estatus del usuario");
+    }
   };
 
   return (
-    <div
-      className="flex min-h-screen"
-      style={{ backgroundColor: "#F9FAFB", fontFamily: "Arial, sans-serif" }}
-    >
+    <div className="flex min-h-screen bg-gray-50">
       {menuOpen && <Menu />}
-      <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${
-          menuOpen ? "ml-64" : "ml-0"
-        }`}
-      >
+      
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? "ml-64" : "ml-0"}`}>
         <Header toggleMenu={toggleMenu} />
 
-        {/* Encabezado y botón */}
-        <div className="pt-16 px-8 max-w-7xl mx-auto w-full">
-          {/* Título y botón de nuevo */}
-          <div className="flex items-center justify-between mb-8 mt-10">
-            <div className="flex items-center space-x-4">
-              <div className="bg-[#D1D5DB] p-4 rounded-full shadow-md hover:scale-105 transform transition duration-300">
-                <i className="bx bx-user text-3xl text-[#374151]"></i>
+        {/* Contenido principal */}
+        <main className="flex-1 p-6">
+          {/* Encabezado */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 mt-13">
+            <div className="flex items-center space-x-4 mb-4 md:mb-0">
+              <div className="bg-white p-3 rounded-full shadow-md">
+                <i className="bx bx-user text-2xl text-indigo-600"></i>
               </div>
-              <h1 className="text-3xl font-semibold text-[#374151]">
-                Gestión de usuario
-              </h1>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Gestión de Usuarios</h1>
+                <p className="text-gray-500 text-sm mt-1">Administra los usuarios del sistema</p>
+              </div>
             </div>
+            
             <button
-              className="bg-[#374151] hover:bg-[#111827] text-white px-6 py-3 rounded-full shadow-md flex items-center space-x-2 transform hover:scale-105 transition duration-300"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg shadow-md flex items-center space-x-2 transition-colors"
               onClick={handleNuevoPersonal}
             >
-              <i className="bx bx-plus text-xl"></i>
+              <i className="bx bx-plus"></i>
               <span>Nuevo Usuario</span>
             </button>
           </div>
 
           {/* Buscador */}
-          <div className="mb-6 flex justify-center max-w-4xl mx-auto">
-            <div className="relative w-full">
+          <div className="mb-6">
+            <div className="relative max-w-2xl">
               <input
                 type="text"
-                placeholder="Buscar..."
-                className="w-full p-4 pl-12 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1F2937] transition duration-300"
+                placeholder="Buscar por nombre, usuario, cédula o rol..."
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              {/* Icono de búsqueda */}
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                <svg
-                  className="w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-4-4m0 0A7 7 0 104 4a7 7 0 0013 13z"
-                  />
-                </svg>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i className="bx bx-search text-gray-400"></i>
               </div>
             </div>
           </div>
 
           {/* Tabla de usuarios */}
-          <div className="overflow-x-auto rounded-xl shadow-lg border border-gray-200 bg-white max-w-7xl mx-auto mb-12 transition-shadow duration-300 hover:shadow-xl">
-            <table className="min-w-full divide-y divide-gray-200 rounded-xl">
-              <thead className="bg-[#F9FAFB] rounded-t-xl">
-                <tr>
-                  {[
-                    { label: "C.I", key: "cedula_usuario" },
-                    { label: "Nombres y Apellidos", key: "nombre" },
-                    { label: "Nombre de Usuario", key: "usuario" },
-                    { label: "rol", key: "rol" },
-                    { label: "Estatus", key: "estatus" },
-                    { label: "Acciones", key: "acciones" },
-                  ].map(({ label, key }) => (
-                    <th
-                      key={key}
-                      className="px-4 py-3 cursor-pointer select-none text-gray-700 font-medium hover:bg-gray-200 transition"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="capitalize">{label}</span>
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredData.length > 0 ? (
-                  filteredData.map((item) => (
-                    <tr
-                      key={item.cedula_usuario}
-                      className="transition hover:bg-gray-50"
-                    >
-                      <td className="px-4 py-3 text-center text-gray-600">
-                        {item.cedula_usuario}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {item.nombre_completo}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {item.usuario}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">{item.rol}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            item.estatus === "Activo"
-                              ? "bg-green-100 text-[#166534]"
-                              : "bg-red-100 text-[#991B1B]"
-                          }`}
-                        >
-                          {item.estatus}
-                        </span>
-                      </td>
-                      {/* Acciones */}
-                      <td className="px-4 py-3 flex justify-center space-x-3">
-                        {/* Editar */}
-                        <button
-                          className="text-blue-500 hover:text-[#1F2937] transition-transform transform hover:scale-105"
-                          onClick={() => handleEditarUsuario(item)}
-                          aria-label="Editar"
-                        >
-                          <i className="bx bx-edit-alt text-xl"></i>
-                        </button>
-                        {/* Eliminar */}
-                        <button
-                          className="text-red-500 hover:text-[#991B1B] transition-transform transform hover:scale-105"
-                          onClick={() => handleEliminarUsuario(item)}
-                          aria-label="Eliminar"
-                        >
-                          <i className="bx bx-trash text-xl"></i>
-                        </button>
-                        {/* Activar / Desactivar */}
-                        <button
-                          className={`px-4 py-2 rounded-full font-semibold transition transform hover:scale-105 ${
-                            item.estatus === "Activo"
-                              ? "bg-[#EF4444] hover:bg-[#DC2626] text-white"
-                              : "bg-[#22C55E] hover:bg-[#16A34A] text-white"
-                          }`}
-                          onClick={() => handleCambiarEstatus(item)}
-                        >
-                          {item.estatus === "Activo" ? "Desactivar" : "Activar"}
-                        </button>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {[
+                      { label: "C.I", key: "cedula" },
+                      { label: "Nombres y Apellidos", key: "nombre" },
+                      { label: "Usuario", key: "usuario" },
+                      { label: "Rol", key: "rol" },
+                      { label: "Estatus", key: "estatus" },
+                      { label: "Acciones", key: "acciones" },
+                    ].map(({ label, key }) => (
+                      <th
+                        key={key}
+                        className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                
+                <tbody className="divide-y divide-gray-200">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center">
+                        <div className="flex justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        </div>
+                        <p className="text-gray-500 mt-2">Cargando usuarios...</p>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="py-4 text-center text-gray-400 font-semibold"
-                    >
-                      No se encontraron resultados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  ) : filteredData.length > 0 ? (
+                    filteredData.map((item) => (
+                      <tr key={item.cedula_usuario} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {item.cedula_usuario}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {item.nombre_completo}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {item.usuario}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            {item.rol}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.estatus === "Activo"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {item.estatus}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              className="text-indigo-600 hover:text-indigo-900 p-1 rounded transition-colors"
+                              onClick={() => handleEditarUsuario(item)}
+                              title="Editar"
+                            >
+                              <i className="bx bx-edit text-lg"></i>
+                            </button>
+                            
+                            <button
+                              className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
+                              onClick={() => handleEliminarUsuario(item)}
+                              title="Eliminar"
+                            >
+                              <i className="bx bx-trash text-lg"></i>
+                            </button>
+                            
+                            <button
+                              className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
+                                item.estatus === "Activo"
+                                  ? "bg-red-100 text-red-800 hover:bg-red-200"
+                                  : "bg-green-100 text-green-800 hover:bg-green-200"
+                              }`}
+                              onClick={() => handleCambiarEstatus(item)}
+                            >
+                              {item.estatus === "Activo" ? "Desactivar" : "Activar"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center">
+                        <i className="bx bx-user-x text-4xl text-gray-300 mb-2"></i>
+                        <p className="text-gray-500">No se encontraron usuarios</p>
+                        {searchTerm && (
+                          <p className="text-sm text-gray-400 mt-1">
+                            Intenta con otros términos de búsqueda
+                          </p>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </main>
 
         {/* Pie de página */}
-        <footer
-          className="mt-auto p-4"
-          style={{
-            backgroundColor: "#F9FAFB",
-            borderTop: "1px solid #D1D5DB",
-            color: "#4B5563",
-            fontSize: "0.875rem",
-            borderRadius: "0px 0px 8px 8px",
-            boxShadow: "inset 0 2px 4px rgba(0,0,0,0.06)",
-          }}
-        >
-          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos
-          reservados.
+        <footer className="bg-white border-t border-gray-200 p-4 text-center text-sm text-gray-600">
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>
 
       {/* ========================= Modales ========================= */}
 
-      {/* Datos Personales */}
+      {/* Modal Datos Personales */}
       <Modal
-        className="bg-black/50 backdrop backdrop-opacity-60"
         isOpen={modalOpen.personal}
         onClose={() => closeModal("personal")}
         title="Datos Personales"
+        size="md"
       >
-        <div className="flex flex-col space-y-4 p-4">
+        <div className="space-y-4">
           {[
             {
               label: "Cédula",
+              type: "text",
               value: personaData.cedula,
-              onChange: (e) => {
-                const valor = e.target.value.replace(/\D/g, "");
-                setPersonaData({ ...personaData, cedula: valor });
-              },
+              onChange: handleCedulaChange,
+              maxLength: 8,
+              placeholder: "Ej: 12345678"
             },
             {
               label: "Nombre Completo",
+              type: "text",
               value: personaData.nombre_completo,
               onChange: (e) => {
                 const valor = e.target.value
                   .split(" ")
-                  .map(
-                    (palabra) =>
-                      palabra.charAt(0).toUpperCase() +
-                      palabra.slice(1).toLowerCase()
-                  )
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                   .join(" ");
                 setPersonaData({ ...personaData, nombre_completo: valor });
               },
+              placeholder: "Nombre y apellido completo"
             },
             {
               label: "Teléfono",
+              type: "tel",
               value: personaData.telefono,
-              onChange: (e) =>
-                setPersonaData({ ...personaData, telefono: e.target.value }),
+              onChange: (e) => setPersonaData({ ...personaData, telefono: e.target.value }),
+              placeholder: "Ej: 0412-1234567"
             },
             {
               label: "Email",
+              type: "email",
               value: personaData.email,
-              onChange: (e) =>
-                setPersonaData({ ...personaData, email: e.target.value }),
+              onChange: (e) => setPersonaData({ ...personaData, email: e.target.value }),
+              placeholder: "ejemplo@correo.com"
             },
-          ].map(({ label, value, onChange, type = "text" }) => (
-            <div key={label} className="flex flex-col">
-              <label className="mb-1 text-sm font-medium text-gray-700">
-                {label}
+          ].map((field, index) => (
+            <div key={index}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {field.label}
               </label>
               <input
-                className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition duration-200"
-                value={value}
-                type={type}
-                onChange={onChange}
+                type={field.type}
+                value={field.value}
+                onChange={field.onChange}
+                maxLength={field.maxLength}
+                placeholder={field.placeholder}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
           ))}
-        </div>
-        <div className="mt-6 flex justify-end space-x-3 px-4">
-          <button
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded-lg transition"
-            onClick={() => closeModal("personal")}
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition"
-            onClick={handleGuardarPersona}
-          >
-            Siguiente
-          </button>
+          
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              onClick={() => closeModal("personal")}
+            >
+              Cancelar
+            </button>
+            <button
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+              onClick={handleGuardarPersona}
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       </Modal>
 
+      {/* Modal Registro de Usuario */}
       <Modal
         isOpen={modalOpen.usuario}
         onClose={() => closeModal("usuario")}
         title="Registro de Usuario"
+        size="md"
       >
-        <div className="flex flex-col space-y-4 p-4">
-          {/* Cédula */}
-          <div className="flex flex-col">
-            <label className="mb-1 text-sm font-medium text-gray-700">
-              Cédula
-            </label>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
             <input
-              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              type="text"
               value={personaData.cedula}
-              onChange={(e) =>
-                setUsuarioData({
-                  ...usuarioData,
-                  cedula_usuario: e.target.value,
-                })
-              }
+              readOnly
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
             />
           </div>
-          {/* Nombre de Usuario */}
-          <div className="flex flex-col">
-            <label className="mb-1 text-sm font-medium text-gray-700">
-              Nombre de Usuario
-            </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de Usuario</label>
             <input
-              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              type="text"
               value={usuarioData.usuario}
-              onChange={(e) =>
-                setUsuarioData({ ...usuarioData, usuario: e.target.value })
-              }
+              onChange={(e) => setUsuarioData({ ...usuarioData, usuario: e.target.value })}
+              placeholder="Ingresa el nombre de usuario"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>
-          {/* Contraseña */}
-          <div className="flex flex-col">
-            <label className="mb-1 text-sm font-medium text-gray-700">
-              Contraseña
-            </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
             <input
               type="password"
-              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
               value={usuarioData.clave}
-              onChange={(e) =>
-                setUsuarioData({ ...usuarioData, clave: e.target.value })
-              }
+              onChange={(e) => setUsuarioData({ ...usuarioData, clave: e.target.value })}
+              placeholder="Mínimo 6 caracteres"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
+            <p className="text-xs text-gray-500 mt-1">La contraseña debe tener entre 6 y 20 caracteres</p>
           </div>
-          {/* Rol */}
-          <div className="flex flex-col">
-            <label className="mb-1 text-sm font-medium text-gray-700">
-              Rol
-            </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
             <select
-              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
               value={usuarioData.rol}
-              onChange={(e) =>
-                setUsuarioData({ ...usuarioData, rol: e.target.value })
-              }
+              onChange={(e) => setUsuarioData({ ...usuarioData, rol: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
-              <option value="">Selecciona Rol</option>
+              <option value="">Selecciona un rol</option>
               <option value="Administrador">Administrador</option>
-              <option value="Credito1">
-                Admin. Credito y Cobranza
-              </option>
-              <option value="Credito2">
-                Asist. Credito y Cobranza
-              </option>
+              <option value="Credito1">Admin. Credito y Cobranza</option>
+              <option value="Credito2">Asist. Credito y Cobranza</option>
             </select>
           </div>
-          {/* Estatus */}
-          <div className="flex flex-col">
-            <label className="mb-1 text-sm font-medium text-gray-700">
-              Estatus
-            </label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estatus</label>
             <select
-              className="border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
               value={usuarioData.estatus}
-              onChange={(e) =>
-                setUsuarioData({ ...usuarioData, estatus: e.target.value })
-              }
+              onChange={(e) => setUsuarioData({ ...usuarioData, estatus: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="Activo">Activo</option>
               <option value="Inactivo">Inactivo</option>
             </select>
           </div>
-        </div>
-        <div className="mt-6 flex justify-end space-x-3 px-4">
-          <button
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded-lg transition"
-            onClick={() => closeModal("usuario")}
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition"
-            onClick={handleCrearRegistro}
-          >
-            Guardar
-          </button>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              onClick={() => closeModal("usuario")}
+            >
+              Cancelar
+            </button>
+            <button
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+              onClick={handleCrearRegistro}
+            >
+              Crear Usuario
+            </button>
+          </div>
         </div>
       </Modal>
 
@@ -629,139 +612,162 @@ const Usuario = () => {
         isOpen={modalOpen.edit}
         onClose={() => closeModal("edit")}
         title="Editar Usuario"
+        size="md"
       >
-        {userToEdit && (
-          <div className="flex flex-col space-y-2">
-            {/* Cédula (solo lectura) */}
-            <label>Cédula</label>
-            <input
-              className="border p-2 rounded"
-              value={editableUser.cedula_usuario}
-              disabled
-            />
+        {editableUser && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cédula</label>
+              <input
+                type="text"
+                value={editableUser.cedula_usuario}
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+              />
+            </div>
 
-            {/* Nombres y Apellidos */}
-            <label>Nombres y Apellidos</label>
-            <input
-              className="border p-2 rounded"
-              value={editableUser.nombre}
-              onChange={(e) =>
-                setEditableUser({ ...editableUser, nombre: e.target.value })
-              }
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nombres y Apellidos</label>
+              <input
+                type="text"
+                value={editableUser.nombre_completo || editableUser.nombre || ""}
+                onChange={(e) => setEditableUser({ ...editableUser, nombre: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
 
-            {/* Usuario */}
-            <label>Nombre de Usuario</label>
-            <input
-              className="border p-2 rounded"
-              value={editableUser.usuario}
-              onChange={(e) =>
-                setEditableUser({ ...editableUser, usuario: e.target.value })
-              }
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de Usuario</label>
+              <input
+                type="text"
+                value={editableUser.usuario}
+                onChange={(e) => setEditableUser({ ...editableUser, usuario: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
 
-            {/* Contraseña */}
-            <label>Contraseña</label>
-            <input
-              type="password"
-              className="border p-2 rounded"
-              placeholder="Dejar en blanco para mantener"
-              value={editableUser.clave}
-              onChange={(e) =>
-                setEditableUser({ ...editableUser, clave: e.target.value })
-              }
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña (dejar en blanco para mantener la actual)</label>
+              <input
+                type="password"
+                value={editableUser.clave || ""}
+                onChange={(e) => setEditableUser({ ...editableUser, clave: e.target.value })}
+                placeholder="Nueva contraseña"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
 
-            {/* Rol */}
-            <label>Rol</label>
-            <select
-              className="border p-2 rounded"
-              value={editableUser.rol}
-              onChange={(e) =>
-                setEditableUser({ ...editableUser, rol: e.target.value })
-              }
-            >
-              <option value="">Selecciona un tipo de usuario</option>
-              <option value="Administrador">Administrador</option>
-              <option value="Admin. Credito y Cobranza">
-                Admin. Credito y Cobranza
-              </option>
-              <option value="Asist. Credito y Cobranza">
-                Asist. Credito y Cobranza
-              </option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+              <select
+                value={editableUser.rol}
+                onChange={(e) => setEditableUser({ ...editableUser, rol: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">Selecciona un rol</option>
+                <option value="Administrador">Administrador</option>
+                <option value="Credito1">Admin. Credito y Cobranza</option>
+                <option value="Credito2">Asist. Credito y Cobranza</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                onClick={() => closeModal("edit")}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                onClick={handleGuardarEdicion}
+              >
+                Guardar Cambios
+              </button>
+            </div>
           </div>
         )}
-        <div className="mt-4 flex justify-end space-x-2">
-          <button
-            className="bg-gray-300 px-4 py-2 rounded"
-            onClick={() => closeModal("edit")}
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-green-500 text-white px-4 py-2 rounded"
-            onClick={handleGuardarEdicion}
-          >
-            Guardar
-          </button>
-        </div>
       </Modal>
 
       {/* Modal Eliminar */}
       <Modal
         isOpen={modalOpen.delete}
         onClose={() => closeModal("delete")}
-        title="Eliminar usuario"
+        title="Eliminar Usuario"
+        size="sm"
       >
         {userToDelete && (
-          <p>
-            ¿Estás seguro de eliminar al usuario {userToDelete.cedula_usuario}?
-          </p>
+          <div className="text-center">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <i className="bx bx-trash text-red-600 text-xl"></i>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">¿Estás seguro?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Se eliminará permanentemente al usuario: <strong>{userToDelete.usuario}</strong>
+            </p>
+            
+            <div className="flex justify-center space-x-3">
+              <button
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                onClick={() => closeModal("delete")}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                onClick={handleConfirmarEliminar}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
         )}
-        <div className="mt-4 flex justify-end space-x-2">
-          <button
-            className="bg-gray-300 px-4 py-2 rounded"
-            onClick={() => closeModal("delete")}
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-red-500 text-white px-4 py-2 rounded"
-            onClick={handleConfirmarEliminar}
-          >
-            Eliminar
-          </button>
-        </div>
       </Modal>
 
-      {/* Modal Activar / Desactivar */}
+      {/* Modal Cambiar Estatus */}
       <Modal
         isOpen={modalOpen.toggle}
         onClose={() => closeModal("toggle")}
         title="Cambiar Estatus"
+        size="sm"
       >
         {userToToggle && (
-          <p>
-            ¿Deseas{" "}
-            {userToToggle.estatus === "Activo" ? "desactivar" : "activar"} a
-            este usuario?
-          </p>
+          <div className="text-center">
+            <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${
+              userToToggle.estatus === "Activo" ? "bg-yellow-100" : "bg-green-100"
+            }`}>
+              <i className={`bx bx-${userToToggle.estatus === "Activo" ? "x-circle" : "check-circle"} text-xl ${
+                userToToggle.estatus === "Activo" ? "text-yellow-600" : "text-green-600"
+              }`}></i>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {userToToggle.estatus === "Activo" ? "Desactivar Usuario" : "Activar Usuario"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              ¿Estás seguro de {userToToggle.estatus === "Activo" ? "desactivar" : "activar"} al usuario{' '}
+              <strong>{userToToggle.usuario}</strong>?
+            </p>
+            
+            <div className="flex justify-center space-x-3">
+              <button
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                onClick={() => closeModal("toggle")}
+              >
+                Cancelar
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md text-white transition-colors ${
+                  userToToggle.estatus === "Activo" 
+                    ? "bg-yellow-600 hover:bg-yellow-700" 
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
+                onClick={handleConfirmarToggle}
+              >
+                {userToToggle.estatus === "Activo" ? "Desactivar" : "Activar"}
+              </button>
+            </div>
+          </div>
         )}
-        <div className="mt-4 flex justify-end space-x-2">
-          <button
-            className="bg-gray-300 px-4 py-2 rounded"
-            onClick={() => closeModal("toggle")}
-          >
-            Cancelar
-          </button>
-          <button
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-            onClick={handleConfirmarToggle}
-          >
-            {userToToggle?.estatus === "Activo" ? "Desactivar" : "Activar"}
-          </button>
-        </div>
       </Modal>
     </div>
   );
