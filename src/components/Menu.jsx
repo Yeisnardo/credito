@@ -97,7 +97,7 @@ const Menu = ({ onClose }) => {
         <div className="bg-indigo-100 p-2 rounded-lg shadow-sm mr-2">
           <i className="bx bx-credit-card-front text-bg-gray-900 text-2xl"></i>
         </div>
-        <h2 className="text-xl font-bold text-bg-gray-900">Sistema de Créditos</h2>
+        <h2 className="text-xl font-bold text-bg-gray-900">Sistema de Microcréditos</h2>
       </div>
 
       {/* Información del usuario */}
