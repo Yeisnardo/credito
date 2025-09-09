@@ -101,18 +101,18 @@ CREATE TABLE n_contrato(
 );
 
 CREATE TABLE contrato (
-    id_contrato INT PRIMARY KEY,
-    numero_contrato VARCHAR(20) NOT NULL,
-    cedula_emprendedor VARCHAR(20),
-    monto_aprob_euro TEXT,
-    monto_bs TEXT,
-    cincoflat TEXT,
-    diezinteres TEXT,
-    monto_devolver TEXT,
-    fecha_desde DATE,
-    fecha_hasta DATE,
-    estatus VARCHAR(20),
-    FOREIGN KEY (cedula_emprendedor) REFERENCES n_contrato (cedula_emprendedor)
+  id_contrato INT PRIMARY KEY,
+  numero_contrato VARCHAR(20) NOT NULL,
+  cedula_emprendedor VARCHAR(20),
+  monto_aprob_euro TEXT,
+  monto_bs TEXT,
+  cincoflat TEXT,
+  diezinteres TEXT,
+  monto_devolver TEXT,
+  fecha_desde DATE,
+  fecha_hasta DATE,
+  estatus VARCHAR(20),
+  FOREIGN KEY (cedula_emprendedor) REFERENCES n_contrato (cedula_emprendedor)
 ); 
 
 CREATE TABLE deposito(

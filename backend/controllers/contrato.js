@@ -86,4 +86,21 @@ router.post('/contrato', async (req, res) => {
   }
 });
 
+// Nueva ruta: Obtener contratos por cédula del emprendedor
+router.get('/:cedula', async (req, res) => {
+  try {
+    const { cedula } = req.params;
+
+    const resultado = await query(
+      `SELECT * FROM contrato WHERE cedula_emprendedor = $1`,
+      [cedula]
+    );
+
+    res.status(200).json(resultado.rows);
+  } catch (error) {
+    console.error('Error al obtener contratos:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

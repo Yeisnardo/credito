@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: 'http://localhost:5000', // cambia esto si tu backend está en otra URL
 });
 
 // Función para asignar el número de contrato
@@ -19,7 +19,14 @@ export const registrarContrato = async (contratoData) => {
   return response.data;
 };
 
+// Función para obtener contratos por cédula del emprendedor
+export const getContratosPorCedulaEmprendedor = async (cedula) => {
+  const response = await api.get(`/api/contratos/${cedula}`);
+  return response.data; // Asumiendo que el backend devuelve una lista de contratos
+};
+
 export default {
   asignarNumeroContrato,
   registrarContrato,
+  getContratosPorCedulaEmprendedor
 };
