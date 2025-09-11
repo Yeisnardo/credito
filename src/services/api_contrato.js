@@ -25,8 +25,15 @@ export const getContratosPorCedulaEmprendedor = async (cedula) => {
   return response.data; // Asumiendo que el backend devuelve una lista de contratos
 };
 
+// Función para aceptar un contrato
+export const aceptarContrato = async (idContrato, datosAceptacion) => {
+  const response = await api.post(`/api/contratos/${idContrato}`, datosAceptacion);
+  return response.data;
+};
+
 export default {
   asignarNumeroContrato,
   registrarContrato,
-  getContratosPorCedulaEmprendedor
+  getContratosPorCedulaEmprendedor,
+  aceptarContrato
 };

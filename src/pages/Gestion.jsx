@@ -48,6 +48,25 @@ const Gestion = ({ user, setUser }) => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedEmpleadorId, setSelectedEmpleadorId] = React.useState("");
   const [comprobanteModal, setComprobanteModal] = useState(null);
+  const [contratosAgrupados, setContratosAgrupados] = useState({});
+
+  // Agrupar contratos por cédula de emprendedor
+  useEffect(() => {
+    if (empleadores.length > 0) {
+      const agrupados = empleadores.reduce((acc, empleador) => {
+        const cedula = empleador.cedula;
+        if (!acc[cedula]) {
+          acc[cedula] = {
+            empleador: empleador,
+            contratos: []
+          };
+        }
+        acc[cedula].contratos.push(empleador);
+        return acc;
+      }, {});
+      setContratosAgrupados(agrupados);
+    }
+  }, [empleadores]);
 
   const handleVerComprobante = (url) => {
     setComprobanteModal(url);
@@ -664,130 +683,142 @@ const Gestion = ({ user, setUser }) => {
   };
 
   // Modal para ver detalles de contratos gestionados
-  const ModalDetalles = ({ empleador, onClose }) => {
-    const contratoGestionado =
-      contratosGestionados[empleador.cedula_emprendedor];
+  // Modal para ver detalles de contratos gestionados
+const ModalDetalles = ({ empleador, onClose }) => {
+  // Obtener todos los contratos para este emprendedor
+  const contratosDelEmpleador = empleadores.filter(
+    e => e.cedula === empleador.cedula
+  );
 
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Detalles de {empleador.nombre}
-            </h2>
-            <button
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-              onClick={onClose}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white p-6 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">
+            Detalles de {empleador.nombre}
+          </h2>
+          <button
+            className="text-gray-500 hover:text-gray-700 transition-colors"
+            onClick={onClose}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">Información Básica</h3>
+            <div className="space-y-2">
+              <p><span className="font-medium text-gray-600">Cédula:</span> {empleador.cedula}</p>
+              <p><span className="font-medium text-gray-600">Contratos:</span> {contratosDelEmpleador.length}</p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">Información Básica</h3>
-              <div className="space-y-2">
-                <p><span className="font-medium text-gray-600">Cédula:</span> {empleador.cedula}</p>
-                <p><span className="font-medium text-gray-600">Contrato:</span> {empleador.tieneContrato ? empleador.numeroContrato : "Sin asignar"}</p>
+          {empleador.tieneDatosBancarios && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">Información Bancaria</h3>
+              <div className="grid grid-cols-1 gap-2">
+                <p><span className="font-medium text-gray-600">Banco:</span> {empleador.datosBancarios.banco}</p>
+                <p><span className="font-medium text-gray-600">Número de Cuenta:</span> {empleador.datosBancarios.numeroCuenta}</p>
+                <p><span className="font-medium text-gray-600">Titular:</span> {empleador.datosBancarios.nombreCompleto}</p>
+                <p><span className="font-medium text-gray-600">Cédula del Titular:</span> {empleador.datosBancarios.cedulaTitular}</p>
               </div>
             </div>
+          )}
+        </div>
 
-            {empleador.tieneDatosBancarios && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-700 mb-3">Información Bancaria</h3>
-                <div className="grid grid-cols-1 gap-2">
-                  <p><span className="font-medium text-gray-600">Banco:</span> {empleador.datosBancarios.banco}</p>
-                  <p><span className="font-medium text-gray-600">Número de Cuenta:</span> {empleador.datosBancarios.numeroCuenta}</p>
-                  <p><span className="font-medium text-gray-600">Titular:</span> {empleador.datosBancarios.nombreCompleto}</p>
-                  <p><span className="font-medium text-gray-600">Cédula del Titular:</span> {empleador.datosBancarios.cedulaTitular}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {empleador ? (
-            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <h3 className="text-lg font-semibold bg-gray-50 px-6 py-3 border-b border-gray-200">
-                Detalles del Contrato
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Monto en euros
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Monto en Bolívares
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        5% FLAT
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        10% Interés
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Monto a devolver
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Desde
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Hasta
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Estatus
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <tr>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {empleador.monto_aprob_euro} €
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {empleador.monto_bs} Bs
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {empleador.cincoflat} €
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {empleador.diezinteres} €
-                      </td>
+        {contratosDelEmpleador.length > 0 ? (
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <h3 className="text-lg font-semibold bg-gray-50 px-6 py-3 border-b border-gray-200">
+              Detalles de los Contratos ({contratosDelEmpleador.length})
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      N° Contrato
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Monto en euros
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Monto en Bolívares
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      5% FLAT
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      10% Interés
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Monto a devolver
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Desde
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Hasta
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Estatus
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {contratosDelEmpleador.map((contrato, index) => (
+                    <tr key={index}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                        {empleador.monto_devolver} €
+                        {contrato.numero_contrato || contrato.numeroContrato || "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {contrato.monto_aprob_euro} €
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {empleador.fecha_desde}
+                        {contrato.monto_bs} Bs
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {empleador.fecha_hasta}
+                        {contrato.cincoflat} €
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contrato.diezinteres} €
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                        {contrato.monto_devolver} €
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contrato.fecha_desde}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {contrato.fecha_hasta}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          empleador.estatus === 'Aprobada' ? 'bg-green-100 text-green-800' :
-                          empleador.estatus === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                          contrato.estatus === 'Aprobada' ? 'bg-green-100 text-green-800' :
+                          contrato.estatus === 'Pendiente' ? 'bg-red-100 text-red-800' :
+                          contrato.estatus === 'Activo' ? 'bg-blue-100 text-blue-800' :
                           'bg-red-100 text-red-800'
                         }`}>
-                          {empleador.estatus}
+                          {contrato.estatus}
                         </span>
                       </td>
                     </tr>
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">
-              No hay contratos gestionados para este emprendedor.
-            </p>
-          )}
-        </div>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-8">
+            No hay contratos gestionados para este emprendedor.
+          </p>
+        )}
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   return (
     <div className="flex min-h-screen bg-gray-50  mt-15">
@@ -947,7 +978,7 @@ const Gestion = ({ user, setUser }) => {
               {/* Contenido según pestaña activa */}
               {activeTab === "asignacion" && (
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {empleadores.length === 0 ? (
+                  {Object.keys(contratosAgrupados).length === 0 ? (
                     <div className="col-span-full text-center py-12">
                       <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
                         <i className="bx bx-user-x text-4xl text-gray-400 mb-4"></i>
@@ -960,18 +991,21 @@ const Gestion = ({ user, setUser }) => {
                       </div>
                     </div>
                   ) : (
-                    empleadores.map((empleador) => (
+                    Object.values(contratosAgrupados).map((grupo) => (
                       <div
-                        key={empleador.id}
+                        key={grupo.empleador.cedula}
                         className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                              {empleador.nombre}
+                              {grupo.empleador.nombre}
                             </h3>
                             <p className="text-sm text-gray-500">
-                              Cédula: {empleador.cedula}
+                              Cédula: {grupo.empleador.cedula}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Contratos: {grupo.contratos.length}
                             </p>
                           </div>
                           <div className="bg-indigo-100 p-2 rounded-lg">
@@ -980,8 +1014,7 @@ const Gestion = ({ user, setUser }) => {
                         </div>
 
                         <div className="mb-4">
-                          {contratosAsignados[empleador.cedulaEmprendedor] ||
-                          empleador.tieneContrato ? (
+                          {grupo.empleador.tieneContrato ? (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                               <div className="flex items-center">
                                 <i className="bx bx-check-circle text-green-600 mr-2"></i>
@@ -990,13 +1023,13 @@ const Gestion = ({ user, setUser }) => {
                                 </span>
                               </div>
                               <p className="text-green-600 text-sm mt-1">
-                                {empleador.numeroContrato}
+                                {grupo.empleador.numeroContrato}
                               </p>
                             </div>
                           ) : (
                             <button
                               className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
-                              onClick={() => iniciarAsignacionContrato(empleador)}
+                              onClick={() => iniciarAsignacionContrato(grupo.empleador)}
                             >
                               <i className="bx bx-file-blank mr-2"></i>
                               Asignar contrato
@@ -1006,7 +1039,7 @@ const Gestion = ({ user, setUser }) => {
 
                         <button
                           className="w-full text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center justify-center"
-                          onClick={() => verDetalles(empleador)}
+                          onClick={() => verDetalles(grupo.empleador)}
                         >
                           <i className="bx bx-show mr-1"></i>
                           Ver detalles
@@ -1036,9 +1069,9 @@ const Gestion = ({ user, setUser }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           <option value="">-- Selecciona un emprendedor --</option>
-                          {empleadores.map((empleador) => (
-                            <option key={empleador.id} value={empleador.id}>
-                              {empleador.nombre} - {empleador.cedula}
+                          {Object.values(contratosAgrupados).map((grupo) => (
+                            <option key={grupo.empleador.id} value={grupo.empleador.id}>
+                              {grupo.empleador.nombre} - {grupo.empleador.cedula}
                             </option>
                           ))}
                         </select>
@@ -1198,43 +1231,57 @@ const Gestion = ({ user, setUser }) => {
                     </div>
 
                     <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {empleadores
-                        .filter((e) => e.tieneContrato || contratosAsignados[e.id])
-                        .filter((e) =>
-                          e.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+                      {Object.values(contratosAgrupados)
+                        .filter((grupo) => grupo.empleador.tieneContrato)
+                        .filter((grupo) =>
+                          grupo.empleador.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          grupo.empleador.cedula.includes(searchTerm)
                         ).length === 0 ? (
                         <div className="text-center py-8">
                           <i className="bx bx-folder-open text-4xl text-gray-400 mb-3"></i>
                           <p className="text-gray-500">No hay contratos asignados</p>
                         </div>
                       ) : (
-                        empleadores
-                          .filter((e) => e.tieneContrato || contratosAsignados[e.id])
-                          .filter((e) =>
-                            e.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+                        Object.values(contratosAgrupados)
+                          .filter((grupo) => grupo.empleador.tieneContrato)
+                          .filter((grupo) =>
+                            grupo.empleador.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            grupo.empleador.cedula.includes(searchTerm)
                           )
-                          .map((empleador) => (
+                          .map((grupo) => (
                             <div
-                              key={empleador.id}
+                              key={grupo.empleador.cedula}
                               className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:bg-gray-100 transition-colors"
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <h3 className="font-semibold text-gray-800">
-                                  {empleador.nombre}
+                                  {grupo.empleador.nombre}
                                 </h3>
                                 <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                                  Contrato asignado
+                                  {grupo.contratos.length} contrato(s)
                                 </span>
                               </div>
                               <p className="text-sm text-gray-600 mb-3">
-                                Cédula: {empleador.cedula}
+                                Cédula: {grupo.empleador.cedula}
                               </p>
-                              <p className="text-sm font-medium text-indigo-600 mb-3">
-                                {contratosAsignados[empleador.id] || empleador.numeroContrato}
-                              </p>
+                              
+                              {/* Listar todos los contratos para este emprendedor */}
+                              <div className="mb-3">
+                                {grupo.contratos.map((contrato, index) => (
+                                  <div key={index} className="bg-white p-2 rounded border mb-2">
+                                    <p className="text-sm font-medium text-indigo-600">
+                                      {contrato.numeroContrato}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Estatus: {contrato.estatus}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                              
                               <button
                                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
-                                onClick={() => verDetalles(empleador)}
+                                onClick={() => verDetalles(grupo.empleador)}
                               >
                                 <i className="bx bx-show mr-1"></i>
                                 Ver detalles del contrato
@@ -1249,7 +1296,7 @@ const Gestion = ({ user, setUser }) => {
 
               {activeTab === "bancarios" && (
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {empleadores.length === 0 ? (
+                  {Object.keys(contratosAgrupados).length === 0 ? (
                     <div className="col-span-full text-center py-12">
                       <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
                         <i className="bx bx-credit-card text-4xl text-gray-400 mb-4"></i>
@@ -1262,18 +1309,21 @@ const Gestion = ({ user, setUser }) => {
                       </div>
                     </div>
                   ) : (
-                    empleadores.map((empleador) => (
+                    Object.values(contratosAgrupados).map((grupo) => (
                       <div
-                        key={empleador.id}
+                        key={grupo.empleador.cedula}
                         className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                              {empleador.nombre}
+                              {grupo.empleador.nombre}
                             </h3>
                             <p className="text-sm text-gray-500">
-                              Cédula: {empleador.cedula}
+                              Cédula: {grupo.empleador.cedula}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Contratos: {grupo.contratos.length}
                             </p>
                           </div>
                           <div className="bg-blue-100 p-2 rounded-lg">
@@ -1282,7 +1332,7 @@ const Gestion = ({ user, setUser }) => {
                         </div>
 
                         <div className="mb-4">
-                          {empleador ? (
+                          {grupo.empleador.tieneDatosBancarios ? (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                               <div className="flex items-center mb-2">
                                 <i className="bx bx-check-circle text-blue-600 mr-2"></i>
@@ -1291,10 +1341,10 @@ const Gestion = ({ user, setUser }) => {
                                 </span>
                               </div>
                               <div className="space-y-1 text-sm">
-                                <p><span className="font-medium">Banco:</span> {empleador.banco}</p>
-                                <p><span className="font-medium">Titular:</span> {empleador.nombre_completo_cuenta}</p>
-                                <p><span className="font-medium">C.I titular:</span> {empleador.cedula_titular}</p>
-                                <p><span className="font-medium">N° Cuenta:</span> {empleador.numero_cuenta}</p>
+                                <p><span className="font-medium">Banco:</span> {grupo.empleador.banco}</p>
+                                <p><span className="font-medium">Titular:</span> {grupo.empleador.nombre_completo_cuenta}</p>
+                                <p><span className="font-medium">C.I titular:</span> {grupo.empleador.cedula_titular}</p>
+                                <p><span className="font-medium">N° Cuenta:</span> {grupo.empleador.numero_cuenta}</p>
                               </div>
                             </div>
                           ) : (
@@ -1333,9 +1383,9 @@ const Gestion = ({ user, setUser }) => {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           <option value="">-- Selecciona un emprendedor --</option>
-                          {empleadores.map((empleador) => (
-                            <option key={empleador.id} value={empleador.id}>
-                              {empleador.nombre} - {empleador.cedula}
+                          {Object.values(contratosAgrupados).map((grupo) => (
+                            <option key={grupo.empleador.id} value={grupo.empleador.id}>
+                              {grupo.empleador.nombre} - {grupo.empleador.cedula}
                             </option>
                           ))}
                         </select>
