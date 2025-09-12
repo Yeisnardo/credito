@@ -41,6 +41,7 @@ router.get("/estatus/aprobada", async (req, res) => {
         c.cincoflat,
         c.diezinteres,
         c.monto_devolver,
+        C.monto_semanal,
         c.fecha_desde,
         c.fecha_hasta,
         c.estatus,

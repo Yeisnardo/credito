@@ -109,6 +109,8 @@ CREATE TABLE contrato (
   cincoflat TEXT,
   diezinteres TEXT,
   monto_devolver TEXT,
+  monto_semanal TEXT,
+  monto_cuota TEXT,
   fecha_desde DATE,
   fecha_hasta DATE,
   estatus VARCHAR(20),
@@ -126,20 +128,16 @@ CREATE TABLE deposito(
 CREATE TABLE cuota (
   id_cuota INT PRIMARY KEY,
   cedula_emprendedor VARCHAR(20) NOT NULL,
-  numeroCuota INT NOT NULL,
-  fecha DATE NOT NULL,
-  comprobante VARCHAR(20) NOT NULL,
-  estado VARCHAR(20) NOT NULL
-);
-
-CREATE TABLE morosidad (
-  id_morosidad INT PRIMARY KEY,
-  cedula_emprendedor VARCHAR(20) NOT NULL,
-  dias_mora DATE,
-  dias_morosidad INT,
-  intereses_mora TEXT,
-  estado_mora VARCHAR(20),
-  FOREIGN KEY (id_morosidad) REFERENCES cuota(id_cuota)
+  monto_euro_p VARCHAR,
+  monto_bs_p VARCHAR,
+  tiempo_morosidad VARCHAR,
+  porcentaje_morosidad VARCHAR,
+  euro_morosidad VARCHAR,
+  bs_morosidad VARCHAR,
+  comprobante TEXT,
+  estado_pago VARCHAR(50),
+  estado_ifemi VARCHAR(50),
+  FOREIGN KEY (id_cuota) REFERENCES contrato (id_contrato)
 );
 
 

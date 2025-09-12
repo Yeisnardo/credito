@@ -14,6 +14,7 @@ const solicitudAPI = require('./controllers/solicitud');
 const cuentaAPI = require('./controllers/banco');
 const fondoAPI = require('./controllers/fondo');
 const contratoAPI = require('./controllers/contrato');
+const coutaAPI = require('./controllers/cuotas');
 const clasificacion_requerimientoAPI = require('./controllers/clasificacion_requerimiento');
 const requerimientoEmprendedorAPI = require('./controllers/requerimiento');
 const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasificacion_emprendimiento');
@@ -45,6 +46,7 @@ app.use('/api/emprendimientos', emprendimientoAPI);
 app.use('/api/solicitudes', solicitudAPI);
 app.use('/api/contratos', contratoAPI);
 app.use('/api/deposito', depositoRouter);
+app.use('/api/cuotas', coutaAPI);
 app.use('/api/requerimiento_emprendedor', requerimientoEmprendedorAPI);
 app.use('/api/clasificacion', clasificacionEmprendimientoEmprendedorAPI);
 
@@ -68,6 +70,7 @@ app.listen(PORT, () => {
   console.log('   /api/solicitudes');
   console.log('   /api/contratos');
   console.log('   /api/deposito');
+  console.log('   /api/cuotas');
   console.log('   /api/requerimiento_emprendedor');
   console.log('   /api/clasificacion');
 });

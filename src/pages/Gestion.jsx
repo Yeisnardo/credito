@@ -22,6 +22,7 @@ const Gestion = ({ user, setUser }) => {
     cincoflat: "",
     diezinteres: "",
     monto_devolver: "",
+    monto_semanal: "", // Nuevo campo
     fecha_desde: "",
     fecha_hasta: "",
     estatus: "Pendiente",
@@ -58,7 +59,7 @@ const Gestion = ({ user, setUser }) => {
         if (!acc[cedula]) {
           acc[cedula] = {
             empleador: empleador,
-            contratos: []
+            contratos: [],
           };
         }
         acc[cedula].contratos.push(empleador);
@@ -182,12 +183,14 @@ const Gestion = ({ user, setUser }) => {
       const flat5 = (montoEuro * 0.05).toFixed(2);
       const interes10 = (montoEuro * 0.1).toFixed(2);
       const montoDevolverCalc = (montoEuro + parseFloat(interes10)).toFixed(2);
+      const montoSemanalCalc = (parseFloat(montoDevolverCalc) / 18).toFixed(2); // Nuevo cálculo
 
       setFormData((prev) => ({
         ...prev,
         cincoflat: flat5,
         diezinteres: interes10,
         monto_devolver: montoDevolverCalc,
+        monto_semanal: montoSemanalCalc, // Actualizar monto semanal
       }));
     } else {
       // Limpia si no es válido
@@ -196,6 +199,7 @@ const Gestion = ({ user, setUser }) => {
         cincoflat: "",
         diezinteres: "",
         monto_devolver: "",
+        monto_semanal: "", // Limpiar también el monto semanal
       }));
     }
   }, [formData.monto_aprob_euro]);
@@ -324,6 +328,7 @@ const Gestion = ({ user, setUser }) => {
         cincoflat: emprendedor.cincoflat || null,
         diezinteres: emprendedor.diezinteres || null,
         monto_devolver: emprendedor.monto_devolver || null,
+        monto_semanal: emprendedor.monto_semanal || null, // Nuevo campo
         fecha_desde: emprendedor.fecha_desde || null,
         fecha_hasta: emprendedor.fecha_hasta || null,
         estatus: emprendedor.estatus || null,
@@ -487,6 +492,7 @@ const Gestion = ({ user, setUser }) => {
       cincoFlat: contratoExistente?.cincoflat || "",
       diezInteres: contratoExistente?.diezinteres || "",
       montoDevolver: contratoExistente?.monto_devolver || "",
+      montoSemana: contratoExistente?.monto_semanal || "",
       fechaDesde: contratoExistente?.fecha_desde || "",
       fechaHasta: contratoExistente?.fecha_hasta || "",
       estatus: contratoExistente?.estatus || "Pendiente",
@@ -528,6 +534,7 @@ const Gestion = ({ user, setUser }) => {
         cincoflat: formData.cincoflat,
         diezinteres: formData.diezinteres,
         monto_devolver: formData.monto_devolver,
+        monto_semanal: formData.monto_semanal,
         fecha_desde: formData.fecha_desde,
         fecha_hasta: formData.fecha_hasta,
         estatus: formData.estatus,
@@ -684,141 +691,190 @@ const Gestion = ({ user, setUser }) => {
 
   // Modal para ver detalles de contratos gestionados
   // Modal para ver detalles de contratos gestionados
-const ModalDetalles = ({ empleador, onClose }) => {
-  // Obtener todos los contratos para este emprendedor
-  const contratosDelEmpleador = empleadores.filter(
-    e => e.cedula === empleador.cedula
-  );
+  const ModalDetalles = ({ empleador, onClose }) => {
+    // Obtener todos los contratos para este emprendedor
+    const contratosDelEmpleador = empleadores.filter(
+      (e) => e.cedula === empleador.cedula
+    );
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-6 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Detalles de {empleador.nombre}
-          </h2>
-          <button
-            className="text-gray-500 hover:text-gray-700 transition-colors"
-            onClick={onClose}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Información Básica</h3>
-            <div className="space-y-2">
-              <p><span className="font-medium text-gray-600">Cédula:</span> {empleador.cedula}</p>
-              <p><span className="font-medium text-gray-600">Contratos:</span> {contratosDelEmpleador.length}</p>
-            </div>
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white p-6 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
+              Detalles de {empleador.nombre}
+            </h2>
+            <button
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              onClick={onClose}
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
           </div>
 
-          {empleador.tieneDatosBancarios && (
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">Información Bancaria</h3>
-              <div className="grid grid-cols-1 gap-2">
-                <p><span className="font-medium text-gray-600">Banco:</span> {empleador.datosBancarios.banco}</p>
-                <p><span className="font-medium text-gray-600">Número de Cuenta:</span> {empleador.datosBancarios.numeroCuenta}</p>
-                <p><span className="font-medium text-gray-600">Titular:</span> {empleador.datosBancarios.nombreCompleto}</p>
-                <p><span className="font-medium text-gray-600">Cédula del Titular:</span> {empleador.datosBancarios.cedulaTitular}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                Información Básica
+              </h3>
+              <div className="space-y-2">
+                <p>
+                  <span className="font-medium text-gray-600">Cédula:</span>{" "}
+                  {empleador.cedula}
+                </p>
+                <p>
+                  <span className="font-medium text-gray-600">Contratos:</span>{" "}
+                  {contratosDelEmpleador.length}
+                </p>
               </div>
             </div>
+
+            {empleador.tieneDatosBancarios && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                  Información Bancaria
+                </h3>
+                <div className="grid grid-cols-1 gap-2">
+                  <p>
+                    <span className="font-medium text-gray-600">Banco:</span>{" "}
+                    {empleador.datosBancarios.banco}
+                  </p>
+                  <p>
+                    <span className="font-medium text-gray-600">
+                      Número de Cuenta:
+                    </span>{" "}
+                    {empleador.datosBancarios.numeroCuenta}
+                  </p>
+                  <p>
+                    <span className="font-medium text-gray-600">Titular:</span>{" "}
+                    {empleador.datosBancarios.nombreCompleto}
+                  </p>
+                  <p>
+                    <span className="font-medium text-gray-600">
+                      Cédula del Titular:
+                    </span>{" "}
+                    {empleador.datosBancarios.cedulaTitular}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {contratosDelEmpleador.length > 0 ? (
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <h3 className="text-lg font-semibold bg-gray-50 px-6 py-3 border-b border-gray-200">
+                Detalles de los Contratos ({contratosDelEmpleador.length})
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        N° Contrato
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto en euros
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto en Bolívares
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        5% FLAT
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        10% Interés
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto a devolver
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto semanal
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Desde
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Hasta
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Estatus
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {contratosDelEmpleador.map((contrato, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                          {contrato.numero_contrato ||
+                            contrato.numeroContrato ||
+                            "N/A"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {contrato.monto_aprob_euro} €
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.monto_bs} Bs
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.cincoflat} €
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.diezinteres} €
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                          {contrato.monto_devolver} €
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.monto_semanal} €
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.fecha_desde}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.fecha_hasta}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              contrato.estatus === "Aprobada"
+                                ? "bg-green-100 text-green-800"
+                                : contrato.estatus === "Pendiente"
+                                ? "bg-red-100 text-red-800"
+                                : contrato.estatus === "Activo"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {contrato.estatus}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-8">
+              No hay contratos gestionados para este emprendedor.
+            </p>
           )}
         </div>
-
-        {contratosDelEmpleador.length > 0 ? (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <h3 className="text-lg font-semibold bg-gray-50 px-6 py-3 border-b border-gray-200">
-              Detalles de los Contratos ({contratosDelEmpleador.length})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      N° Contrato
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Monto en euros
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Monto en Bolívares
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      5% FLAT
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      10% Interés
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Monto a devolver
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Desde
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Hasta
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estatus
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {contratosDelEmpleador.map((contrato, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                        {contrato.numero_contrato || contrato.numeroContrato || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {contrato.monto_aprob_euro} €
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contrato.monto_bs} Bs
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contrato.cincoflat} €
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contrato.diezinteres} €
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                        {contrato.monto_devolver} €
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contrato.fecha_desde}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contrato.fecha_hasta}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          contrato.estatus === 'Aprobada' ? 'bg-green-100 text-green-800' :
-                          contrato.estatus === 'Pendiente' ? 'bg-red-100 text-red-800' :
-                          contrato.estatus === 'Activo' ? 'bg-blue-100 text-blue-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {contrato.estatus}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <p className="text-gray-500 text-center py-8">
-            No hay contratos gestionados para este emprendedor.
-          </p>
-        )}
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50  mt-15">
@@ -858,7 +914,9 @@ const ModalDetalles = ({ empleador, onClose }) => {
                     <i className="bx bx-euro text-xl text-indigo-600"></i>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Tipo de cambio EUR/VES</p>
+                    <p className="text-sm text-gray-600">
+                      Tipo de cambio EUR/VES
+                    </p>
                     <p className="text-lg font-semibold text-gray-800">
                       1€ = {rateEuroToVES} Bs
                     </p>
@@ -875,22 +933,24 @@ const ModalDetalles = ({ empleador, onClose }) => {
           {/* Tabs de navegación */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <nav className="flex overflow-x-auto">
-              {["asignacion", "gestion", "bancarios", "depositos"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
-                    activeTab === tab
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {tab === "asignacion" && "Asignación de Contratos"}
-                  {tab === "gestion" && "Gestión de Contratos"}
-                  {tab === "bancarios" && "Datos Bancarios"}
-                  {tab === "depositos" && "Gestión de Depósitos"}
-                </button>
-              ))}
+              {["asignacion", "gestion", "bancarios", "depositos"].map(
+                (tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-6 py-4 font-medium text-sm whitespace-nowrap border-b-2 transition-colors ${
+                      activeTab === tab
+                        ? "border-indigo-500 text-indigo-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {tab === "asignacion" && "Asignación de Contratos"}
+                    {tab === "gestion" && "Gestión de Contratos"}
+                    {tab === "bancarios" && "Datos Bancarios"}
+                    {tab === "depositos" && "Gestión de Depósitos"}
+                  </button>
+                )
+              )}
             </nav>
           </div>
 
@@ -901,8 +961,18 @@ const ModalDetalles = ({ empleador, onClose }) => {
                   className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 bg-white rounded-full p-1 shadow-md"
                   onClick={cerrarModalComprobante}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
                 <img
@@ -926,15 +996,26 @@ const ModalDetalles = ({ empleador, onClose }) => {
                     className="text-gray-400 hover:text-gray-600"
                     onClick={cancelarAsignacion}
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
                 <p className="text-gray-600 mb-4">
-                  Asignando contrato a <strong>{asignandoContrato.nombre}</strong>
+                  Asignando contrato a{" "}
+                  <strong>{asignandoContrato.nombre}</strong>
                 </p>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1029,7 +1110,9 @@ const ModalDetalles = ({ empleador, onClose }) => {
                           ) : (
                             <button
                               className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
-                              onClick={() => iniciarAsignacionContrato(grupo.empleador)}
+                              onClick={() =>
+                                iniciarAsignacionContrato(grupo.empleador)
+                              }
                             >
                               <i className="bx bx-file-blank mr-2"></i>
                               Asignar contrato
@@ -1057,8 +1140,14 @@ const ModalDetalles = ({ empleador, onClose }) => {
                     <h2 className="text-xl font-semibold text-gray-800 mb-6">
                       Gestión de Contrato
                     </h2>
-                    
-                    <form onSubmit={(e) => { e.preventDefault(); handleGuardarContrato(); }} className="space-y-4">
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleGuardarContrato();
+                      }}
+                      className="space-y-4"
+                    >
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Seleccionar emprendedor
@@ -1068,10 +1157,16 @@ const ModalDetalles = ({ empleador, onClose }) => {
                           onChange={handleEmpleadorChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                          <option value="">-- Selecciona un emprendedor --</option>
+                          <option value="">
+                            -- Selecciona un emprendedor --
+                          </option>
                           {Object.values(contratosAgrupados).map((grupo) => (
-                            <option key={grupo.empleador.id} value={grupo.empleador.id}>
-                              {grupo.empleador.nombre} - {grupo.empleador.cedula}
+                            <option
+                              key={grupo.empleador.id}
+                              value={grupo.empleador.id}
+                            >
+                              {grupo.empleador.nombre} -{" "}
+                              {grupo.empleador.cedula}
                             </option>
                           ))}
                         </select>
@@ -1147,6 +1242,23 @@ const ModalDetalles = ({ empleador, onClose }) => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
                             readOnly
                           />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Monto semanal (€)
+                          </label>
+                          <input
+                            type="text"
+                            name="monto_semanal"
+                            value={formData.monto_semanal}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                            readOnly
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Monto a devolver dividido en 18 semanas
+                          </p>
                         </div>
 
                         <div>
@@ -1233,20 +1345,28 @@ const ModalDetalles = ({ empleador, onClose }) => {
                     <div className="space-y-4 max-h-96 overflow-y-auto">
                       {Object.values(contratosAgrupados)
                         .filter((grupo) => grupo.empleador.tieneContrato)
-                        .filter((grupo) =>
-                          grupo.empleador.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          grupo.empleador.cedula.includes(searchTerm)
+                        .filter(
+                          (grupo) =>
+                            grupo.empleador.nombre
+                              .toLowerCase()
+                              .includes(searchTerm.toLowerCase()) ||
+                            grupo.empleador.cedula.includes(searchTerm)
                         ).length === 0 ? (
                         <div className="text-center py-8">
                           <i className="bx bx-folder-open text-4xl text-gray-400 mb-3"></i>
-                          <p className="text-gray-500">No hay contratos asignados</p>
+                          <p className="text-gray-500">
+                            No hay contratos asignados
+                          </p>
                         </div>
                       ) : (
                         Object.values(contratosAgrupados)
                           .filter((grupo) => grupo.empleador.tieneContrato)
-                          .filter((grupo) =>
-                            grupo.empleador.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            grupo.empleador.cedula.includes(searchTerm)
+                          .filter(
+                            (grupo) =>
+                              grupo.empleador.nombre
+                                .toLowerCase()
+                                .includes(searchTerm.toLowerCase()) ||
+                              grupo.empleador.cedula.includes(searchTerm)
                           )
                           .map((grupo) => (
                             <div
@@ -1264,11 +1384,14 @@ const ModalDetalles = ({ empleador, onClose }) => {
                               <p className="text-sm text-gray-600 mb-3">
                                 Cédula: {grupo.empleador.cedula}
                               </p>
-                              
+
                               {/* Listar todos los contratos para este emprendedor */}
                               <div className="mb-3">
                                 {grupo.contratos.map((contrato, index) => (
-                                  <div key={index} className="bg-white p-2 rounded border mb-2">
+                                  <div
+                                    key={index}
+                                    className="bg-white p-2 rounded border mb-2"
+                                  >
                                     <p className="text-sm font-medium text-indigo-600">
                                       {contrato.numeroContrato}
                                     </p>
@@ -1278,7 +1401,7 @@ const ModalDetalles = ({ empleador, onClose }) => {
                                   </div>
                                 ))}
                               </div>
-                              
+
                               <button
                                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
                                 onClick={() => verDetalles(grupo.empleador)}
@@ -1341,10 +1464,26 @@ const ModalDetalles = ({ empleador, onClose }) => {
                                 </span>
                               </div>
                               <div className="space-y-1 text-sm">
-                                <p><span className="font-medium">Banco:</span> {grupo.empleador.banco}</p>
-                                <p><span className="font-medium">Titular:</span> {grupo.empleador.nombre_completo_cuenta}</p>
-                                <p><span className="font-medium">C.I titular:</span> {grupo.empleador.cedula_titular}</p>
-                                <p><span className="font-medium">N° Cuenta:</span> {grupo.empleador.numero_cuenta}</p>
+                                <p>
+                                  <span className="font-medium">Banco:</span>{" "}
+                                  {grupo.empleador.banco}
+                                </p>
+                                <p>
+                                  <span className="font-medium">Titular:</span>{" "}
+                                  {grupo.empleador.nombre_completo_cuenta}
+                                </p>
+                                <p>
+                                  <span className="font-medium">
+                                    C.I titular:
+                                  </span>{" "}
+                                  {grupo.empleador.cedula_titular}
+                                </p>
+                                <p>
+                                  <span className="font-medium">
+                                    N° Cuenta:
+                                  </span>{" "}
+                                  {grupo.empleador.numero_cuenta}
+                                </p>
                               </div>
                             </div>
                           ) : (
@@ -1382,10 +1521,16 @@ const ModalDetalles = ({ empleador, onClose }) => {
                           onChange={handleEmpleadorChange}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
-                          <option value="">-- Selecciona un emprendedor --</option>
+                          <option value="">
+                            -- Selecciona un emprendedor --
+                          </option>
                           {Object.values(contratosAgrupados).map((grupo) => (
-                            <option key={grupo.empleador.id} value={grupo.empleador.id}>
-                              {grupo.empleador.nombre} - {grupo.empleador.cedula}
+                            <option
+                              key={grupo.empleador.id}
+                              value={grupo.empleador.id}
+                            >
+                              {grupo.empleador.nombre} -{" "}
+                              {grupo.empleador.cedula}
                             </option>
                           ))}
                         </select>
@@ -1415,7 +1560,9 @@ const ModalDetalles = ({ empleador, onClose }) => {
 
                         {depositoData.comprobantePreview && (
                           <div className="mt-3">
-                            <p className="text-sm text-gray-600 mb-2">Vista previa:</p>
+                            <p className="text-sm text-gray-600 mb-2">
+                              Vista previa:
+                            </p>
                             <img
                               src={depositoData.comprobantePreview}
                               alt="Comprobante de pago"
@@ -1449,7 +1596,9 @@ const ModalDetalles = ({ empleador, onClose }) => {
                     {depositos.length === 0 ? (
                       <div className="text-center py-8">
                         <i className="bx bx-receipt text-4xl text-gray-400 mb-3"></i>
-                        <p className="text-gray-500">No hay depósitos registrados</p>
+                        <p className="text-gray-500">
+                          No hay depósitos registrados
+                        </p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
@@ -1469,7 +1618,10 @@ const ModalDetalles = ({ empleador, onClose }) => {
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
                             {depositos.map((deposito) => (
-                              <tr key={deposito.id} className="hover:bg-gray-50">
+                              <tr
+                                key={deposito.id}
+                                className="hover:bg-gray-50"
+                              >
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div>
                                     <div className="text-sm font-medium text-gray-900">
@@ -1481,18 +1633,24 @@ const ModalDetalles = ({ empleador, onClose }) => {
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    deposito.estado === "Verificado"
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-yellow-100 text-yellow-800"
-                                  }`}>
+                                  <span
+                                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                      deposito.estado === "Verificado"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-yellow-100 text-yellow-800"
+                                    }`}
+                                  >
                                     {deposito.estado}
                                   </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   {deposito.comprobante ? (
                                     <button
-                                      onClick={() => handleVerComprobante(deposito.comprobante)}
+                                      onClick={() =>
+                                        handleVerComprobante(
+                                          deposito.comprobante
+                                        )
+                                      }
                                       className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
                                     >
                                       <i className="bx bx-image-alt mr-1"></i>
@@ -1519,7 +1677,8 @@ const ModalDetalles = ({ empleador, onClose }) => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-600">
-          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
+          © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos
+          reservados.
         </footer>
       </div>
 

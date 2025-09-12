@@ -50,6 +50,7 @@ router.post('/contrato', async (req, res) => {
       cincoflat,
       diezinteres,
       monto_devolver,
+      monto_semanal, // Nuevo campo agregado aquí
       fecha_desde,
       fecha_hasta,
       estatus
@@ -73,11 +74,12 @@ router.post('/contrato', async (req, res) => {
         cincoflat,
         diezinteres,
         monto_devolver,
+        monto_semanal,
         fecha_desde,
         fecha_hasta,
         estatus
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
       ) RETURNING *`,
       [
         id_contrato,
@@ -88,6 +90,7 @@ router.post('/contrato', async (req, res) => {
         cincoflat,
         diezinteres,
         monto_devolver,
+        monto_semanal, // Nuevo valor incluido en los datos
         fecha_desde,
         fecha_hasta,
         estatus

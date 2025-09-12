@@ -302,16 +302,22 @@ const AceptacionContrato = ({ setUser }) => {
                       {formatearFecha(contratoSeleccionado?.fecha_hasta)}
                     </p>
                   </div>
-                  <center>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-500 mb-1">
-                        Monto a devolver
-                      </h3>
-                      <p className="text-lg font-semibold text-gray-800">
-                        {formatearMontoBs(contratoSeleccionado?.monto_devolver)}
-                      </p>
-                    </div>
-                  </center>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">
+                      Monto a devolver
+                    </h3>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {formatearMonto(contratoSeleccionado?.monto_devolver)}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 mb-1">
+                      Monto a pagar semanalmente en la cuota
+                    </h3>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {formatearMonto(contratoSeleccionado?.monto_semanal)}
+                    </p>
+                  </div>
                 </div>
                 {/* Términos y condiciones */}
                 <div className="border-t border-gray-200 pt-6">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
@@ -14,8 +14,7 @@ const Cuotas = ({ setUser }) => {
   const [cuotas, setCuotas] = useState([]);
   const [cuotaSeleccionada, setCuotaSeleccionada] = useState(null);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
-  const [mostrarConfirmacionIFEMI, setMostrarConfirmacionIFEMI] =
-    useState(false);
+  const [mostrarConfirmacionIFEMI, setMostrarConfirmacionIFEMI] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState("Todas");
   const [cargando, setCargando] = useState(false);
   const [comprobante, setComprobante] = useState(null);
@@ -29,6 +28,7 @@ const Cuotas = ({ setUser }) => {
     direccion: "asc",
   });
   const [ultimaActualizacion, setUltimaActualizacion] = useState(new Date());
+  const [tasaCambio, setTasaCambio] = useState(40);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -53,7 +53,6 @@ const Cuotas = ({ setUser }) => {
     if (!user) fetchUserData();
   }, [setUser, user]);
 
-  // Función mejorada de cálculo de morosidad en tiempo real
   const calcularMorosidad = (fechaVencimiento) => {
     const hoy = new Date();
     const vencimiento = new Date(fechaVencimiento);
@@ -66,7 +65,6 @@ const Cuotas = ({ setUser }) => {
       (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
     );
 
-    // Calcula el porcentaje exacto (2% por día completo + proporcional por horas)
     const porcentajePorHora = 2 / 24;
     const porcentajeRecargo = diffDays * 2 + diffHours * porcentajePorHora;
 
@@ -77,7 +75,6 @@ const Cuotas = ({ setUser }) => {
     };
   };
 
-  // Actualización en tiempo real de la morosidad
   useEffect(() => {
     if (
       cuotas.some(
@@ -105,13 +102,12 @@ const Cuotas = ({ setUser }) => {
         });
         setCuotas(cuotasActualizadas);
         setUltimaActualizacion(new Date());
-      }, 60000); // Actualizar cada minuto
+      }, 60000);
 
       return () => clearInterval(interval);
     }
   }, [cuotas]);
 
-  // Actualización en tiempo real para el modal de pago
   useEffect(() => {
     if (mostrarConfirmacion && cuotaSeleccionada) {
       const interval = setInterval(() => {
@@ -179,26 +175,47 @@ const Cuotas = ({ setUser }) => {
     }
   };
 
+  const calcularRangoSemana = (fechaInicio, numeroSemana) => {
+    const fechaInicioObj = new Date(fechaInicio);
+    const fechaDesde = new Date(fechaInicioObj);
+    fechaDesde.setDate(fechaInicioObj.getDate() + (numeroSemana - 1) * 7);
+    
+    const fechaHasta = new Date(fechaDesde);
+    fechaHasta.setDate(fechaDesde.getDate() + 6);
+    
+    return {
+      desde: fechaDesde.toISOString().split('T')[0],
+      hasta: fechaHasta.toISOString().split('T')[0]
+    };
+  };
+
+  const calcularFechaVencimiento = (fechaHasta) => {
+    const fechaVencimiento = new Date(fechaHasta);
+    fechaVencimiento.setDate(fechaVencimiento.getDate() + 7);
+    return fechaVencimiento.toISOString().split('T')[0];
+  };
+
   const generarCuotasSemanales = (contrato) => {
     const cuotas = [];
     const montoSemanal = contrato.montoTotal / contrato.semanasTotales;
-    const fechaInicio = new Date(contrato.fechaInicio);
+    
     for (let i = 1; i <= contrato.semanasTotales; i++) {
-      const fechaVencimiento = new Date(fechaInicio);
-      fechaVencimiento.setDate(fechaInicio.getDate() + i * 7);
-      const morosidad = calcularMorosidad(
-        fechaVencimiento.toISOString().split("T")[0]
-      );
-      const montoConRecargo =
-        morosidad.dias > 0
-          ? montoSemanal * (1 + morosidad.porcentaje / 100)
-          : montoSemanal;
+      const rangoSemana = calcularRangoSemana(contrato.fechaInicio, i);
+      const fechaVencimiento = calcularFechaVencimiento(rangoSemana.hasta);
+      
+      const morosidad = calcularMorosidad(fechaVencimiento);
+      const montoConRecargo = montoSemanal * (1 + morosidad.porcentaje / 100);
+      const montoBolivares = montoConRecargo * tasaCambio;
+      
       cuotas.push({
         id: i,
         numeroSemana: i,
         monto: montoSemanal,
         montoConRecargo: montoConRecargo,
-        fechaVencimiento: fechaVencimiento.toISOString().split("T")[0],
+        montoBolivares: montoBolivares,
+        fechaDesde: rangoSemana.desde,
+        fechaHasta: rangoSemana.hasta,
+        fechaVencimiento: fechaVencimiento,
         estado: i === 1 ? "Pendiente" : "No vencida",
         descripcion: `Semana ${i}`,
         comprobante: null,
@@ -210,16 +227,21 @@ const Cuotas = ({ setUser }) => {
         esSemanaGracia: false,
       });
     }
+    
     for (let i = 1; i <= contrato.semanasGracia; i++) {
       const semanaNum = contrato.semanasTotales + i;
-      const fechaVencimiento = new Date(fechaInicio);
-      fechaVencimiento.setDate(fechaInicio.getDate() + semanaNum * 7);
+      const rangoSemana = calcularRangoSemana(contrato.fechaInicio, semanaNum);
+      const fechaVencimiento = calcularFechaVencimiento(rangoSemana.hasta);
+      
       cuotas.push({
         id: semanaNum,
         numeroSemana: semanaNum,
         monto: montoSemanal,
         montoConRecargo: montoSemanal,
-        fechaVencimiento: fechaVencimiento.toISOString().split("T")[0],
+        montoBolivares: montoSemanal * tasaCambio,
+        fechaDesde: rangoSemana.desde,
+        fechaHasta: rangoSemana.hasta,
+        fechaVencimiento: fechaVencimiento,
         estado: "No vencida",
         descripcion: `Semana de gracia ${i}`,
         comprobante: null,
@@ -231,6 +253,7 @@ const Cuotas = ({ setUser }) => {
         esSemanaGracia: true,
       });
     }
+    
     return cuotas;
   };
 
@@ -252,7 +275,7 @@ const Cuotas = ({ setUser }) => {
     if (contrato) {
       setContratoSeleccionado(contrato);
       await cargarCuotas(contrato);
-      setPaginaActual(1); // Resetear a la primera página al cambiar contrato
+      setPaginaActual(1);
     }
   };
 
@@ -313,6 +336,63 @@ const Cuotas = ({ setUser }) => {
 
   const toggleFila = (id) => {
     setFilaExpandida((prev) => (prev === id ? null : id));
+  };
+
+  // Componente para los detalles expandidos (INDEPENDIENTE de la tabla)
+  const DetallesExpandidos = ({ cuota, estaExpandida }) => {
+    if (!estaExpandida) return null;
+    
+    return (
+      <div className="bg-gray-50 p-4 rounded-lg mt-2 border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="font-medium text-gray-700">Detalles de pago:</p>
+            <p><strong>Semana:</strong> {cuota.fechaDesde} al {cuota.fechaHasta}</p>
+            <p><strong>Vence:</strong> {cuota.fechaVencimiento}</p>
+            <p><strong>Monto original:</strong> ${cuota.monto.toFixed(2)} (€)</p>
+            <p><strong>Monto en Bs:</strong> Bs {cuota.montoBolivares.toFixed(2)}</p>
+          </div>
+          <div>
+            <p><strong>Recargo:</strong> {cuota.porcentajeRecargo}%</p>
+            <p><strong>Total a pagar:</strong> ${cuota.montoConRecargo.toFixed(2)} (€)</p>
+            <p><strong>Total en Bs:</strong> Bs {(cuota.montoConRecargo * tasaCambio).toFixed(2)}</p>
+            {cuota.diasMorosidad > 0 && (
+              <p className="text-red-600">
+                <strong>Días de morosidad:</strong> {cuota.diasMorosidad}d {cuota.horasMorosidad}h
+              </p>
+            )}
+            {cuota.comprobante && (
+              <button
+                className="mt-2 text-blue-600 hover:text-blue-800 underline text-sm"
+                onClick={() => {
+                  /* Lógica para descargar/view comprobante */
+                }}
+              >
+                Ver comprobante
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+          {cuota.estado === "Pendiente" && (
+            <button
+              onClick={() => confirmarPago(cuota)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
+            >
+              Pagar ahora
+            </button>
+          )}
+          {(cuota.estado === "En verificación" || cuota.estado === "Pagada") && (
+            <button
+              onClick={() => verDetallesIFEMI(cuota)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
+            >
+              Ver detalles IFEMI
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Filtrado y ordenamiento
@@ -445,12 +525,11 @@ const Cuotas = ({ setUser }) => {
                 <i className="bx bx-money text-3xl text-gray-700"></i>
               </div>
               <h1 className="text-2xl md:text-3xl font-semibold text-gray-800">
-                Gestión de Cuotas Semanales
+                Gestion de cuota
               </h1>
             </div>
             <div className="text-xs text-gray-500">
-              Actualizado por última vez:{" "}
-              {ultimaActualizacion.toLocaleTimeString()}
+              Última actualización: {ultimaActualizacion.toLocaleTimeString()}
             </div>
           </div>
 
@@ -587,6 +666,27 @@ const Cuotas = ({ setUser }) => {
                 </div>
               </div>
 
+              {/* Barra desplegable en pantallas pequeñas */}
+              <div className="block md:hidden mb-2">
+                <label htmlFor="limitePagina" className="mr-2 text-sm font-medium text-gray-700">
+                  Mostrar:
+                </label>
+                <select
+                  id="limitePagina"
+                  value={elementosPorPagina}
+                  onChange={(e) => {
+                    setElementosPorPagina(Number(e.target.value));
+                    setPaginaActual(1);
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+
               {cargando ? (
                 <div className="flex justify-center items-center py-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -604,7 +704,7 @@ const Cuotas = ({ setUser }) => {
                           <div>
                             <p className="font-semibold">{cuota.descripcion}</p>
                             <p className="text-sm text-gray-600">
-                              Vence: {cuota.fechaVencimiento}
+                              Semana: {cuota.fechaDesde} al {cuota.fechaHasta}
                             </p>
                           </div>
                           <span
@@ -625,13 +725,13 @@ const Cuotas = ({ setUser }) => {
                           <p className="text-sm">
                             Monto:{" "}
                             <span className="font-medium">
-                              ${cuota.monto.toFixed(2)}
+                              ${cuota.monto.toFixed(2)} (€)
                             </span>
                           </p>
                           <p className="text-sm">
-                            Total:{" "}
+                            En Bs:{" "}
                             <span className="font-medium">
-                              ${cuota.montoConRecargo.toFixed(2)}
+                              Bs {cuota.montoBolivares.toFixed(2)}
                             </span>
                           </p>
                         </div>
@@ -649,8 +749,19 @@ const Cuotas = ({ setUser }) => {
                           <div className="mt-4 pt-4 border-t border-gray-200">
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <p>
+                                <strong>Vence:</strong> {cuota.fechaVencimiento}
+                              </p>
+                              <p>
                                 <strong>Recargo:</strong>{" "}
                                 {cuota.porcentajeRecargo}%
+                              </p>
+                              <p>
+                                <strong>Total a pagar:</strong>{" "}
+                                ${cuota.montoConRecargo.toFixed(2)} (€)
+                              </p>
+                              <p>
+                                <strong>En Bs:</strong>{" "}
+                                Bs {(cuota.montoConRecargo * tasaCambio).toFixed(2)}
                               </p>
                               <p>
                                 <strong>Estado IFEMI:</strong>{" "}
@@ -668,7 +779,7 @@ const Cuotas = ({ setUser }) => {
                               </p>
                             </div>
                             <div className="mt-3 flex flex-col space-y-2">
-                              {cuota.estado === "Pendiente" && (
+                              {cuota.estado === "Pendiente" &&  (
                                 <button
                                   onClick={() => confirmarPago(cuota)}
                                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm transition-colors"
@@ -705,21 +816,19 @@ const Cuotas = ({ setUser }) => {
                             {orden.campo === "numeroSemana" &&
                               (orden.direccion === "asc" ? "↑" : "↓")}
                           </th>
-                          <th
-                            className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                            onClick={() => handleOrdenar("fechaVencimiento")}
-                          >
-                            Vencimiento{" "}
-                            {orden.campo === "fechaVencimiento" &&
-                              (orden.direccion === "asc" ? "↑" : "↓")}
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Rango Semana
                           </th>
                           <th
                             className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                             onClick={() => handleOrdenar("monto")}
                           >
-                            Monto Original{" "}
+                            Monto (€){" "}
                             {orden.campo === "monto" &&
                               (orden.direccion === "asc" ? "↑" : "↓")}
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Monto (Bs)
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Recargo
@@ -728,7 +837,7 @@ const Cuotas = ({ setUser }) => {
                             className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                             onClick={() => handleOrdenar("montoConRecargo")}
                           >
-                            Total a Pagar{" "}
+                            Total a Pagar (€){" "}
                             {orden.campo === "montoConRecargo" &&
                               (orden.direccion === "asc" ? "↑" : "↓")}
                           </th>
@@ -746,12 +855,9 @@ const Cuotas = ({ setUser }) => {
                       <tbody className="divide-y divide-gray-200 bg-white">
                         {elementosActuales.length > 0 ? (
                           elementosActuales.map((cuota) => (
-                            <>
+                            <React.Fragment key={cuota.id}>
                               {/* Fila principal */}
-                              <tr
-                                key={cuota.id}
-                                className="hover:bg-gray-50 cursor-pointer"
-                              >
+                              <tr className="hover:bg-gray-50">
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   {cuota.descripcion}
                                   {cuota.esSemanaGracia && (
@@ -761,10 +867,13 @@ const Cuotas = ({ setUser }) => {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
-                                  {cuota.fechaVencimiento}
+                                  {cuota.fechaDesde} al {cuota.fechaHasta}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   ${cuota.monto.toFixed(2)}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap">
+                                  Bs {cuota.montoBolivares.toFixed(2)}
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   {cuota.diasMorosidad > 0 ? (
@@ -786,6 +895,9 @@ const Cuotas = ({ setUser }) => {
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap font-semibold">
                                   ${cuota.montoConRecargo.toFixed(2)}
+                                  <div className="text-xs text-gray-500">
+                                    Bs {(cuota.montoConRecargo * tasaCambio).toFixed(2)}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap">
                                   <span
@@ -813,89 +925,34 @@ const Cuotas = ({ setUser }) => {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap text-center">
-                                  {/* Botón para desplegar/ocultar detalles */}
                                   <button
                                     onClick={() => toggleFila(cuota.id)}
-                                    className="text-blue-600 text-sm font-semibold"
+                                    className="text-blue-600 text-sm font-semibold hover:underline"
                                   >
                                     {filaExpandida === cuota.id
                                       ? "Ocultar"
                                       : "Ver más"}
                                   </button>
-                                  {/* Los botones de acciones */}
-                                  {cuota.estado === "Pendiente" && (
-                                    <button
-                                      onClick={() => confirmarPago(cuota)}
-                                      className="block mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
-                                    >
-                                      Pagar ahora
-                                    </button>
-                                  )}
-                                  {(cuota.estado === "En verificación" ||
-                                    cuota.estado === "Pagada") && (
-                                    <button
-                                      onClick={() => verDetallesIFEMI(cuota)}
-                                      className="block mt-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
-                                    >
-                                      Ver detalles
-                                    </button>
-                                  )}
                                 </td>
                               </tr>
-                              {/* Fila de detalles desplegada */}
+                              
+                              {/* Fila de detalles expandidos (independiente) */}
                               {filaExpandida === cuota.id && (
-                                <tr className="bg-gray-50">
-                                  <td colSpan={8} className="px-4 py-4">
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                      <div>
-                                        <p className="font-medium">
-                                          Detalles de pago:
-                                        </p>
-                                        <p>
-                                          <strong>Comprobante:</strong>{" "}
-                                          {cuota.comprobante || "No enviado"}
-                                        </p>
-                                        <p>
-                                          <strong>Fecha de vencimiento:</strong>{" "}
-                                          {cuota.fechaVencimiento}
-                                        </p>
-                                        <p>
-                                          <strong>Días de morosidad:</strong>{" "}
-                                          {cuota.diasMorosidad}d{" "}
-                                          {cuota.horasMorosidad}h
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p>
-                                          <strong>Estado:</strong>{" "}
-                                          {getEstadoIFEMI(cuota)}
-                                        </p>
-                                        <p>
-                                          <strong>Comentarios:</strong>{" "}
-                                          {cuota.comentariosIFEMI ||
-                                            "Sin comentarios"}
-                                        </p>
-                                        {cuota.comprobante && (
-                                          <button
-                                            className="mt-2 text-blue-600 hover:text-blue-800 underline text-sm"
-                                            onClick={() => {
-                                              /* Lógica para descargar/view comprobante */
-                                            }}
-                                          >
-                                            Ver comprobante
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
+                                <tr>
+                                  <td colSpan={9} className="px-4 py-4">
+                                    <DetallesExpandidos 
+                                      cuota={cuota} 
+                                      estaExpandida={filaExpandida === cuota.id} 
+                                    />
                                   </td>
                                 </tr>
                               )}
-                            </>
+                            </React.Fragment>
                           ))
                         ) : (
                           <tr>
                             <td
-                              colSpan="8"
+                              colSpan="9"
                               className="px-4 py-4 text-center text-sm text-gray-500"
                             >
                               No se encontraron cuotas para este contrato
@@ -932,8 +989,14 @@ const Cuotas = ({ setUser }) => {
                     {cuotaSeleccionada.descripcion}
                   </p>
                   <p>
+                    <strong>Semana:</strong> {cuotaSeleccionada.fechaDesde} al {cuotaSeleccionada.fechaHasta}
+                  </p>
+                  <p>
                     <strong>Monto original:</strong> $
-                    {cuotaSeleccionada.monto.toFixed(2)}
+                    {cuotaSeleccionada.monto.toFixed(2)} (€)
+                  </p>
+                  <p>
+                    <strong>Monto en Bs:</strong> Bs {cuotaSeleccionada.montoBolivares.toFixed(2)}
                   </p>
                   {cuotaSeleccionada.diasMorosidad > 0 && (
                     <>
@@ -959,7 +1022,10 @@ const Cuotas = ({ setUser }) => {
                   )}
                   <p className="font-bold text-lg mt-2">
                     <strong>Total a pagar:</strong> $
-                    {cuotaSeleccionada.montoConRecargo.toFixed(2)}
+                    {cuotaSeleccionada.montoConRecargo.toFixed(2)} (€)
+                  </p>
+                  <p>
+                    <strong>Total en Bs:</strong> Bs {(cuotaSeleccionada.montoConRecargo * tasaCambio).toFixed(2)}
                   </p>
                   <p>
                     <strong>Vencimiento:</strong>{" "}
@@ -1015,8 +1081,14 @@ const Cuotas = ({ setUser }) => {
                     {cuotaSeleccionada.descripcion}
                   </p>
                   <p>
+                    <strong>Semana:</strong> {cuotaSeleccionada.fechaDesde} al {cuotaSeleccionada.fechaHasta}
+                  </p>
+                  <p>
                     <strong>Monto original:</strong> $
-                    {cuotaSeleccionada.monto.toFixed(2)}
+                    {cuotaSeleccionada.monto.toFixed(2)} (€)
+                  </p>
+                  <p>
+                    <strong>Monto en Bs:</strong> Bs {cuotaSeleccionada.montoBolivares.toFixed(2)}
                   </p>
                   {cuotaSeleccionada.diasMorosidad > 0 && (
                     <p>
@@ -1026,7 +1098,10 @@ const Cuotas = ({ setUser }) => {
                   )}
                   <p>
                     <strong>Total pagado:</strong> $
-                    {cuotaSeleccionada.montoConRecargo.toFixed(2)}
+                    {cuotaSeleccionada.montoConRecargo.toFixed(2)} (€)
+                  </p>
+                  <p>
+                    <strong>Total en Bs:</strong> Bs {(cuotaSeleccionada.montoConRecargo * tasaCambio).toFixed(2)}
                   </p>
                   <p>
                     <strong>Vencimiento:</strong>{" "}
