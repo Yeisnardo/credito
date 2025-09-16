@@ -1419,81 +1419,51 @@ const Gestion = ({ user, setUser }) => {
 
               {activeTab === "bancarios" && (
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Object.keys(contratosAgrupados).length === 0 ? (
-                    <div className="col-span-full text-center py-12">
-                      <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-                        <i className="bx bx-credit-card text-4xl text-gray-400 mb-4"></i>
-                        <h3 className="text-lg font-medium text-gray-600 mb-2">
-                          No hay emprendedores registrados
-                        </h3>
-                        <p className="text-gray-500">
-                          Todos los emprendedores aprobados aparecerán aquí
-                        </p>
-                      </div>
+                  {empleadores.length === 0 ? (
+                    <div className="col-span-full text-center py-8">
+                      <p className="text-gray-500">
+                        No hay emprendedores registrados.
+                      </p>
                     </div>
                   ) : (
-                    Object.values(contratosAgrupados).map((grupo) => (
+                    empleadores.map((empleador) => (
                       <div
-                        key={grupo.empleador.cedula}
-                        className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                        key={empleador.id}
+                        className="bg-white rounded-xl shadow-lg p-4 border-t-4 relative"
+                        style={{ borderColor: "#0F3C5B" }}
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                              {grupo.empleador.nombre}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              Cédula: {grupo.empleador.cedula}
-                            </p>
-                            <p className="text-sm text-gray-500 mt-1">
-                              Contratos: {grupo.contratos.length}
-                            </p>
-                          </div>
-                          <div className="bg-blue-100 p-2 rounded-lg">
-                            <i className="bx bx-credit-card text-blue-600"></i>
-                          </div>
-                        </div>
+                        <h2 className="text-xl font-semibold mb-2">
+                          {empleador.nombre}
+                        </h2>
 
+                        {/* Estado datos bancarios */}
                         <div className="mb-4">
-                          {grupo.empleador.tieneDatosBancarios ? (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                              <div className="flex items-center mb-2">
-                                <i className="bx bx-check-circle text-blue-600 mr-2"></i>
-                                <span className="text-blue-700 font-medium">
-                                  Datos bancarios registrados
-                                </span>
-                              </div>
-                              <div className="space-y-1 text-sm">
-                                <p>
-                                  <span className="font-medium">Banco:</span>{" "}
-                                  {grupo.empleador.banco}
-                                </p>
-                                <p>
-                                  <span className="font-medium">Titular:</span>{" "}
-                                  {grupo.empleador.nombre_completo_cuenta}
-                                </p>
-                                <p>
-                                  <span className="font-medium">
-                                    C.I titular:
-                                  </span>{" "}
-                                  {grupo.empleador.cedula_titular}
-                                </p>
-                                <p>
-                                  <span className="font-medium">
-                                    N° Cuenta:
-                                  </span>{" "}
-                                  {grupo.empleador.numero_cuenta}
-                                </p>
-                              </div>
+                          {empleador ? (
+                            <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-md">
+                              <p className="font-semibold">
+                                Datos bancarios registrados
+                              </p>
+                              <p className="text-sm mt-1">
+                                <strong>C.I titular:</strong>{" "}
+                                {empleador.cedula_titular}
+                              </p>
+                              <p className="text-sm mt-1">
+                                <strong>Banco:</strong> {empleador.banco}
+                              </p>
+                              <p className="text-sm">
+                                <strong>Titular:</strong>{" "}
+                                {empleador.nombre_completo_cuenta}
+                              </p>
+                              <p className="text-sm">
+                                <strong>N° Cuenta:</strong>{" "}
+                                {empleador.numero_cuenta}
+                              </p>
                             </div>
                           ) : (
-                            <div className="bg-gray-100 border border-gray-200 rounded-lg p-4">
-                              <div className="flex items-center">
-                                <i className="bx bx-info-circle text-gray-600 mr-2"></i>
-                                <span className="text-gray-700">
-                                  Sin datos bancarios
-                                </span>
-                              </div>
+                            <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-md">
+                              <p className="font-semibold">
+                                Sin datos bancarios
+                              </p>
                             </div>
                           )}
                         </div>

@@ -15,17 +15,17 @@ router.get("/", async (req, res) => {
 });
 
 // Obtener cuota por cédula del emprendedor
-router.get("/:cedula_emprendedor", async (req, res) => {
+router.get("/:id_contrato", async (req, res) => {
   try {
-    const { cedula_emprendedor } = req.params;
+    const { id_contrato } = req.params;
     const resultado = await query(
-      "SELECT * FROM contrato WHERE cedula_emprendedor = $1",
-      [cedula_emprendedor]
+      "SELECT * FROM contrato WHERE id_contrato = $1 AND estatus = 'aceptado'",
+      [id_contrato]
     );
     if (resultado.rows.length > 0) {
       res.json(resultado.rows);
     } else {
-      res.status(404).json({ message: "No se encontraron cuotas para esa cédula" });
+      res.status(404).json({ message: "No se encontraron cuotas aceptadas para esa cédula" });
     }
   } catch (error) {
     console.error("Error al obtener cuota por cédula:", error);

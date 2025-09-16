@@ -11,12 +11,13 @@ export const getCuotas = async () => {
   return response.data;
 };
 
-export const getCuotaPorCedula = async (cedula_emprendedor) => {
-  const response = await api.get(`/api/cuotas/${cedula_emprendedor}`);
+export const getContratoPorCedula = async (id_contrato) => {
+  const response = await api.get(`/api/cuotas/${id_contrato}`);
   return response.data;
 };
 
+
 export default {
   getCuotas,
-  getCuotaPorCedula
+  getContratoPorCedula
 };
