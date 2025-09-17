@@ -6,18 +6,12 @@ const api = axios.create({
 
 // Funciones API para cuotas
 
-export const getCuotas = async () => {
-  const response = await api.get('/api/cuotas');
-  return response.data;
-};
-
-export const getContratoPorCedula = async (id_contrato) => {
-  const response = await api.get(`/api/cuotas/${id_contrato}`);
+export const getContratoPorId = async (cedula_emprendedor) => {
+  const response = await api.get(`/api/cuotas/${cedula_emprendedor}`);
   return response.data;
 };
 
 
 export default {
-  getCuotas,
-  getContratoPorCedula
+  getContratoPorId
 };
