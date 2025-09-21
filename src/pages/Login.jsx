@@ -59,7 +59,7 @@ const Login = ({ setUser }) => {
         icon: "success",
         title: "¡Bienvenido!",
         text: response.data.message || "Inicio de sesión exitoso",
-        timer: 8500,
+        timer: 1500,
         showConfirmButton: false,
       }).then(() => {
         navigate("/dashboard");
