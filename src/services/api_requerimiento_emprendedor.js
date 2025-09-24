@@ -38,12 +38,12 @@ export const getTodosRequerimientosEmprendedor = async () => {
 };
 
 // Actualizar un requerimiento_emprendedor existente por cédula del emprendedor
-export const updateRequerimientoEmprendedor = async (cedula_emprendedor, requerimientoEmprendedor) => {
+export const updateRequerimientoEmprendedor = async (id_req, requerimientoEmprendedor) => {
   try {
-    const response = await api.put(`/api/requerimiento_emprendedor/${cedula_emprendedor}`, requerimientoEmprendedor);
+    const response = await api.put(`/api/requerimiento_emprendedor/${id_req}`, requerimientoEmprendedor);
     return response.data;
   } catch (error) {
-    console.error(`Error al actualizar requerimiento_emprendedor con cédula ${cedula_emprendedor}:`, error);
+    console.error(`Error al actualizar requerimiento_emprendedor con cédula ${id_req}:`, error);
     throw error;
   }
 };

@@ -5,6 +5,7 @@ import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import { registrarContrato } from "../services/api_contrato";
+import apiconfiguracionDesdeAPI from "../services/api_configuracion_contratos";
 
 const Gestion = ({ user, setUser }) => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const Gestion = ({ user, setUser }) => {
     cincoflat: "",
     diezinteres: "",
     monto_devolver: "",
-    monto_semanal: "", // Nuevo campo
+    monto_semanal: "",
     fecha_desde: "",
     fecha_hasta: "",
     estatus: "Pendiente",
@@ -45,11 +46,64 @@ const Gestion = ({ user, setUser }) => {
   const [contratosAsignados, setContratosAsignados] = useState({});
   const [contratosGestionados, setContratosGestionados] = useState({});
   const [depositos, setDepositos] = useState([]);
-  const [rateEuroToVES, setRateEuroToVES] = useState(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedEmpleadorId, setSelectedEmpleadorId] = React.useState("");
   const [comprobanteModal, setComprobanteModal] = useState(null);
   const [contratosAgrupados, setContratosAgrupados] = useState({});
+  const [rates, setRates] = useState({ euro: null, dolar: null });
+  const [configuracion, setConfiguracion] = useState(null);
+
+  // Cargar configuración al montar
+  useEffect(() => {
+    const fetchConfiguracion = async () => {
+      try {
+        const data = await apiconfiguracionDesdeAPI.getConfiguracion();
+        setConfiguracion(data);
+      } catch (error) {
+        console.error("Error cargando configuración", error);
+      }
+    };
+    fetchConfiguracion();
+  }, []);
+
+  // Cargar tasas de cambio
+  useEffect(() => {
+    fetchRates();
+  }, []);
+
+  const fetchRates = async () => {
+    try {
+      const responseEUR = await axios.get("https://api.exchangerate-api.com/v4/latest/EUR");
+      const responseUSD = await axios.get("https://api.exchangerate-api.com/v4/latest/USD");
+      const rateEUR = responseEUR.data.rates["VES"];
+      const rateUSD = responseUSD.data.rates["VES"];
+      setRates({ euro: rateEUR, dolar: rateUSD });
+    } catch (error) {
+      console.error("Error al obtener las tasas de cambio:", error);
+    }
+  };
+
+  // Función para calcular monto en Bs según configuración
+  useEffect(() => {
+    if (!rates.euro || !rates.dolar || !formData.monto_aprob_euro || !configuracion) return;
+
+    const montoEuro = parseFloat(formData.monto_aprob_euro);
+    if (isNaN(montoEuro)) {
+      setFormData((prev) => ({ ...prev, monto_bs: "" }));
+      return;
+    }
+
+    // Decide la tasa según la moneda en la configuración
+    const tasa =
+      configuracion.moneda === "USD"
+        ? rates.dolar
+        : configuracion.moneda === "EUR"
+        ? rates.euro
+        : 1; // Si la moneda es DOP, asumimos que el monto ya está en DOP, o define la tasa como 1
+
+    const montoBs = (montoEuro * tasa).toFixed(2);
+    setFormData((prev) => ({ ...prev, monto_bs: montoBs }));
+  }, [formData.monto_aprob_euro, rates, configuracion]);
 
   // Agrupar contratos por cédula de emprendedor
   useEffect(() => {
@@ -177,32 +231,28 @@ const Gestion = ({ user, setUser }) => {
   }, []);
 
   // Actualizar montos y cálculos cuando monto_aprob_euro cambie
-  React.useEffect(() => {
-    const montoEuro = parseFloat(formData.monto_aprob_euro);
-    if (!isNaN(montoEuro)) {
-      const flat5 = (montoEuro * 0.05).toFixed(2);
-      const interes10 = (montoEuro * 0.1).toFixed(2);
-      const montoDevolverCalc = (montoEuro + parseFloat(interes10)).toFixed(2);
-      const montoSemanalCalc = (parseFloat(montoDevolverCalc) / 18).toFixed(2); // Nuevo cálculo
-
-      setFormData((prev) => ({
-        ...prev,
-        cincoflat: flat5,
-        diezinteres: interes10,
-        monto_devolver: montoDevolverCalc,
-        monto_semanal: montoSemanalCalc, // Actualizar monto semanal
-      }));
-    } else {
-      // Limpia si no es válido
-      setFormData((prev) => ({
-        ...prev,
-        cincoflat: "",
-        diezinteres: "",
-        monto_devolver: "",
-        monto_semanal: "", // Limpiar también el monto semanal
-      }));
+  useEffect(() => {
+    if (configuracion && formData.monto_aprob_euro) {
+      const montoEuro = parseFloat(formData.monto_aprob_euro);
+      const porcentajeFlat = parseFloat(configuracion.porcentaje_flat) || 0;
+      const porcentajeInteres = parseFloat(configuracion.porcentaje_interes) || 0;
+      
+      if (!isNaN(montoEuro)) {
+        const flatAmount = ((montoEuro * porcentajeFlat) / 100).toFixed(2);
+        const interesAmount = ((montoEuro * porcentajeInteres) / 100).toFixed(2);
+        const montoDevolver = (montoEuro + parseFloat(interesAmount)).toFixed(2);
+        const montoSemanal = (parseFloat(montoDevolver) / 18).toFixed(2);
+        
+        setFormData((prev) => ({
+          ...prev,
+          cincoflat: flatAmount,
+          diezinteres: interesAmount,
+          monto_devolver: montoDevolver,
+          monto_semanal: montoSemanal,
+        }));
+      }
     }
-  }, [formData.monto_aprob_euro]);
+  }, [formData.monto_aprob_euro, configuracion]);
 
   // Función para manejar el cambio en el select de empleadores
   const handleEmpleadorChange = (e) => {
@@ -240,45 +290,6 @@ const Gestion = ({ user, setUser }) => {
     setSearchTerm(e.target.value);
   };
 
-  const fetchEuroToVESRate = async () => {
-    try {
-      const response = await axios.get(
-        "https://api.exchangerate-api.com/v4/latest/EUR"
-      );
-      const rate = response.data.rates["VES"];
-      setRateEuroToVES(rate);
-    } catch (error) {
-      console.error("Error al obtener la tasa EUR a VES:", error);
-    }
-  };
-
-  React.useEffect(() => {
-    if (rateEuroToVES && formData.monto_aprob_euro) {
-      const montoEuro = parseFloat(formData.monto_aprob_euro);
-      if (!isNaN(montoEuro)) {
-        const montoBolivares = (montoEuro * rateEuroToVES).toFixed(2);
-        setFormData((prev) => ({
-          ...prev,
-          monto_bs: montoBolivares,
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          monto_bs: "",
-        }));
-      }
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        monto_bs: "",
-      }));
-    }
-  }, [formData.monto_aprob_euro, rateEuroToVES]);
-
-  useEffect(() => {
-    fetchEuroToVESRate();
-  }, []);
-
   useEffect(() => {
     cargarEmpleadores();
     cargarDepositos();
@@ -286,7 +297,7 @@ const Gestion = ({ user, setUser }) => {
 
   const generarNumeroContrato = () => {
     const ano = getAnoActual();
-    const secuenciaStr = String(secuencia).padStart(3, "0"); // 001, 002, ...
+    const secuenciaStr = String(secuencia).padStart(3, "0");
     const numeroContrato = `IFEMI/CRED-${secuenciaStr}-${ano}`;
     return numeroContrato;
   };
@@ -328,7 +339,7 @@ const Gestion = ({ user, setUser }) => {
         cincoflat: emprendedor.cincoflat || null,
         diezinteres: emprendedor.diezinteres || null,
         monto_devolver: emprendedor.monto_devolver || null,
-        monto_semanal: emprendedor.monto_semanal || null, // Nuevo campo
+        monto_semanal: emprendedor.monto_semanal || null,
         fecha_desde: emprendedor.fecha_desde || null,
         fecha_hasta: emprendedor.fecha_hasta || null,
         estatus: emprendedor.estatus || null,
@@ -690,7 +701,6 @@ const Gestion = ({ user, setUser }) => {
   };
 
   // Modal para ver detalles de contratos gestionados
-  // Modal para ver detalles de contratos gestionados
   const ModalDetalles = ({ empleador, onClose }) => {
     // Obtener todos los contratos para este emprendedor
     const contratosDelEmpleador = empleadores.filter(
@@ -907,7 +917,7 @@ const Gestion = ({ user, setUser }) => {
             </div>
 
             {/* Tarjeta de tipo de cambio */}
-            {rateEuroToVES ? (
+            {rates.euro && rates.dolar ? (
               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center space-x-3">
                   <div className="bg-indigo-100 p-2 rounded-lg">
@@ -915,10 +925,10 @@ const Gestion = ({ user, setUser }) => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">
-                      Tipo de cambio EUR/VES
+                      Tipo de cambio {configuracion?.moneda === "USD" ? "USD/VES" : "EUR/VES"}
                     </p>
                     <p className="text-lg font-semibold text-gray-800">
-                      1€ = {rateEuroToVES} Bs
+                      1{configuracion?.moneda === "USD" ? "$" : "€"} = {configuracion?.moneda === "USD" ? rates.dolar : rates.euro} Bs
                     </p>
                   </div>
                 </div>

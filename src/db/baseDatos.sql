@@ -39,14 +39,7 @@ CREATE TABLE usuario (
   CONSTRAINT fk_usuario_persona FOREIGN KEY (cedula_usuario) REFERENCES persona(cedula)
 );
 
--- Cuenta Bancaria
-CREATE TABLE cuenta (
-  cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
-  banco TEXT,
-  cedula_titular VARCHAR (20) NOT NULL,
-  nombre_completo VARCHAR (255) NOT NULL,
-  numero_cuenta VARCHAR (50) NOT NULL
-);
+
 
 
 ----------------------------------------------------------------------------------
@@ -61,7 +54,7 @@ CREATE TABLE requerimientos (
 
 
 ----------------------------------------------------------------------------------
---  Emprededor -------------------------------------------------------------------
+--  Emprendedor -------------------------------------------------------------------
 ----------------------------------------------------------------------------------
 
 -- Tabla intermedia para relacionar requerimientos y emprendedores
@@ -69,8 +62,16 @@ CREATE TABLE requerimiento_emprendedor (
   id_req SERIAL PRIMARY KEY,
   cedula_emprendedor VARCHAR(20) NOT NULL,
   opt_requerimiento TEXT,
+  vereficacion TEXT,
   CONSTRAINT fk_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula),
   CONSTRAINT fk_requerimiento FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos)
+);
+
+CREATE TABLE requerimiento_archivo (
+  id_archivo SERIAL PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) NOT NULL,
+  archivo TEXT,
+  fecha_llevar DATE
 );
 
 --TABLA DE SOLICITUD
@@ -81,6 +82,15 @@ CREATE TABLE solicitud (
   estatus VARCHAR (20),
   motivo_rechazo TEXT,
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
+);
+
+-- Cuenta Bancaria
+CREATE TABLE cuenta (
+  cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
+  banco TEXT,
+  cedula_titular VARCHAR (20) NOT NULL,
+  nombre_completo VARCHAR (255) NOT NULL,
+  numero_cuenta VARCHAR (50) NOT NULL
 );
 
 
@@ -127,19 +137,76 @@ CREATE TABLE deposito(
 
 CREATE TABLE cuota (
   id_cuota INT PRIMARY KEY,
+  id_cuota_c INT NOT NULL, 
   cedula_emprendedor VARCHAR(20) NOT NULL,
-  monto_euro_p VARCHAR,
-  monto_bs_p VARCHAR,
-  tiempo_morosidad VARCHAR,
-  porcentaje_morosidad VARCHAR,
-  euro_morosidad VARCHAR,
-  bs_morosidad VARCHAR,
-  comprobante TEXT,
-  estado_pago VARCHAR(50),
-  estado_ifemi VARCHAR(50),
-  FOREIGN KEY (id_cuota) REFERENCES contrato (id_contrato)
+  semana VARCHAR(255) NOT NULL,
+  monto VARCHAR(255) NOT NULL,
+  monto_ves VARCHAR(255) NOT NULL,
+  fecha_pagada DATE NOT NULL,
+  estado_cuota VARCHAR(50) NOT NULL, -- Ejemplo: 'Pendiente', 'Pagado'
+  dias_mora_cuota INT DEFAULT 0,
+  interes_acumulado VARCHAR(255),
+  confirmacionIFEMI VARCHAR(255), -- Puede ser un código o estado de confirmación
+  comprobante TEXT, -- Ruta o nombre del archivo almacenado
+  FOREIGN KEY (id_cuota_c) REFERENCES contrato (id_contrato)
 );
 
+CREATE TABLE configuracion_contratos (
+    id SERIAL PRIMARY KEY,
+    moneda TEXT NOT NULL,
+    porcentaje_flat TEXT,
+    porcentaje_interes TEXT,
+    porcentaje_mora TEXT,
+    numero_cuotas TEXT NOT NULL ,
+    cuotasGracia TEXT NOT NULL,
+    frecuencia_pago TEXT NOT NULL ,
+    dias_personalizados TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para el historial de cambios en la configuración
+CREATE TABLE historial_configuracion_contratos (
+    id SERIAL PRIMARY KEY,
+    configuracion_id INTEGER REFERENCES configuracion_contratos(id),
+    moneda VARCHAR(3) NOT NULL,
+    porcentaje_flat NUMERIC(5, 2) NOT NULL,
+    porcentaje_interes NUMERIC(5, 2) NOT NULL,
+    porcentaje_mora NUMERIC(5, 2) NOT NULL,
+    numero_cuotas INTEGER NOT NULL,
+    frecuencia_pago VARCHAR(20) NOT NULL,
+    dias_personalizados INTEGER,
+    fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Función y trigger para guardar el historial de cambios
+CREATE OR REPLACE FUNCTION guardar_historial_configuracion()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO historial_configuracion_contratos (
+        configuracion_id,
+        moneda,
+        porcentaje_flat,
+        porcentaje_interes,
+        porcentaje_mora,
+        numero_cuotas,
+        frecuencia_pago,
+        dias_personalizados,
+        usuario_cambio
+    ) VALUES (
+        OLD.id,
+        OLD.moneda,
+        OLD.porcentaje_flat,
+        OLD.porcentaje_interes,
+        OLD.porcentaje_mora,
+        OLD.numero_cuotas,
+        OLD.frecuencia_pago,
+        OLD.dias_personalizados,
+        OLD.usuario_actualizacion
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 ----------------------------------------------------------------------------------
 --  Inserciones ----------------------------------------------------------------
@@ -264,3 +331,156 @@ VALUES ('31234567', 'Carlos Alberto Mendoza Ruiz', '1990-03-25', '555-9876', 'ca
 
 INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
 VALUES ('31234567', 'CarlosMendoza', 'carlos2024', 'Administrador', 'Activo');
+
+
+	INSERT INTO configuracion_contratos (
+	    moneda,
+	    porcentaje_flat,
+	    porcentaje_interes,
+	    porcentaje_mora,
+	    numero_cuotas,
+	    cuotasGracia,
+	    frecuencia_pago,
+	    dias_personalizados
+	) VALUES (
+	    'USD',            -- moneda
+	    5,                -- porcentaje_flat
+	    10,               -- porcentaje_interes
+	    2,                -- porcentaje_mora
+	    12,               -- numero_cuotas
+	    2,                -- cuotasGracia
+	    'Mensual',        -- frecuencia_pago
+	    0               -- dias_personalizados
+	
+	);
+
+
+----------------------------------------------------------------------------------
+--  DISPARADOR TRIGGER -----------------------------------------------------------
+----------------------------------------------------------------------------------
+
+
+  -- Crear función que genere cuotas según configuración del contrato
+CREATE OR REPLACE FUNCTION generar_cuotas()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_configuracion RECORD;
+    v_monto_semanal TEXT;
+    v_fecha_desde DATE;
+    v_fecha_hasta DATE;
+    v_num_cuotas INT;
+    v_frecuencia TEXT;
+    v_cuotas_gracia TEXT;
+    v_deposito_estado VARCHAR;
+    v_deposito RECORD;
+    v_fecha_pago DATE; -- Añadido aquí
+BEGIN
+    -- Obtener configuración del contrato
+    SELECT * INTO v_configuracion FROM configuracion_contratos WHERE id = (SELECT MAX(id) FROM configuracion_contratos);
+
+    -- Obtener monto_semanal y fechas del contrato
+    SELECT monto_semanal, fecha_desde, fecha_hasta INTO v_monto_semanal, v_fecha_desde, v_fecha_hasta FROM contrato WHERE id_contrato = NEW.id_contrato;
+
+    -- Obtener depósito asociado
+    SELECT * INTO v_deposito FROM deposito WHERE cedula_emprendedor = NEW.cedula_emprendedor AND estado = 'Recibido';
+
+    -- Verificar si existe depósito y su estado
+    IF v_deposito IS NULL THEN
+        RAISE NOTICE 'No hay depósito con estado "Recibido". No se generarán cuotas.';
+        RETURN NEW;
+    END IF;
+
+    v_deposito_estado := v_deposito.estado;
+
+    IF v_deposito_estado <> 'Recibido' THEN
+        RAISE NOTICE 'El depósito no está en estado "Recibido" (%). No se generarán cuotas.', v_deposito_estado;
+        RETURN NEW;
+    END IF;
+
+    -- Obtener número de cuotas y frecuencia
+    v_num_cuotas := CAST(v_configuracion.numero_cuotas AS INTEGER);
+    v_frecuencia := v_configuracion.frecuencia_pago;
+    v_cuotas_gracia := v_configuracion.cuotasGracia;
+
+    -- Validar monto semanal
+    IF v_monto_semanal IS NULL THEN
+        RAISE NOTICE 'Monto semanal no definido.';
+        RETURN NEW;
+    END IF;
+
+    -- Crear cuotas según frecuencia
+    IF v_frecuencia = 'SEMANAL' THEN
+        v_fecha_pago := v_fecha_desde; -- inicializar aquí
+        FOR i IN 1..v_num_cuotas LOOP
+            INSERT INTO cuota (
+                id_cuota_c,
+                cedula_emprendedor,
+                descripcion,
+                monto_euros,
+                monto_ves,
+                fecha_desde_cuota,
+                fecha_hasta_cuota,
+                estado_cuota,
+                dias_mora_cuota,
+                interes_acumulado,
+                confirmacionIFEMI,
+                comprobante
+            ) VALUES (
+                NEW.id_contrato,
+                NEW.cedula_emprendedor,
+                'Cuota semanal ' || i,
+                v_monto_semanal,
+                v_monto_semanal,
+                v_fecha_pago,
+                v_fecha_pago + INTERVAL '7 days',
+                'Pendiente',
+                0,
+                NULL,
+                NULL,
+                NULL
+            );
+            v_fecha_pago := v_fecha_pago + INTERVAL '7 days';
+        END LOOP;
+    ELSIF v_frecuencia = 'MENSUAL' THEN
+        v_fecha_pago := v_fecha_desde; -- inicializar aquí
+        FOR i IN 1..v_num_cuotas LOOP
+            INSERT INTO cuota (
+                id_cuota_c,
+                cedula_emprendedor,
+                descripcion,
+                monto_euros,
+                monto_ves,
+                fecha_desde_cuota,
+                fecha_hasta_cuota,
+                estado_cuota,
+                dias_mora_cuota,
+                interes_acumulado,
+                confirmacionIFEMI,
+                comprobante
+            ) VALUES (
+                NEW.id_contrato,
+                NEW.cedula_emprendedor,
+                'Cuota mensual ' || i,
+                v_monto_semanal,
+                v_monto_semanal,
+                v_fecha_pago,
+                v_fecha_pago + INTERVAL '1 month',
+                'Pendiente',
+                0,
+                NULL,
+                NULL,
+                NULL
+            );
+            v_fecha_pago := v_fecha_pago + INTERVAL '1 month';
+        END LOOP;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Crear trigger que llama a la función después de insertar o actualizar en contrato
+CREATE TRIGGER trg_generar_cuotas
+AFTER INSERT OR UPDATE ON contrato
+FOR EACH ROW
+EXECUTE FUNCTION generar_cuotas();

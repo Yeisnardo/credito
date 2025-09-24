@@ -5,9 +5,11 @@ import Swal from "sweetalert2";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import { updateSolicitud } from "../services/api_solicitud";
+
 import { getRequerimientos } from "../services/api_requerimientos";
 import { getTodosRequerimientosEmprendedor } from "../services/api_requerimiento_emprendedor";
+import { updateRequerimientoEmprendedor } from "../services/api_requerimiento_emprendedor";
+import { updateSolicitud } from "../services/api_solicitud";
 
 // Funciones para cargar datos
 const fetchPersonasRegistradas = async () => {
@@ -65,7 +67,12 @@ const Aprobacion = () => {
       setLoading(true);
       try {
         const data = await fetchPersonasRegistradas();
-        setPersonasRegistradas(data);
+        // Inicializar requerimientosVerificados en cada persona
+        const personasConVerificados = data.map((p) => ({
+          ...p,
+          requerimientosVerificados: p.requerimientos_verificados || [],
+        }));
+        setPersonasRegistradas(personasConVerificados);
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -82,13 +89,21 @@ const Aprobacion = () => {
     setLoading(true);
     try {
       const detalles = await fetchDetallesPersona(persona.cedula_emprendedor);
-      // Si fetchDetallesPersona devuelve todos los registros, filtra aquí:
       const detallesFiltrados = detalles
         ? Array.isArray(detalles)
-          ? detalles.filter((d) => d.cedula_emprendedor === persona.cedula_emprendedor)
-          : [detalles] // si es un objeto, poner en array
+          ? detalles.filter(
+              (d) => d.cedula_emprendedor === persona.cedula_emprendedor
+            )
+          : [detalles]
         : [];
-      setResultado(detallesFiltrados);
+
+      // Asegurar que cada detalle tenga su array de requerimientos verificados
+      const detallesConVerificados = detallesFiltrados.map((detalle) => ({
+        ...detalle,
+        requerimientosVerificados: detalle.requerimientos_verificados || [],
+      }));
+
+      setResultado(detallesConVerificados);
       setModalOpen(true);
     } catch (error) {
       console.error("Error loading details:", error);
@@ -116,7 +131,10 @@ const Aprobacion = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
+          // Actualizar el estado en el backend
           await updateSolicitud(cedula, { estatus: "Aprobada" });
+
+          // Actualizar el estado local
           setPersonasRegistradas((prev) =>
             prev.map((p) =>
               p.cedula_emprendedor === cedula
@@ -124,6 +142,10 @@ const Aprobacion = () => {
                 : p
             )
           );
+
+          // Cerrar el modal después de aprobar
+          cerrarModal();
+
           Swal.fire(
             "¡Aprobada!",
             "La solicitud ha sido aprobada correctamente.",
@@ -144,7 +166,7 @@ const Aprobacion = () => {
       inputLabel: "Motivo del rechazo",
       inputPlaceholder: "Escribe el motivo del rechazo...",
       inputAttributes: {
-        "aria-label": "Escribe el motivo del rechazo"
+        "aria-label": "Escribe el motivo del rechazo",
       },
       showCancelButton: true,
       confirmButtonText: "Rechazar",
@@ -158,14 +180,17 @@ const Aprobacion = () => {
         }
         return motivo;
       },
-      allowOutsideClick: () => !Swal.isLoading()
+      allowOutsideClick: () => !Swal.isLoading(),
     }).then(async (result) => {
       if (result.isConfirmed && result.value) {
         try {
-          await updateSolicitud(persona.cedula_emprendedor, {
+          // Actualizar el estado en el backend
+          await updateRequerimientoEmprendedor(persona.cedula_emprendedor, {
             estatus: "Rechazada",
             motivo_rechazo: result.value,
           });
+
+          // Actualizar el estado local
           setPersonasRegistradas((prev) =>
             prev.map((p) =>
               p.cedula_emprendedor === persona.cedula_emprendedor
@@ -173,6 +198,10 @@ const Aprobacion = () => {
                 : p
             )
           );
+
+          // Cerrar el modal después de rechazar
+          cerrarModal();
+
           Swal.fire("Rechazada", "La solicitud ha sido rechazada.", "success");
         } catch (error) {
           console.error("Error rechazando solicitud:", error);
@@ -180,6 +209,50 @@ const Aprobacion = () => {
         }
       }
     });
+  };
+
+  // Función para enviar requerimientos verificados
+  const handleEnviarRequerimientosVerificados = async () => {
+    if (!personaSeleccionada || !resultado) {
+      Swal.fire("Error", "No hay datos para guardar.", "error");
+      return;
+    }
+
+    try {
+      // Actualizar cada requerimiento del resultado
+      for (const req of resultado) {
+        await updateRequerimientoEmprendedor(req.id_req, {
+          requerimientosVerificados: req.requerimientosVerificados || [],
+        });
+      }
+
+      // Actualizar el estado local
+      setPersonasRegistradas((prev) =>
+        prev.map((p) =>
+          p.cedula_emprendedor === personaSeleccionada.cedula_emprendedor
+            ? {
+                ...p,
+                requerimientosVerificados: resultado.flatMap(
+                  (r) => r.requerimientosVerificados || []
+                ),
+              }
+            : p
+        )
+      );
+
+      Swal.fire(
+        "Éxito",
+        "Requerimientos verificados guardados correctamente.",
+        "success"
+      );
+    } catch (error) {
+      console.error("Error guardando requerimientos verificados:", error);
+      Swal.fire(
+        "Error",
+        "No se pudieron guardar los requerimientos verificados.",
+        "error"
+      );
+    }
   };
 
   // Filtrado de solicitudes
@@ -238,7 +311,9 @@ const Aprobacion = () => {
                 <i className="bx bx-check-circle text-3xl text-indigo-600"></i>
               </div>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Revisión y Aprobación</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                  Revisión y Aprobación
+                </h1>
                 <p className="text-gray-500 text-sm mt-1">
                   Gestiona las solicitudes de los emprendedores
                 </p>
@@ -249,8 +324,11 @@ const Aprobacion = () => {
           {/* Filtros */}
           <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Filtros */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Estado
+                </label>
                 <select
                   className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
                   value={filtroEstado}
@@ -262,9 +340,11 @@ const Aprobacion = () => {
                   <option value="rechazada">Rechazada</option>
                 </select>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Buscar por nombre</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Buscar por nombre
+                </label>
                 <input
                   type="text"
                   placeholder="Nombre del emprendedor"
@@ -273,9 +353,11 @@ const Aprobacion = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Filtrar por cédula</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Filtrar por cédula
+                </label>
                 <input
                   type="text"
                   placeholder="Número de cédula"
@@ -284,9 +366,9 @@ const Aprobacion = () => {
                   onChange={(e) => setCedulaFiltro(e.target.value)}
                 />
               </div>
-              
+
               <div className="flex items-end">
-                <button 
+                <button
                   onClick={() => {
                     setFiltroEstado("todos");
                     setSearchTerm("");
@@ -302,6 +384,7 @@ const Aprobacion = () => {
 
           {/* Estadísticas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Estadísticas */}
             <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
               <div className="flex items-center">
                 <div className="bg-blue-100 p-3 rounded-lg mr-4">
@@ -309,11 +392,13 @@ const Aprobacion = () => {
                 </div>
                 <div>
                   <p className="text-gray-500 text-sm">Total solicitudes</p>
-                  <h3 className="text-2xl font-bold text-gray-800">{personasRegistradas.length}</h3>
+                  <h3 className="text-2xl font-bold text-gray-800">
+                    {personasRegistradas.length}
+                  </h3>
                 </div>
               </div>
             </div>
-            
+            {/* Aprobadas */}
             <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500">
               <div className="flex items-center">
                 <div className="bg-green-100 p-3 rounded-lg mr-4">
@@ -322,12 +407,16 @@ const Aprobacion = () => {
                 <div>
                   <p className="text-gray-500 text-sm">Aprobadas</p>
                   <h3 className="text-2xl font-bold text-gray-800">
-                    {personasRegistradas.filter(p => p.estatus === "aprobada").length}
+                    {
+                      personasRegistradas.filter(
+                        (p) => p.estatus === "aprobada"
+                      ).length
+                    }
                   </h3>
                 </div>
               </div>
             </div>
-            
+            {/* Pendientes */}
             <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-yellow-500">
               <div className="flex items-center">
                 <div className="bg-yellow-100 p-3 rounded-lg mr-4">
@@ -336,7 +425,11 @@ const Aprobacion = () => {
                 <div>
                   <p className="text-gray-500 text-sm">Pendientes</p>
                   <h3 className="text-2xl font-bold text-gray-800">
-                    {personasRegistradas.filter(p => p.estatus === "pendiente").length}
+                    {
+                      personasRegistradas.filter(
+                        (p) => p.estatus === "pendiente"
+                      ).length
+                    }
                   </h3>
                 </div>
               </div>
@@ -353,31 +446,50 @@ const Aprobacion = () => {
             ) : filteredPersonas.length === 0 ? (
               <div className="p-8 text-center">
                 <i className="bx bx-search-alt text-4xl text-gray-300 mb-4"></i>
-                <h3 className="text-lg font-medium text-gray-600 mb-2">No se encontraron resultados</h3>
-                <p className="text-gray-500">Intenta ajustar los filtros de búsqueda</p>
+                <h3 className="text-lg font-medium text-gray-600 mb-2">
+                  No se encontraron resultados
+                </h3>
+                <p className="text-gray-500">
+                  Intenta ajustar los filtros de búsqueda
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Emprendedor
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Cédula
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Estado
                       </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         Acciones
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredPersonas.map((persona) => (
-                      <tr key={persona.cedula_emprendedor} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={persona.cedula_emprendedor}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -386,23 +498,34 @@ const Aprobacion = () => {
                               </span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{persona.nombre_completo}</div>
-                              <div className="text-sm text-gray-500">{persona.nombre_emprendimiento}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {persona.nombre_completo}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {persona.nombre_emprendimiento}
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{persona.cedula_emprendedor}</div>
+                          <div className="text-sm text-gray-900">
+                            {persona.cedula_emprendedor}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(persona.estatus)}`}>
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                              persona.estatus
+                            )}`}
+                          >
                             {persona.estatus}
                           </span>
-                          {persona.estatus === "rechazada" && persona.motivo_rechazo && (
-                            <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
-                              Motivo: {persona.motivo_rechazo}
-                            </div>
-                          )}
+                          {persona.estatus === "rechazada" &&
+                            persona.motivo_rechazo && (
+                              <div className="text-xs text-gray-500 mt-1 max-w-xs truncate">
+                                Motivo: {persona.motivo_rechazo}
+                              </div>
+                            )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
@@ -412,22 +535,6 @@ const Aprobacion = () => {
                             >
                               Detalles
                             </button>
-                            {persona.estatus !== "aprobada" && (
-                              <>
-                                <button
-                                  className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition"
-                                  onClick={() => aprobarPersona(persona.cedula_emprendedor)}
-                                >
-                                  Aprobar
-                                </button>
-                                <button
-                                  className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md transition"
-                                  onClick={() => rechazarPersona(persona)}
-                                >
-                                  Rechazar
-                                </button>
-                              </>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -444,8 +551,15 @@ const Aprobacion = () => {
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Mostrando <span className="font-medium">{filteredPersonas.length}</span> de{" "}
-                    <span className="font-medium">{filteredPersonas.length}</span> resultados
+                    Mostrando{" "}
+                    <span className="font-medium">
+                      {filteredPersonas.length}
+                    </span>{" "}
+                    de{" "}
+                    <span className="font-medium">
+                      {filteredPersonas.length}
+                    </span>{" "}
+                    resultados
                   </p>
                 </div>
               </div>
@@ -455,90 +569,220 @@ const Aprobacion = () => {
 
         {/* Modal detalles */}
         {modalOpen && personaSeleccionada && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-black/75 fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm transition-opacity duration-300">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-transform duration-300 scale-100">
               {/* Header del modal */}
-              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-800">
-                  Detalles de {personaSeleccionada.nombre_completo}
-                </h3>
+              <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                    Detalles de {personaSeleccionada.nombre_completo}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Información completa de la solicitud
+                  </p>
+                </div>
                 <button
-                  className="text-gray-400 hover:text-gray-600 transition"
+                  className="text-gray-400 hover:text-gray-600 transition-all duration-200 p-2 hover:bg-gray-100 rounded-full"
                   onClick={cerrarModal}
                   aria-label="Cerrar"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
 
               {/* Contenido del modal */}
-              <div className="overflow-y-auto p-6">
+              <div className="overflow-y-auto flex-1 p-8 bg-gray-50/50">
                 {loading ? (
-                  <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
-                    <p className="text-gray-500">Cargando detalles...</p>
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mb-4"></div>
+                    <p className="text-gray-600 text-lg">
+                      Cargando detalles...
+                    </p>
                   </div>
                 ) : resultado ? (
                   Array.isArray(resultado) ? (
-                    resultado.map((req, index) => (
-                      <div key={index} className="mb-6 last:mb-0 bg-gray-50 rounded-lg p-5 border border-gray-200">
-                        {/* Información básica */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-500 mb-1">Nombre del emprendimiento</h4>
-                            <p className="text-gray-900">{req.nombre_emprendimiento}</p>
+                    <>
+                      {resultado.map((req, index) => (
+                        <div
+                          key={index}
+                          className="mb-8 last:mb-0 bg-white rounded-xl p-8 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300"
+                        >
+                          {/* Información básica */}
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                                  Nombre del emprendimiento
+                                </label>
+                                <p className="text-gray-900 font-medium text-lg">
+                                  {req.nombre_emprendimiento ||
+                                    "No especificado"}
+                                </p>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                                  Tipo de negocio
+                                </label>
+                                <p className="text-gray-900 font-medium">
+                                  {req.tipo_negocio || "No especificado"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                                  Sector
+                                </label>
+                                <p className="text-gray-900 font-medium">
+                                  {req.tipo_sector || "No especificado"}
+                                </p>
+                              </div>
+                              <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                                  Cédula
+                                </label>
+                                <p className="text-gray-900 font-mono font-medium">
+                                  {req.cedula_emprendedor}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-500 mb-1">Sector</h4>
-                            <p className="text-gray-900">{req.tipo_sector}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-500 mb-1">Tipo de negocio</h4>
-                            <p className="text-gray-900">{req.tipo_negocio}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-500 mb-1">Cédula</h4>
-                            <p className="text-gray-900">{req.cedula_emprendedor}</p>
-                          </div>
-                        </div>
 
-                        {/* Requerimientos */}
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-500 mb-2">Requerimientos seleccionados</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {requerimientos
-                              .filter(r => req.opt_requerimiento?.includes(r.id_requerimientos))
-                              .map(r => (
-                                <div key={r.id_requerimientos} className="flex items-center bg-white p-2 rounded border">
-                                  <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></div>
-                                  <span className="text-sm text-gray-700">{r.nombre_requerimiento}</span>
-                                </div>
-                              ))
-                            }
-                          </div>
-                        </div>
+                          {/* Separador */}
+                          <div className="border-t border-gray-200 my-6"></div>
 
-                        {/* Motivo */}
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-2">Motivo de la solicitud</h4>
-                          <div className="bg-white p-4 rounded border text-gray-700">
-                            {req.motivo}
+                          {/* Requerimientos */}
+                          <div className="mb-6">
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 block">
+                              Requerimientos seleccionados
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {requerimientos
+                                .filter((r) =>
+                                  req.opt_requerimiento?.includes(
+                                    r.id_requerimientos
+                                  )
+                                )
+                                .map((r, idx) => (
+                                  <div
+                                    key={r.id_requerimientos}
+                                    className="flex items-center bg-gray-50 p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 transition duration-200"
+                                      checked={
+                                        req.requerimientosVerificados?.includes(
+                                          r.id_requerimientos
+                                        ) || false
+                                      }
+                                      onChange={async (e) => {
+                                        const checked = e.target.checked;
+                                        setResultado((prev) => {
+                                          if (!prev) return prev;
+                                          return prev.map((item) => {
+                                            if (
+                                              item.cedula_emprendedor !==
+                                              req.cedula_emprendedor
+                                            )
+                                              return item;
+                                            return {
+                                              ...item,
+                                              requerimientosVerificados: checked
+                                                ? [
+                                                    ...(item.requerimientosVerificados ||
+                                                      []),
+                                                    r.id_requerimientos,
+                                                  ]
+                                                : (
+                                                    item.requerimientosVerificados ||
+                                                    []
+                                                  ).filter(
+                                                    (id) =>
+                                                      id !== r.id_requerimientos
+                                                  ),
+                                            };
+                                          });
+                                        });
+                                      }}
+                                    />
+                                    <div className="w-3 h-3 bg-indigo-500 rounded-full ml-3 mr-4 flex-shrink-0"></div>
+                                    <span className="text-gray-700 font-medium">
+                                      {r.nombre_requerimiento}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+
+                          {/* Motivo */}
+                          <div>
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 block">
+                              Motivo de la solicitud
+                            </label>
+                            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                                {req.motivo ||
+                                  "No se proporcionó un motivo específico."}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                      ))}
+
+                      {/* Botón para guardar requerimientos verificados */}
+                      <div className="mt-8 flex justify-end">
+                        <button
+                          className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                          onClick={handleEnviarRequerimientosVerificados}
+                        >
+                          <span className="flex items-center">
+                            <svg
+                              className="w-5 h-5 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            Guardar Requerimientos Verificados
+                          </span>
+                        </button>
                       </div>
-                    ))
+                    </>
                   ) : (
-                    <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">Cédula</h4>
-                          <p className="text-gray-900">{resultado.cedula_emprendedor}</p>
+                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                            Cédula
+                          </label>
+                          <p className="text-gray-900 font-mono font-medium text-lg">
+                            {resultado.cedula_emprendedor}
+                          </p>
                         </div>
                         <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">Requerimientos</h4>
-                          <p className="text-gray-900">
+                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                            Requerimientos
+                          </label>
+                          <p className="text-gray-900 font-medium">
                             {Array.isArray(resultado.opt_requerimiento)
                               ? resultado.opt_requerimiento.join(", ")
                               : "No especificado"}
@@ -546,26 +790,99 @@ const Aprobacion = () => {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-2">Motivo</h4>
-                        <div className="bg-white p-4 rounded border text-gray-700">
-                          {resultado.motivo}
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 block">
+                          Motivo
+                        </label>
+                        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                          <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                            {resultado.motivo ||
+                              "No se proporcionó un motivo específico."}
+                          </p>
                         </div>
                       </div>
                     </div>
                   )
                 ) : (
-                  <p className="text-center text-gray-500 py-8">No se encontraron detalles.</p>
+                  <div className="text-center py-16">
+                    <div className="text-gray-400 mb-4">
+                      <svg
+                        className="w-16 h-16 mx-auto"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1}
+                          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-lg">
+                      No se encontraron detalles.
+                    </p>
+                  </div>
                 )}
               </div>
 
               {/* Footer del modal */}
-              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+              <div className="px-8 py-6 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center">
                 <button
                   onClick={cerrarModal}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+                  className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all duration-300 shadow-sm hover:shadow-md"
                 >
                   Cerrar
                 </button>
+
+                {personaSeleccionada.estatus !== "aprobada" && (
+                  <div className="flex space-x-4">
+                    <button
+                      className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      onClick={() =>
+                        aprobarPersona(personaSeleccionada.cedula_emprendedor)
+                      }
+                    >
+                      <span className="flex items-center">
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Aprobar
+                      </span>
+                    </button>
+                    <button
+                      className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      onClick={() => rechazarPersona(personaSeleccionada)}
+                    >
+                      <span className="flex items-center">
+                        <svg
+                          className="w-5 h-5 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                        Rechazar
+                      </span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -573,7 +890,8 @@ const Aprobacion = () => {
 
         {/* Pie de página */}
         <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} <strong>IFEMI & UPTYAB</strong>. Todos los derechos reservados.
+          © {new Date().getFullYear()} <strong>IFEMI & UPTYAB</strong>. Todos
+          los derechos reservados.
         </footer>
       </div>
     </div>

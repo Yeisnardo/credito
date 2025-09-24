@@ -118,7 +118,7 @@ const Deposito = ({ setUser }) => {
                 <i className="bx bx-home text-3xl text-gray-700"></i>
               </div>
               <h1 className="text-3xl font-semibold text-gray-800">
-                Confirmación de Depósitos
+                Aceptación de transferencia del crédito
               </h1>
             </div>
           </div>
@@ -126,7 +126,7 @@ const Deposito = ({ setUser }) => {
           {/* Tabla de depósitos por confirmar */}
           <section className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              Depósitos por Confirmar
+              transferencia del crédito
             </h2>
             {depositosPendientes.length === 0 ? (
               <div className="text-center py-8">

@@ -65,17 +65,19 @@ router.get('/', async (req, res) => {
 });
 
 // Actualizar un requerimiento_emprendedor por cédula del emprendedor
-router.put("/:cedula_emprendedor", async (req, res) => {
+// Actualizar requerimiento_emprendedor por id_req
+router.put("/:id_req", async (req, res) => {
   try {
-    const { cedula_emprendedor } = req.params;
-    const { opt_requerimiento } = req.body;
+    const { id_req } = req.params; // ahora es id_req en la URL
+    const { requerimientosVerificados } = req.body;
 
+    // Asegúrate que en la consulta usas la columna correcta
     const resultado = await query(
       `UPDATE requerimiento_emprendedor
-       SET opt_requerimiento = $1
-       WHERE cedula_emprendedor = $2
+       SET vereficacion = $1
+       WHERE id_req = $2
        RETURNING *`,
-      [opt_requerimiento, cedula_emprendedor]
+      [requerimientosVerificados, id_req]
     );
 
     if (resultado.rowCount === 0) {
