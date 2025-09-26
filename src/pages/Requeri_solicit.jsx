@@ -383,125 +383,204 @@ const ResultadoSolicitud = ({ resultado, requerimientos, handleVolver }) => {
     .filter((nombre) => nombre !== "");
 
   return (
-    <div className="mt-8 max-w-4xl mx-auto p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-          <i className="bx bx-check-circle text-4xl text-green-600"></i>
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Header con gradiente */}
+      <div className="text-center mb-10 bg-gradient-to-br from-green-50 to-emerald-100 rounded-3xl p-8 border border-green-200/50 shadow-sm">
+        <div className="relative inline-flex mb-5">
+          <div className="absolute inset-0 bg-green-400/20 blur-lg rounded-full"></div>
+          <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
+            <i className="bx bx-check-circle text-4xl text-white"></i>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          Solicitud Enviada Exitosamente
+        
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-green-700 to-emerald-800 bg-clip-text text-transparent mb-3">
+          ¡Solicitud Enviada con Éxito!
         </h2>
-        <p className="text-gray-600">
-          Hemos recibido tu solicitud de crédito. A continuación puedes ver los
-          detalles.
+        <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+          Hemos recibido tu solicitud de crédito. Te notificaremos a travez del sistema
+          una vez que sea procesada.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
-          <h3 className="font-semibold text-blue-800 mb-3 flex items-center">
-            <i className="bx bx-info-circle mr-2"></i>
-            Información de la Solicitud
-          </h3>
-          <div className="space-y-2">
-            <p>
-              <span className="font-medium">Fecha de envío:</span>{" "}
-              {new Date().toLocaleDateString()}
-            </p>
-            <p>
-              <span className="font-medium">Estado:</span>
-              <span
-                className={`ml-2 px-3 py-1 rounded-full text-sm font-semibold ${
-                  estadoSolicitud === "Aprobado"
-                    ? "bg-green-100 text-green-800"
-                    : estadoSolicitud === "Rechazado"
-                    ? "bg-red-100 text-red-800"
-                    : "bg-yellow-100 text-yellow-800"
-                }`}
-              >
-                {estadoSolicitud}
-              </span>
-            </p>
-            {solicitud.fecha_llevar && (
-              <p>
-                <span className="font-medium">
-                  Fecha para llevar documentos:
-                </span>{" "}
-                {new Date(solicitud.fecha_llevar).toLocaleDateString()}
-              </p>
-            )}
+      {/* Grid de información */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Tarjeta de estado */}
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
+          <div className="relative bg-white rounded-2xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
+                <i className="bx bx-info-circle text-xl text-blue-600"></i>
+              </div>
+              <h3 className="font-semibold text-gray-800 text-lg">Estado de la Solicitud</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Fecha de envío:</span>
+                <span className="font-medium">{new Date().toLocaleDateString('es-ES', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Estado actual:</span>
+                <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
+                  estadoSolicitud === "Aprobado" ? "bg-green-100 text-green-800 border border-green-200" :
+                  estadoSolicitud === "Rechazado" ? "bg-red-100 text-red-800 border border-red-200" :
+                  "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200"
+                }`}>
+                  {estadoSolicitud}
+                </span>
+              </div>
+
+              {solicitud.fecha_llevar && (
+                <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-200">
+                  <div className="flex items-center text-blue-700">
+                    <i className="bx bx-calendar-event mr-2"></i>
+                    <span className="font-medium">Próxima cita:</span>
+                  </div>
+                  <span className="text-blue-900 font-semibold">
+                    {new Date(solicitud.fecha_llevar).toLocaleDateString('es-ES', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="bg-purple-50 p-5 rounded-xl border border-purple-100">
-          <h3 className="font-semibold text-purple-800 mb-3 flex items-center">
-            <i className="bx bx-user mr-2"></i>
-            Información Personal
-          </h3>
-          <div className="space-y-2">
-            <p>
-              <span className="font-medium">Cédula:</span>{" "}
-              {solicitud.cedula_emprendedor || "N/A"}
-            </p>
-            <p>
-              <span className="font-medium">Motivo:</span>{" "}
-              {solicitud.motivo || "No especificado"}
-            </p>
+        {/* Tarjeta de información personal */}
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-300"></div>
+          <div className="relative bg-white rounded-2xl p-6 border border-purple-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                <i className="bx bx-user text-xl text-purple-600"></i>
+              </div>
+              <h3 className="font-semibold text-gray-800 text-lg">Datos del Solicitante</h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="flex items-center p-3 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                <i className="bx bx-id-card text-gray-400 mr-3"></i>
+                <div>
+                  <div className="text-xs text-gray-500">CÉDULA</div>
+                  <div className="font-medium">{solicitud.cedula_emprendedor || "No especificada"}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                <i className="bx bx-bullseye text-gray-400 mr-3"></i>
+                <div>
+                  <div className="text-xs text-gray-500">MOTIVO DEL CRÉDITO</div>
+                  <div className="font-medium">{solicitud.motivo || "No especificado"}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mb-8">
-        <h3 className="font-semibold text-gray-800 mb-4 flex items-center">
-          <i className="bx bx-file mr-2"></i>
-          Requerimientos Adjuntados
-        </h3>
-        <div className="bg-gray-50 p-5 rounded-xl border border-gray-200">
-          {requerimientosSeleccionados.length > 0 ? (
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {requerimientosSeleccionados.map((req, index) => (
-                <li key={index} className="flex items-center">
-                  <i className="bx bx-check text-green-600 mr-2"></i>
-                  {req}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No se seleccionaron requerimientos</p>
-          )}
+      {/* Requerimientos adjuntados */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300 mb-8">
+        <div className="flex items-center mb-6">
+          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mr-3">
+            <i className="bx bx-folder-open text-xl text-indigo-600"></i>
+          </div>
+          <h3 className="font-semibold text-gray-800 text-lg">Documentos Adjuntados</h3>
         </div>
+        
+        {requerimientosSeleccionados.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {requerimientosSeleccionados.map((req, index) => (
+              <div key={index} className="flex items-center p-3 rounded-lg bg-green-50/50 border border-green-200/50 hover:bg-green-50 transition-colors">
+                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                  <i className="bx bx-check text-green-600 text-sm"></i>
+                </div>
+                <span className="text-gray-700">{req}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-400">
+            <i className="bx bx-folder text-4xl mb-3 opacity-50"></i>
+            <p>No se adjuntaron documentos adicionales</p>
+          </div>
+        )}
       </div>
 
-      <div className="bg-yellow-50 p-5 rounded-xl border border-yellow-200 mb-8">
-        <h3 className="font-semibold text-yellow-800 mb-3 flex items-center">
-          <i className="bx bx-time-five mr-2"></i>
-          Próximos Pasos
-        </h3>
-        <ul className="list-disc pl-5 space-y-2 text-gray-700">
-          <li>Tu solicitud será revisada por nuestro equipo de evaluación.</li>
-          <li>
-            Recibirás una notificación por correo electrónico con la respuesta.
-          </li>
-          <li>
-            El proceso de evaluación puede tardar entre 5 y 10 días hábiles.
-          </li>
+      {/* Próximos pasos */}
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200/50 shadow-sm mb-8">
+        <div className="flex items-center mb-6">
+          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center mr-3">
+            <i className="bx bx-time-five text-xl text-amber-600"></i>
+          </div>
+          <h3 className="font-semibold text-gray-800 text-lg">Siguientes Pasos</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-start space-x-3 p-3">
+            <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+              <span className="text-amber-600 font-bold text-sm">1</span>
+            </div>
+            <p className="text-gray-700">Revisión de documentación por nuestro equipo especializado</p>
+          </div>
+          
+          <div className="flex items-start space-x-3 p-3">
+            <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+              <span className="text-amber-600 font-bold text-sm">2</span>
+            </div>
+            <p className="text-gray-700">Notificación vía por nuestro sistema con la respuesta</p>
+          </div>
+          
+          <div className="flex items-start space-x-3 p-3">
+            <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+              <span className="text-amber-600 font-bold text-sm">3</span>
+            </div>
+            <p className="text-gray-700">Tiempo estimado de evaluación: 5-10 días hábiles</p>
+          </div>
+          
           {solicitud.fecha_llevar && (
-            <li>
-              Recuerda llevar los documentos físicos el día{" "}
-              {new Date(solicitud.fecha_llevar).toLocaleDateString()}.
-            </li>
+            <div className="flex items-start space-x-3 p-3">
+              <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+                <span className="text-amber-600 font-bold text-sm">4</span>
+              </div>
+              <p className="text-gray-700">
+                Presentación de documentos físicos el{" "}
+                <span className="font-semibold text-amber-700">
+                  {new Date(solicitud.fecha_llevar).toLocaleDateString('es-ES')}
+                </span>
+              </p>
+            </div>
           )}
-        </ul>
+        </div>
       </div>
 
-      <div className="text-center mt-8">
+      {/* Botón de acción */}
+      <div className="text-center">
         <button
           onClick={handleVolver}
-          className="bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold py-3 px-8 rounded-xl shadow-md transition-all duration-300 inline-flex items-center"
+          className="group relative bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900 text-white font-semibold py-4 px-10 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 inline-flex items-center transform hover:scale-105"
         >
-          <i className="bx bx-plus-circle mr-2"></i>
-          Nueva Solicitud
+          <div className="absolute inset-0 bg-white/10 rounded-2xl transform group-hover:scale-110 transition duration-300"></div>
+          <i className="bx bx-plus-circle text-xl mr-3 relative z-10"></i>
+          <span className="relative z-10">Realizar Nueva Solicitud</span>
         </button>
+        
+        <p className="text-gray-500 text-sm mt-4">
+          ¿Necesitas ayuda?{" "}
+          <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+            Contáctanos
+          </a>
+        </p>
       </div>
     </div>
   );

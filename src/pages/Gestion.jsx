@@ -73,8 +73,12 @@ const Gestion = ({ user, setUser }) => {
 
   const fetchRates = async () => {
     try {
-      const responseEUR = await axios.get("https://api.exchangerate-api.com/v4/latest/EUR");
-      const responseUSD = await axios.get("https://api.exchangerate-api.com/v4/latest/USD");
+      const responseEUR = await axios.get(
+        "https://api.exchangerate-api.com/v4/latest/EUR"
+      );
+      const responseUSD = await axios.get(
+        "https://api.exchangerate-api.com/v4/latest/USD"
+      );
       const rateEUR = responseEUR.data.rates["VES"];
       const rateUSD = responseUSD.data.rates["VES"];
       setRates({ euro: rateEUR, dolar: rateUSD });
@@ -85,7 +89,13 @@ const Gestion = ({ user, setUser }) => {
 
   // Función para calcular monto en Bs según configuración
   useEffect(() => {
-    if (!rates.euro || !rates.dolar || !formData.monto_aprob_euro || !configuracion) return;
+    if (
+      !rates.euro ||
+      !rates.dolar ||
+      !formData.monto_aprob_euro ||
+      !configuracion
+    )
+      return;
 
     const montoEuro = parseFloat(formData.monto_aprob_euro);
     if (isNaN(montoEuro)) {
@@ -235,14 +245,19 @@ const Gestion = ({ user, setUser }) => {
     if (configuracion && formData.monto_aprob_euro) {
       const montoEuro = parseFloat(formData.monto_aprob_euro);
       const porcentajeFlat = parseFloat(configuracion.porcentaje_flat) || 0;
-      const porcentajeInteres = parseFloat(configuracion.porcentaje_interes) || 0;
-      
+      const porcentajeInteres =
+        parseFloat(configuracion.porcentaje_interes) || 0;
+
       if (!isNaN(montoEuro)) {
         const flatAmount = ((montoEuro * porcentajeFlat) / 100).toFixed(2);
-        const interesAmount = ((montoEuro * porcentajeInteres) / 100).toFixed(2);
-        const montoDevolver = (montoEuro + parseFloat(interesAmount)).toFixed(2);
+        const interesAmount = ((montoEuro * porcentajeInteres) / 100).toFixed(
+          2
+        );
+        const montoDevolver = (montoEuro + parseFloat(interesAmount)).toFixed(
+          2
+        );
         const montoSemanal = (parseFloat(montoDevolver) / 18).toFixed(2);
-        
+
         setFormData((prev) => ({
           ...prev,
           cincoflat: flatAmount,
@@ -925,10 +940,15 @@ const Gestion = ({ user, setUser }) => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">
-                      Tipo de cambio {configuracion?.moneda === "USD" ? "USD/VES" : "EUR/VES"}
+                      Tipo de cambio{" "}
+                      {configuracion?.moneda === "USD" ? "USD/VES" : "EUR/VES"}
                     </p>
                     <p className="text-lg font-semibold text-gray-800">
-                      1{configuracion?.moneda === "USD" ? "$" : "€"} = {configuracion?.moneda === "USD" ? rates.dolar : rates.euro} Bs
+                      1{configuracion?.moneda === "USD" ? "$" : "€"} ={" "}
+                      {configuracion?.moneda === "USD"
+                        ? rates.dolar
+                        : rates.euro}{" "}
+                      Bs
                     </p>
                   </div>
                 </div>
