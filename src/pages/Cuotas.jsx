@@ -203,6 +203,19 @@ const Cuota = ({ setUser }) => {
     setDiasMorosidad(nuevosDiasMorosidad);
   };
 
+  // FUNCIÓN MEJORADA: Calcular intereses de morosidad basado en porcentaje_mora
+  const calcularInteresMorosidad = (diasMora, montoOriginal) => {
+    if (!configuracion || !configuracion.porcentaje_mora) return 0;
+    
+    // Convertir porcentaje_mora a decimal (ej: 10% -> 0.10)
+    const porcentajeDiario = configuracion.porcentaje_mora / 100;
+    
+    // Calcular interés: monto * porcentaje_diario * días_mora
+    const interes = parseFloat(montoOriginal) * porcentajeDiario * diasMora;
+    
+    return parseFloat(interes.toFixed(2));
+  };
+
   // Función para actualizar estado de cuota y días de mora
   const actualizarEstadoCuota = (id, nuevoEstado, diasMora = null) => {
     setCuotas((prevCuotas) =>
@@ -216,13 +229,6 @@ const Cuota = ({ setUser }) => {
           : c
       )
     );
-  };
-
-  // Función para calcular intereses de morosidad (puedes personalizar esta lógica)
-  const calcularInteresMorosidad = (diasMora, montoOriginal) => {
-    // Ejemplo: 1% de interés por día de mora
-    const tasaInteresDiaria = 0.01;
-    return (parseFloat(montoOriginal) * tasaInteresDiaria * diasMora).toFixed(2);
   };
 
   // Efecto principal para los cronómetros
@@ -241,7 +247,7 @@ const Cuota = ({ setUser }) => {
     }
   }, [cuotas]);
 
-  // Efecto para manejar transición de cuotas Pendiente → Vencido → En Mora
+  // Efecto MEJORADO: Manejar transición de cuotas y calcular intereses
   useEffect(() => {
     Object.keys(diasRestantes).forEach((idCuota) => {
       const id = parseInt(idCuota);
@@ -260,7 +266,7 @@ const Cuota = ({ setUser }) => {
       if (diasMora > 0 && cuota.estado_cuota === "Vencido") {
         actualizarEstadoCuota(id, "En Mora", diasMora);
         
-        // Calcular y actualizar intereses de morosidad
+        // Calcular y actualizar intereses de morosidad usando porcentaje_mora
         const interes = calcularInteresMorosidad(diasMora, cuota.monto);
         setCuotas(prev => prev.map(c => 
           c.id_cuota === id 
@@ -273,7 +279,7 @@ const Cuota = ({ setUser }) => {
       if (diasMora > 0 && cuota.estado_cuota === "En Mora") {
         actualizarEstadoCuota(id, "En Mora", diasMora);
         
-        // Recalcular intereses
+        // Recalcular intereses usando porcentaje_mora
         const interes = calcularInteresMorosidad(diasMora, cuota.monto);
         setCuotas(prev => prev.map(c => 
           c.id_cuota === id 
@@ -282,7 +288,7 @@ const Cuota = ({ setUser }) => {
         ));
       }
     });
-  }, [diasRestantes, diasMorosidad, cuotas]);
+  }, [diasRestantes, diasMorosidad, cuotas, configuracion]); // Agregar configuracion como dependencia
 
   const fetchRates = async () => {
     try {
@@ -312,8 +318,8 @@ const Cuota = ({ setUser }) => {
         if (setUser) setUser(usuario);
 
         const config = await apiConfig.getConfiguracion();
-        if (config && config.moneda) {
-          setMonedaPref(config.moneda);
+        if (config) {
+          setMonedaPref(config.moneda || 'USD');
           setConfiguracion(config);
           const contratoDatos = await fetchContratoDatos(cedula);
 
@@ -335,6 +341,7 @@ const Cuota = ({ setUser }) => {
             numero_cuotas: "5",
             cuotasGracia: "2",
             frecuencia_pago: "semanal",
+            porcentaje_mora: 2 // Porcentaje por defecto
           };
           setConfiguracion(defaultConfig);
           const cuotasGeneradas = generarCuotas(
@@ -372,6 +379,14 @@ const Cuota = ({ setUser }) => {
     } else {
       return "Moneda no soportada";
     }
+  };
+
+  // Función para mostrar información del porcentaje de mora
+  const getInfoPorcentajeMora = () => {
+    if (!configuracion || !configuracion.porcentaje_mora) {
+      return "No configurado";
+    }
+    return `${configuracion.porcentaje_mora}% diario`;
   };
 
   useEffect(() => {
@@ -569,6 +584,11 @@ const Cuota = ({ setUser }) => {
                     Bienvenido,{" "}
                     {user?.nombre_completo?.split(" ")[0] || "Usuario"}
                   </p>
+                  {configuracion?.porcentaje_mora && (
+                    <p className="text-sm text-orange-600 font-medium mt-1">
+                      Tasa de mora: {getInfoPorcentajeMora()}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -642,7 +662,7 @@ const Cuota = ({ setUser }) => {
             </div>
           </div>
 
-          {/* Tabla de cuotas - CON TODAS LAS COLUMNAS INCLUYENDO MONTO EN BS */}
+          {/* Tabla de cuotas */}
           <section className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-100">
             <div className="overflow-x-auto border border-gray-200 rounded-lg">
               <table className="min-w-full">
@@ -655,7 +675,7 @@ const Cuota = ({ setUser }) => {
                       Período
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Dias Restentes
+                      Días Restantes
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Monto
@@ -716,7 +736,7 @@ const Cuota = ({ setUser }) => {
                         </span>
                       </td>
                       
-                      {/* Monto en Bs - COLUMNA MANTENIDA */}
+                      {/* Monto en Bs */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                         {convertirAVes(cuota.monto)} Bs
                       </td>
@@ -728,6 +748,11 @@ const Cuota = ({ setUser }) => {
                         }`}>
                           ${cuota.interes_acumulado.toFixed(2)}
                         </span>
+                        {cuota.interes_acumulado > 0 && (
+                          <div className="text-xs text-gray-500">
+                            {diasMorosidad[cuota.id_cuota] || 0}d × {getInfoPorcentajeMora()}
+                          </div>
+                        )}
                       </td>
                       
                       {/* Estado de la cuota */}
@@ -816,7 +841,7 @@ const Cuota = ({ setUser }) => {
           </section>
         </main>
 
-        {/* Modal de Morosidad mejorado */}
+        {/* Modal de Morosidad MEJORADO con información del porcentaje */}
         {modalMorosidad && cuotaMorosidad && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
@@ -872,6 +897,18 @@ const Cuota = ({ setUser }) => {
                     {diasMorosidad[cuotaMorosidad.id_cuota] || 0} días
                   </span>
                 </div>
+
+                {/* NUEVA SECCIÓN: Información del porcentaje de mora */}
+                {configuracion?.porcentaje_mora && (
+                  <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                    <span className="font-medium text-purple-800">
+                      Tasa de Mora:
+                    </span>
+                    <span className="font-semibold text-purple-900">
+                      {getInfoPorcentajeMora()}
+                    </span>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                   <span className="font-medium text-purple-800">
