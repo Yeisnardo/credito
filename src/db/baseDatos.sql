@@ -142,7 +142,7 @@ CREATE TABLE cuota (
   semana VARCHAR(255) NOT NULL,
   monto VARCHAR(255) NOT NULL,
   monto_ves VARCHAR(255) NOT NULL,
-  fecha_pagada DATE NOT NULL,
+  fecha_pagada TEXT NOT NULL,
   estado_cuota VARCHAR(50) NOT NULL, -- Ejemplo: 'Pendiente', 'Pagado'
   dias_mora_cuota INT DEFAULT 0,
   interes_acumulado VARCHAR(255),
@@ -151,6 +151,7 @@ CREATE TABLE cuota (
   comprobante TEXT, -- Ruta o nombre del archivo almacenado
   FOREIGN KEY (id_cuota_c) REFERENCES contrato (id_contrato)
 );
+
 
 CREATE TABLE configuracion_contratos (
     id SERIAL PRIMARY KEY,

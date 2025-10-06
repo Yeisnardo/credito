@@ -1,9 +1,23 @@
 const express = require("express");
 const path = require("path");
 const multer = require("multer");
-const { query } = require("../config/conexion"); // tu conexión a la base
+const { query } = require("../config/conexion"); // conexión a la base
 
 const router = express.Router();
+
+// Variable para mantener el último ID utilizado
+let lastId = 0;
+
+// Función para inicializar lastId con el valor máximo en la base de datos
+async function initializeLastId() {
+  try {
+    const res = await query('SELECT MAX(id_cuota) AS max_id FROM cuota');
+    lastId = res.rows[0].max_id !== null ? parseInt(res.rows[0].max_id, 10) : 0;
+  } catch (err) {
+    console.error('Error al obtener el max id_cuota:', err);
+    lastId = 0;
+  }
+}
 
 // Configuración de multer para guardar archivos en /uploads
 const storage = multer.diskStorage({
@@ -50,81 +64,74 @@ router.get("/:cedula_emprendedor", async (req, res) => {
   }
 });
 
-// Ruta para registrar cuotas según configuración_contratos
+// Ruta para registrar una cuota sin configuración
 router.post("/", upload.single("comprobante"), async (req, res) => {
   try {
-    // **IMPORTANTE**: Define estos valores antes de usar
-    const idConfiguracion = req.body.idConfiguracion; // debe enviarse en el body
-    const id_cuota_c = req.body.id_cuota_c; // también enviado en el body
-    const cedula_emprendedor = req.body.cedula_emprendedor; // enviado en el body
-    const monto_ves = req.body.monto_ves || 0; // ajusta según sea necesario
+    const {
+      id_cuota_c,
+      cedula_emprendedor,
+      monto_ves,
+      semana,
+      monto,
+      fecha_pagada,          // Nuevo: obtener del cuerpo
+      confirmacionIFEMI,     // Nuevo: obtener del cuerpo
+      dias_mora_cuota,       // Nuevo: obtener del cuerpo
+      interes_acumulado,     // Nuevo: obtener del cuerpo
+      estado_cuota           // Nuevo: obtener del cuerpo
+    } = req.body;
 
-    // Obtener la ruta del comprobante si se subió
     const comprobantePath = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // 1. Obtener los datos de configuración_contratos
-    const configuracionResult = await query(
-      "SELECT numero_cuotas, cuotasGracia FROM configuracion_contratos WHERE id = $1",
-      [idConfiguracion]
+    // Asignar valores predeterminados en caso de que no vengan en req.body
+    const fechaPagada = fecha_pagada || null;
+    const confirmacion = "En Espera"; // valor por defecto
+    const diasMora = dias_mora_cuota !== undefined ? parseInt(dias_mora_cuota, 10) : 0;
+    const interes = interes_acumulado; // asumiendo que es VARCHAR
+    const estado = estado_cuota || "Pendiente"; // o el valor que prefieras
+
+    // Incrementar el ID manualmente
+    lastId += 1;
+    const id_cuota = lastId;
+
+    const resultado = await query(
+      `INSERT INTO cuota (
+        id_cuota,
+        id_cuota_c,
+        cedula_emprendedor,
+        semana,
+        monto,
+        monto_ves,
+        fecha_pagada,
+        estado_cuota,
+        dias_mora_cuota,
+        interes_acumulado,
+        confirmacionIFEMI,
+        comprobante
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+      ) RETURNING *`,
+      [
+        id_cuota,
+        id_cuota_c,
+        cedula_emprendedor,
+        semana,
+        monto,
+        monto_ves,
+        fechaPagada,
+        estado,
+        diasMora,
+        interes,
+        confirmacion,
+        comprobantePath,
+      ]
     );
 
-    const filaConfig = configuracionResult.rows[0];
-
-    if (!filaConfig) {
-      return res.status(404).json({ error: "Configuración no encontrada" });
-    }
-
-    // Convertir valores a enteros
-    const numeroCuotas = parseInt(filaConfig.numero_cuotas, 10);
-    const cuotasGracia = parseInt(filaConfig.cuotasGracia, 10);
-
-    // 2. Crear cuotas en ciclo
-    const inserciones = [];
-    for (let i = 0; i < numeroCuotas; i++) {
-      const descripcionCuota = `${i + 1}`; // descripción como "Cuota 1", "Cuota 2", etc.
-
-      // Valores predeterminados o ajustados
-      const estado_cuota = "Pendiente";
-      const dias_mora_cuota = 0;
-      const interes_acumulado = 0;
-      const confirmacionIFEMI = "Pendiente";
-
-      const resultado = await query(
-        `INSERT INTO cuota (
-          id_cuota,
-          id_cuota_c,
-          cedula_emprendedor,
-          semana,
-          monto_ves,
-          estado_cuota,
-          dias_mora_cuota,
-          interes_acumulado,
-          confirmacionIFEMI,
-          comprobante
-        ) VALUES (
-          DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9
-        ) RETURNING *`,
-        [
-          id_cuota_c,
-          cedula_emprendedor,
-          descripcionCuota,
-          monto_ves,
-          estado_cuota,
-          dias_mora_cuota,
-          interes_acumulado,
-          confirmacionIFEMI,
-          comprobantePath,
-        ]
-      );
-      inserciones.push(resultado.rows[0]);
-    }
-
     res.status(201).json({
-      message: `Se insertaron ${numeroCuotas} cuotas.`,
-      cuotas: inserciones,
+      message: `Cuota registrada.`,
+      cuota: resultado.rows[0],
     });
   } catch (error) {
-    console.error("Error al registrar cuotas:", error);
+    console.error("Error al registrar cuota:", error);
     res.status(500).json({ error: error.message });
   }
 });
