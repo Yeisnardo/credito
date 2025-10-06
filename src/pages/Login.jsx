@@ -78,7 +78,7 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="flex min-h-screen font-serif bg-gray-50 overflow-hidden">
+    <div className="flex min-h-screen bg-gray-50 overflow-hidden">
       {/* Panel izquierdo con logo */}
       <motion.aside
         initial={{ x: -100, opacity: 0 }}
@@ -110,14 +110,14 @@ const Login = ({ setUser }) => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="mb-8 text-4xl font-serif text-center text-gray-800 tracking-wide"
           >
-            Inicio de Sesión
+            Inicio de sesión
           </motion.h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Usuario */}
             <div>
               <label
                 htmlFor="username"
-                className="block mb-2 text-sm font-serif text-gray-700"
+                className="block mb-2 text-sm font-semibold text-gray-700"
               >
                 Usuario
               </label>

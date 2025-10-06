@@ -39,14 +39,7 @@ CREATE TABLE usuario (
   CONSTRAINT fk_usuario_persona FOREIGN KEY (cedula_usuario) REFERENCES persona(cedula)
 );
 
--- Cuenta Bancaria
-CREATE TABLE cuenta (
-  cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
-  banco TEXT,
-  cedula_titular VARCHAR (20) NOT NULL,
-  nombre_completo VARCHAR (255) NOT NULL,
-  numero_cuenta VARCHAR (50) NOT NULL
-);
+
 
 
 ----------------------------------------------------------------------------------
@@ -61,7 +54,7 @@ CREATE TABLE requerimientos (
 
 
 ----------------------------------------------------------------------------------
---  Emprededor -------------------------------------------------------------------
+--  Emprendedor -------------------------------------------------------------------
 ----------------------------------------------------------------------------------
 
 -- Tabla intermedia para relacionar requerimientos y emprendedores
@@ -69,8 +62,16 @@ CREATE TABLE requerimiento_emprendedor (
   id_req SERIAL PRIMARY KEY,
   cedula_emprendedor VARCHAR(20) NOT NULL,
   opt_requerimiento TEXT,
+  vereficacion TEXT,
   CONSTRAINT fk_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula),
   CONSTRAINT fk_requerimiento FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos)
+);
+
+CREATE TABLE requerimiento_archivo (
+  id_archivo SERIAL PRIMARY KEY,
+  cedula_emprendedor VARCHAR(20) NOT NULL,
+  archivo TEXT,
+  fecha_llevar DATE
 );
 
 --TABLA DE SOLICITUD
@@ -81,6 +82,15 @@ CREATE TABLE solicitud (
   estatus VARCHAR (20),
   motivo_rechazo TEXT,
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
+);
+
+-- Cuenta Bancaria
+CREATE TABLE cuenta (
+  cedula_emprendedor VARCHAR (20) NOT NULL PRIMARY KEY,
+  banco TEXT,
+  cedula_titular VARCHAR (20) NOT NULL,
+  nombre_completo VARCHAR (255) NOT NULL,
+  numero_cuenta VARCHAR (50) NOT NULL
 );
 
 
@@ -127,19 +137,49 @@ CREATE TABLE deposito(
 
 CREATE TABLE cuota (
   id_cuota INT PRIMARY KEY,
+  id_cuota_c INT NOT NULL, 
   cedula_emprendedor VARCHAR(20) NOT NULL,
-  monto_euro_p VARCHAR,
-  monto_bs_p VARCHAR,
-  tiempo_morosidad VARCHAR,
-  porcentaje_morosidad VARCHAR,
-  euro_morosidad VARCHAR,
-  bs_morosidad VARCHAR,
-  comprobante TEXT,
-  estado_pago VARCHAR(50),
-  estado_ifemi VARCHAR(50),
-  FOREIGN KEY (id_cuota) REFERENCES contrato (id_contrato)
+  semana VARCHAR(255) NOT NULL,
+  monto VARCHAR(255) NOT NULL,
+  monto_ves VARCHAR(255) NOT NULL,
+  fecha_pagada TEXT NOT NULL,
+  estado_cuota VARCHAR(50) NOT NULL, -- Ejemplo: 'Pendiente', 'Pagado'
+  dias_mora_cuota INT DEFAULT 0,
+  interes_acumulado VARCHAR(255),
+  monto_morosidad TEXT,
+  confirmacionIFEMI VARCHAR(255), -- Puede ser un código o estado de confirmación
+  comprobante TEXT, -- Ruta o nombre del archivo almacenado
+  FOREIGN KEY (id_cuota_c) REFERENCES contrato (id_contrato)
 );
 
+
+CREATE TABLE configuracion_contratos (
+    id SERIAL PRIMARY KEY,
+    moneda TEXT NOT NULL,
+    porcentaje_flat TEXT,
+    porcentaje_interes TEXT,
+    porcentaje_mora TEXT,
+    numero_cuotas TEXT NOT NULL ,
+    cuotasGracia TEXT NOT NULL,
+    frecuencia_pago TEXT NOT NULL ,
+    dias_personalizados TEXT,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla para el historial de cambios en la configuración
+CREATE TABLE historial_configuracion_contratos (
+    id SERIAL PRIMARY KEY,
+    configuracion_id INTEGER REFERENCES configuracion_contratos(id),
+    moneda VARCHAR(3) NOT NULL,
+    porcentaje_flat NUMERIC(5, 2) NOT NULL,
+    porcentaje_interes NUMERIC(5, 2) NOT NULL,
+    porcentaje_mora NUMERIC(5, 2) NOT NULL,
+    numero_cuotas INTEGER NOT NULL,
+    frecuencia_pago VARCHAR(20) NOT NULL,
+    dias_personalizados INTEGER,
+    fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 ----------------------------------------------------------------------------------
 --  Inserciones ----------------------------------------------------------------
@@ -264,3 +304,6 @@ VALUES ('31234567', 'Carlos Alberto Mendoza Ruiz', '1990-03-25', '555-9876', 'ca
 
 INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
 VALUES ('31234567', 'CarlosMendoza', 'carlos2024', 'Administrador', 'Activo');
+
+INSERT INTO configuracion_contratos ( moneda, porcentaje_flat, porcentaje_interes, porcentaje_mora, numero_cuotas, cuotasGracia, frecuencia_pago, dias_personalizados) 
+VALUES ('USD', 5, 10, 2, 12, 2, 'Mensual', 0 );

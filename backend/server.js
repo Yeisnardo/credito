@@ -11,6 +11,7 @@ const personaAPI = require('./controllers/persona');
 const emprendimientoAPI = require('./controllers/empredimiento');
 const usuarioAPI = require('./controllers/usuario');
 const solicitudAPI = require('./controllers/solicitud');
+const archivoAPI = require('./controllers/archivo');
 const cuentaAPI = require('./controllers/banco');
 const fondoAPI = require('./controllers/fondo');
 const contratoAPI = require('./controllers/contrato');
@@ -18,6 +19,7 @@ const coutaAPI = require('./controllers/cuotas');
 const clasificacion_requerimientoAPI = require('./controllers/clasificacion_requerimiento');
 const requerimientoEmprendedorAPI = require('./controllers/requerimiento');
 const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasificacion_emprendimiento');
+const configAPi = require('./controllers/configuracion_contratos');
 
 const app = express();
 
@@ -44,11 +46,13 @@ app.use('/api/cuenta', cuentaAPI);
 app.use('/api/requerimientos', clasificacion_requerimientoAPI);
 app.use('/api/emprendimientos', emprendimientoAPI);
 app.use('/api/solicitudes', solicitudAPI);
+app.use('/api/archivo', archivoAPI);
 app.use('/api/contratos', contratoAPI);
 app.use('/api/deposito', depositoRouter);
 app.use('/api/cuotas', coutaAPI);
 app.use('/api/requerimiento_emprendedor', requerimientoEmprendedorAPI);
 app.use('/api/clasificacion', clasificacionEmprendimientoEmprendedorAPI);
+app.use('/api/configuracion', configAPi);
 
 // Middleware de errores
 app.use((err, req, res, next) => {
@@ -68,9 +72,11 @@ app.listen(PORT, () => {
   console.log('   /api/requerimientos');
   console.log('   /api/emprendimientos');
   console.log('   /api/solicitudes');
+  console.log('   /api/archivo');
   console.log('   /api/contratos');
   console.log('   /api/deposito');
   console.log('   /api/cuotas');
   console.log('   /api/requerimiento_emprendedor');
   console.log('   /api/clasificacion');
+  console.log('   /api/configuracion');
 });

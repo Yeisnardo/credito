@@ -3,27 +3,114 @@ import { useState, useEffect, useRef } from "react";
 
 const Menu = ({ onClose }) => {
   // Colores mejorados con mejor contraste y armonía
-  const activeClassName = "bg-gray-900 text-white shadow-lg";
+  const activeClassName = "bg-indigo-100 text-indigo-800 shadow-lg";
   const hoverClassName = "hover:bg-indigo-100 hover:text-indigo-800";
   const submenuHoverClassName = "hover:bg-indigo-50 hover:text-indigo-700";
 
-  // Estados para los submenús, con persistencia en localStorage
-  const [isRequerimientosOpen, setIsRequerimientosOpen] = useState(() => {
-    return JSON.parse(localStorage.getItem("isRequerimientosOpen")) || false;
-  });
-  const [isHistorialOpen, setIsHistorialOpen] = useState(() => {
-    return JSON.parse(localStorage.getItem("isHistorialOpen")) || false;
-  });
-  const [isGestionEmprendOpen, setIsGestionEmprendOpen] = useState(() => {
-    return JSON.parse(localStorage.getItem("isGestionEmprendOpen")) || false;
+  // Estados para los submenús con persistencia en localStorage
+  const [openSubmenus, setOpenSubmenus] = useState({
+    requerimientos: JSON.parse(localStorage.getItem("isRequerimientosOpen")) || false,
+    historial: JSON.parse(localStorage.getItem("isHistorialOpen")) || false,
+    gestionEmprend: JSON.parse(localStorage.getItem("isGestionEmprendOpen")) || false
   });
 
   const menuRef = useRef(null);
   const linkRefs = useRef({});
   const location = useLocation();
 
-  // Cargar usuario logueado desde localStorage (o contexto)
+  // Cargar usuario logueado desde localStorage
   const [usuarioLogueado, setUsuarioLogueado] = useState(null);
+
+  // Estructura del menú por roles
+  const menuItems = {
+    // Items visibles para todos los usuarios autenticados
+    comunes: [
+      {
+        path: "/dashboard",
+        icon: "bx-home",
+        label: "Pagina principal",
+        roles: ["Emprendedor", "Credito1", "Credito2", "Administrador"]
+      }
+    ],
+
+    // Items específicos para Emprendedor
+    emprendedor: [
+      {
+        type: "submenu",
+        key: "requerimientos",
+        icon: "bx-file",
+        label: "Solicitud de crédito",
+        roles: ["Emprendedor"],
+        subitems: [
+          { path: "/Requeri_solicit", label: "Requerimientos y motivo" },
+          { path: "/Contrato", label: "Mi Contrato" }
+        ]
+      },
+      {
+        type: "submenu",
+        key: "historial",
+        icon: "bx-folder-open",
+        label: "Seguimiento de crédito",
+        roles: ["Emprendedor"],
+        subitems: [
+          { path: "/depositos", label: "Historial de depósitos" },
+          { path: "/cuotas", label: "Reporte de cuotas" }
+        ]
+      },
+      {
+        path: "/Banco",
+        icon: "bx-wallet",
+        label: "Mi banco",
+        roles: ["Emprendedor"]
+      }
+    ],
+
+    // Items para roles de Crédito y Administrador
+    administracion: [
+      {
+        path: "/Aprobacion",
+        icon: "bx-check-circle",
+        label: "Revisión y aprobación de solicitud",
+        roles: ["Credito2", "Administrador"]
+      },
+      {
+        path: "/Gestion",
+        icon: "bx-credit-card",
+        label: "Gestión de contrato",
+        roles: ["Credito1", "Administrador"]
+      },
+      {
+        path: "/Fondo",
+        icon: "bx-money-withdraw",
+        label: "Fondo Financiero",
+        roles: ["Administrador"]
+      },
+      {
+        path: "/Bitacora",
+        icon: "bx-book-alt",
+        label: "Bitácora",
+        roles: ["Administrador"]
+      }
+    ],
+
+    // Configuración solo para Administrador
+    configuracion: [
+      {
+        type: "submenu",
+        key: "gestionEmprend",
+        icon: "bx-cog",
+        label: "Configuración",
+        roles: ["Administrador"],
+        subitems: [
+          { path: "/Usuario", label: "Gestión de Usuarios" },
+          { path: "/Emprendimiento", label: "Clasificación Emprendimiento" },
+          { path: "/Requerimientos", label: "Requerimientos" },
+          { path: "/FormatoContrato", label: "Configuracion de contrato" }
+        ]
+      }
+    ]
+  };
+
   useEffect(() => {
     const usuario = JSON.parse(localStorage.getItem("usuario")) || null;
     setUsuarioLogueado(usuario);
@@ -36,36 +123,26 @@ const Menu = ({ onClose }) => {
 
   // Persistir estados de los submenús en localStorage
   useEffect(() => {
-    localStorage.setItem(
-      "isRequerimientosOpen",
-      JSON.stringify(isRequerimientosOpen)
-    );
-  }, [isRequerimientosOpen]);
-
-  useEffect(() => {
-    localStorage.setItem("isHistorialOpen", JSON.stringify(isHistorialOpen));
-  }, [isHistorialOpen]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      "isGestionEmprendOpen",
-      JSON.stringify(isGestionEmprendOpen)
-    );
-  }, [isGestionEmprendOpen]);
+    Object.keys(openSubmenus).forEach(key => {
+      localStorage.setItem(`is${key.charAt(0).toUpperCase() + key.slice(1)}Open`, 
+        JSON.stringify(openSubmenus[key]));
+    });
+  }, [openSubmenus]);
 
   // Cerrar submenús al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsRequerimientosOpen(false);
-        setIsHistorialOpen(false);
-        setIsGestionEmprendOpen(false);
+        setOpenSubmenus({
+          requerimientos: false,
+          historial: false,
+          gestionEmprend: false
+        });
       }
     };
+    
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Scroll hacia el elemento activo
@@ -81,11 +158,86 @@ const Menu = ({ onClose }) => {
     if (el) linkRefs.current[path] = el;
   };
 
-  const toggleRequerimientos = () =>
-    setIsRequerimientosOpen(!isRequerimientosOpen);
-  const toggleHistorial = () => setIsHistorialOpen(!isHistorialOpen);
-  const toggleGestionEmprend = () =>
-    setIsGestionEmprendOpen(!isGestionEmprendOpen);
+  const toggleSubmenu = (key) => {
+    setOpenSubmenus(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // Función para renderizar items del menú
+  const renderMenuItem = (item) => {
+    if (!puedeVer(item.roles)) return null;
+
+    if (item.type === "submenu") {
+      return (
+        <div key={item.key}>
+          <button
+            onClick={() => toggleSubmenu(item.key)}
+            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer focus:outline-none ${
+              openSubmenus[item.key] 
+                ? "bg-indigo-100 text-indigo-800" 
+                : `text-gray-700 ${hoverClassName}`
+            }`}
+          >
+            <i className={`bx ${item.icon} text-xl mr-3`}></i>
+            <span className="flex-1 text-sm font-medium text-left">
+              {item.label}
+            </span>
+            <i
+              className={`bx transition-transform duration-300 text-lg ${
+                openSubmenus[item.key]
+                  ? "bx-chevron-up transform rotate-180"
+                  : "bx-chevron-down"
+              }`}
+            ></i>
+          </button>
+          
+          {openSubmenus[item.key] && (
+            <div className="ml-6 mt-1 space-y-1 transition-all duration-300 overflow-hidden">
+              {item.subitems.map((subitem) => (
+                <div key={subitem.path} ref={setLinkRef(subitem.path)}>
+                  <NavLink
+                    to={subitem.path}
+                    className={({ isActive }) =>
+                      `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
+                        isActive
+                          ? "bg-indigo-100 text-indigo-800 font-medium"
+                          : `text-gray-600 ${submenuHoverClassName}`
+                      }`
+                    }
+                    onClick={onClose}
+                  >
+                    <i className="bx bx-chevron-right text-xs mr-2"></i>
+                    {subitem.label}
+                  </NavLink>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div key={item.path} ref={setLinkRef(item.path)}>
+        <NavLink
+          to={item.path}
+          className={({ isActive }) =>
+            `flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
+              isActive 
+                ? activeClassName 
+                : `text-gray-700 ${hoverClassName}`
+            }`
+          }
+          onClick={onClose}
+        >
+          <i className={`bx ${item.icon} text-xl mr-3`}></i>
+          <span className="text-sm font-medium">{item.label}</span>
+        </NavLink>
+      </div>
+    );
+  };
 
   return (
     <aside
@@ -95,9 +247,9 @@ const Menu = ({ onClose }) => {
       {/* Logo y nombre de la app */}
       <div className="p-5 border-b border-indigo-200 flex items-center justify-center mt-14">
         <div className="bg-indigo-100 p-2 rounded-lg shadow-sm mr-2">
-          <i className="bx bx-credit-card-front text-bg-gray-900 text-2xl"></i>
+          <i className="bx bx-credit-card-front text-gray-900 text-2xl"></i>
         </div>
-        <h2 className="text-xl font-bold text-bg-gray-900">Sistema de Microcréditos</h2>
+        <h2 className="text-xl font-bold text-gray-900">Sistema de Microcréditos</h2>
       </div>
 
       {/* Información del usuario */}
@@ -107,8 +259,12 @@ const Menu = ({ onClose }) => {
             <i className="bx bx-user text-white"></i>
           </div>
           <div className="overflow-hidden">
-            <p className="font-medium truncate text-gray-800">{usuarioLogueado.nombre_completo || "Usuario"}</p>
-            <p className="text-blue-500 text-xs capitalize">{usuarioLogueado.rol || "Rol"}</p>
+            <p className="font-medium truncate text-gray-800">
+              {usuarioLogueado.nombre_completo || "Usuario"}
+            </p>
+            <p className="text-blue-500 text-xs capitalize">
+              {usuarioLogueado.rol || "Rol"}
+            </p>
           </div>
         </div>
       )}
@@ -116,333 +272,28 @@ const Menu = ({ onClose }) => {
       {/* Navegación */}
       <div className="p-4">
         <nav className="space-y-1">
-          {/* Inicio - visible para todos */}
-          <div ref={setLinkRef("/dashboard")}>
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                  isActive 
-                    ? activeClassName 
-                    : `text-gray-700 ${hoverClassName}`
-                }`
-              }
-              onClick={onClose}
-            >
-              <i className="bx bx-home text-xl mr-3"></i>
-              <span className="text-sm font-medium">Inicio</span>
-            </NavLink>
-          </div>
-
-          {/* Solicitud de crédito - solo roles permitidos */}
-          {puedeVer(["Emprendedor"]) && (
-            <div>
-              {/* Menú de Solicitud de crédito */}
-              <button
-                onClick={toggleRequerimientos}
-                className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer focus:outline-none ${
-                  isRequerimientosOpen 
-                    ? "bg-indigo-100 text-indigo-800" 
-                    : `text-gray-700 ${hoverClassName}`
-                }`}
-              >
-                <i className="bx bx-file text-xl mr-3"></i>
-                <span className="flex-1 text-sm font-medium text-left">
-                  Solicitud de crédito
-                </span>
-                <i
-                  className={`bx transition-transform duration-300 text-lg ${
-                    isRequerimientosOpen
-                      ? "bx-chevron-up transform rotate-180"
-                      : "bx-chevron-down"
-                  }`}
-                ></i>
-              </button>
-              {isRequerimientosOpen && (
-                <div className="ml-6 mt-1 space-y-1 transition-all duration-300 overflow-hidden">
-                  {/* Requerimientos y motivo */}
-                  <div ref={setLinkRef("/Requeri_solicit")}>
-                    <NavLink
-                      to="/Requeri_solicit"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
-                          isActive
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : `text-gray-600 ${submenuHoverClassName}`
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      <i className="bx bx-chevron-right text-xs mr-2"></i>
-                      Requerimientos y motivo
-                    </NavLink>
-                  </div>
-                  {/* Mi Contrato */}
-                  <div ref={setLinkRef("/Contrato")}>
-                    <NavLink
-                      to="/Contrato"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
-                          isActive
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : `text-gray-600 ${submenuHoverClassName}`
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      <i className="bx bx-chevron-right text-xs mr-2"></i>
-                      Mi Contrato
-                    </NavLink>
-                  </div>
-                </div>
-              )}
+          {/* Items comunes */}
+          {menuItems.comunes.map(renderMenuItem)}
+          
+          {/* Separador visual si hay items de emprendedor */}
+          {puedeVer(["Emprendedor"]) && menuItems.emprendedor.length > 0 && (
+            <div className="pt-2">
+              {menuItems.emprendedor.map(renderMenuItem)}
             </div>
           )}
 
-          {/* Control de seguimiento de crédito - solo roles permitidos */}
-          {puedeVer(["Emprendedor"]) && (
-            <div>
-              {/* Menú de Control de seguimiento */}
-              <button
-                onClick={toggleHistorial}
-                className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer focus:outline-none ${
-                  isHistorialOpen 
-                    ? "bg-indigo-100 text-indigo-800" 
-                    : `text-gray-700 ${hoverClassName}`
-                }`}
-              >
-                <i className="bx bx-folder-open text-xl mr-3"></i>
-                <span className="flex-1 text-sm font-medium text-left">
-                  Seguimiento de crédito
-                </span>
-                <i
-                  className={`bx transition-transform duration-300 text-lg ${
-                    isHistorialOpen
-                      ? "bx-chevron-up transform rotate-180"
-                      : "bx-chevron-down"
-                  }`}
-                ></i>
-              </button>
-              {isHistorialOpen && (
-                <div className="ml-6 mt-1 space-y-1 transition-all duration-300 overflow-hidden">
-                  {/* Opciones */}
-                  <div ref={setLinkRef("/depositos")}>
-                    <NavLink
-                      to="/depositos"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
-                          isActive
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : `text-gray-600 ${submenuHoverClassName}`
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      <i className="bx bx-chevron-right text-xs mr-2"></i>
-                      Historial de depósitos
-                    </NavLink>
-                  </div>
-                  <div ref={setLinkRef("/cuotas")}>
-                    <NavLink
-                      to="/cuotas"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
-                          isActive
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : `text-gray-600 ${submenuHoverClassName}`
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      <i className="bx bx-chevron-right text-xs mr-2"></i>
-                      Reporte de cuotas
-                    </NavLink>
-                  </div>
-                </div>
-              )}
+          {/* Items de administración */}
+          {(puedeVer(["Credito1", "Credito2", "Administrador"])) && (
+            <div className="pt-2 border-t border-gray-100">
+              {menuItems.administracion.map(renderMenuItem)}
             </div>
           )}
 
-          {/* Enlaces que solo ven los emprendedores */}
-          {puedeVer(["Emprendedor"]) && (
-            <div ref={setLinkRef("/Banco")}>
-              <NavLink
-                to="/Banco"
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                    isActive 
-                      ? activeClassName 
-                      : `text-gray-700 ${hoverClassName}`
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-wallet text-xl mr-3"></i>
-                <span className="text-sm font-medium">Mi banco</span>
-              </NavLink>
-            </div>
-          )}
-
-          {/* Revisión y aprobación - solo roles */}
-          {puedeVer(["Credito2", "Administrador"]) && (
-            <div ref={setLinkRef("/Aprobacion")}>
-              <NavLink
-                to="/Aprobacion"
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                    isActive 
-                      ? activeClassName 
-                      : `text-gray-700 ${hoverClassName}`
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-check-circle text-xl mr-3"></i>
-                <span className="text-sm font-medium">Revisión y aprobación</span>
-              </NavLink>
-            </div>
-          )}
-
-          {/* Gestión de contratos - solo Administrador */}
-          {puedeVer(["Credito1", "Administrador"]) && (
-            <div ref={setLinkRef("/Gestion")}>
-              <NavLink
-                to="/Gestion"
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                    isActive 
-                      ? activeClassName 
-                      : `text-gray-700 ${hoverClassName}`
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-credit-card text-xl mr-3"></i>
-                <span className="text-sm font-medium">Gestión de contrato</span>
-              </NavLink>
-            </div>
-          )}
-
-          {/* Fondo financiero - solo Administrador */}
+          {/* Configuración */}
           {puedeVer(["Administrador"]) && (
-            <div ref={setLinkRef("/Fondo")}>
-              <NavLink
-                to="/Fondo"
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                    isActive 
-                      ? activeClassName 
-                      : `text-gray-700 ${hoverClassName}`
-                  }`
-                }
-                onClick={onClose}
-              >
-                <i className="bx bx-money-withdraw text-xl mr-3"></i>
-                <span className="text-sm font-medium">Fondo Financiero</span>
-              </NavLink>
+            <div className="pt-2 border-t border-gray-100">
+              {menuItems.configuracion.map(renderMenuItem)}
             </div>
-          )}
-
-          {/* Supervisión de cuotas - solo roles permitidos */}
-          {puedeVer(["Credito2", "Administrador"]) && (
-            <>
-              <div ref={setLinkRef("/Bitacora")}>
-                <NavLink
-                  to="/Bitacora"
-                  className={({ isActive }) =>
-                    `flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
-                      isActive 
-                        ? activeClassName 
-                        : `text-gray-700 ${hoverClassName}`
-                    }`
-                  }
-                  onClick={onClose}
-                >
-                  <i className="bx bx-book-alt text-xl mr-3"></i>
-                  <span className="text-sm font-medium">Bitácora</span>
-                </NavLink>
-              </div>
-            </>
-          )}
-
-          {/* Configuración - solo Administrador */}
-          {puedeVer(["Administrador"]) && (
-            <>
-              {/* Menú de Configuración */}
-              <button
-                onClick={toggleGestionEmprend}
-                className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer focus:outline-none ${
-                  isGestionEmprendOpen 
-                    ? "bg-indigo-100 text-indigo-800" 
-                    : `text-gray-700 ${hoverClassName}`
-                }`}
-              >
-                <i className="bx bx-cog text-xl mr-3"></i>
-                <span className="flex-1 text-sm font-medium text-left">
-                  Configuración
-                </span>
-                <i
-                  className={`bx transition-transform duration-300 text-lg ${
-                    isGestionEmprendOpen
-                      ? "bx-chevron-up transform rotate-180"
-                      : "bx-chevron-down"
-                  }`}
-                ></i>
-              </button>
-              {isGestionEmprendOpen && (
-                <div className="ml-6 mt-1 space-y-1 transition-all duration-300 overflow-hidden">
-                  {/* Opciones en configuración */}
-                  <div ref={setLinkRef("/Usuario")}>
-                    <NavLink
-                      to="/Usuario"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
-                          isActive
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : `text-gray-600 ${submenuHoverClassName}`
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      <i className="bx bx-chevron-right text-xs mr-2"></i>
-                      Gestión de Usuarios
-                    </NavLink>
-                  </div>
-                  <div ref={setLinkRef("/Emprendimiento")}>
-                    <NavLink
-                      to="/Emprendimiento"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
-                          isActive
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : `text-gray-600 ${submenuHoverClassName}`
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      <i className="bx bx-chevron-right text-xs mr-2"></i>
-                      Clasificación Emprendimiento
-                    </NavLink>
-                  </div>
-                  <div ref={setLinkRef("/Requerimientos")}>
-                    <NavLink
-                      to="/Requerimientos"
-                      className={({ isActive }) =>
-                        `block px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer text-sm ${
-                          isActive
-                            ? "bg-indigo-100 text-indigo-800 font-medium"
-                            : `text-gray-600 ${submenuHoverClassName}`
-                        }`
-                      }
-                      onClick={onClose}
-                    >
-                      <i className="bx bx-chevron-right text-xs mr-2"></i>
-                      Requerimientos
-                    </NavLink>
-                  </div>
-                </div>
-              )}
-            </>
           )}
         </nav>
       </div>

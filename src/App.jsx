@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-
+import FormatoContrato from "./pages/FormatoContrato"
 //Emprededor
 import RegistroEmprendedor from "./pages/RegistroEmprendedor";
 import Requeri_solicit from "./pages/Requeri_solicit";
@@ -69,6 +69,7 @@ function App() {
         <Route path="/Credito" element={<Credito />} />
         <Route path="/Requerimientos" element={<Requerimientos />} />
         <Route path='/Bitacora' element={<Bitacora />} />
+        <Route path='/FormatoContrato' element={<FormatoContrato />} />
       </Routes>
     </Router>
   );

@@ -1,5 +1,7 @@
 const express = require("express");
 const { query } = require("../config/conexion"); // Conexión a la base de datos
+const multer = require('multer');
+const upload = multer(); // para datos sin archivos
 
 const router = express.Router();
 
@@ -64,7 +66,7 @@ router.get("/estatus/aprobada", async (req, res) => {
 });
 
 // Endpoint para crear una nueva solicitud
-router.post("/", async (req, res) => {
+router.post("/", upload.none(), async (req, res) => {
   try {
     const { cedula_emprendedor, motivo, estatus } = req.body;
 
