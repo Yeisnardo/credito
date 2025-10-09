@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api, { getUsuarioPorCedula } from '../services/api_usuario';
+import { generarResumenUsuario } from '../pdf/generarPdf';
 
 const Dashboard = ({ setUser }) => {
   const navigate = useNavigate();
@@ -13,6 +14,13 @@ const Dashboard = ({ setUser }) => {
     proximosPagos: 0,
     mensajesNoLeidos: 3
   });
+
+  const handleViewPdf = () => {
+  const doc = generarResumenUsuario(user, stats);
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  window.open(pdfUrl);
+};
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -120,6 +128,12 @@ const Dashboard = ({ setUser }) => {
                   <i className="bx bx-user-circle text-2xl text-indigo-600"></i>
                 </div>
               </div>
+              <button
+  className="bg-green-600 text-white px-4 py-2 rounded-lg mb-4"
+  onClick={handleViewPdf}
+>
+  Descargar Resumen PDF
+</button>
             </div>
 
             {/* Tarjeta 2 - Créditos activos */}

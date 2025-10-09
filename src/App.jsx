@@ -28,6 +28,7 @@ import Amortizacion from "./pages/Amortizacion";
 import Credito from "./pages/Credito";
 import Requerimientos from "./pages/Requerimientos";
 import Bitacora from './pages/Bitacora';
+import AdministracionCuota from './pages/AdministracionCuota';
 
 
 // Importación de componentes adicionales
@@ -69,6 +70,7 @@ function App() {
         <Route path="/Credito" element={<Credito />} />
         <Route path="/Requerimientos" element={<Requerimientos />} />
         <Route path='/Bitacora' element={<Bitacora />} />
+        <Route path='/AdministracionCuota' element={<AdministracionCuota/>} />
         <Route path='/FormatoContrato' element={<FormatoContrato />} />
       </Routes>
     </Router>

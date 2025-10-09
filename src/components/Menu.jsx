@@ -90,6 +90,12 @@ const Menu = ({ onClose }) => {
         icon: "bx-book-alt",
         label: "Bitácora",
         roles: ["Administrador"]
+      },
+      {
+        path: "/AdministracionCuota",
+        icon: "bx bx-calendar-alt",
+        label: "Administración de cuotas",
+        roles: ["Administrador", "Credito1"]
       }
     ],
 
