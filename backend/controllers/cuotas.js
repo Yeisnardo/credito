@@ -63,6 +63,38 @@ function calcularFechaVencimiento(fechaInicio, frecuencia, numeroCuota) {
   return fecha.toISOString().split('T')[0];
 }
 
+// Obtener configuración activa
+async function obtenerConfiguracionActiva() {
+  try {
+    const resultado = await query(
+      'SELECT * FROM configuracion_contratos ORDER BY id DESC LIMIT 1'
+    );
+    
+    if (resultado.rows.length === 0) {
+      // Configuración por defecto si no hay ninguna
+      return {
+        frecuencia_pago: 'mensual',
+        numero_cuotas: '6',
+        cuotasGracia: '0',
+        porcentaje_interes: '0',
+        porcentaje_mora: '0'
+      };
+    }
+    
+    return resultado.rows[0];
+  } catch (error) {
+    console.error('Error al obtener configuración:', error);
+    // Retornar configuración por defecto en caso de error
+    return {
+      frecuencia_pago: 'mensual',
+      numero_cuotas: '6',
+      cuotasGracia: '0',
+      porcentaje_interes: '0',
+      porcentaje_mora: '0'
+    };
+  }
+}
+
 // ========== RUTAS PARA EMPRENDEDOR ==========
 
 // Obtener contrato por cédula del emprendedor
@@ -151,8 +183,7 @@ router.post("/", upload.single("comprobante"), async (req, res) => {
       confirmacionIFEMI,
       dias_mora_cuota,
       interes_acumulado,
-      estado_cuota,
-      monto_morosidad
+      estado_cuota
     } = req.body;
 
     const comprobantePath = req.file ? `/uploads/${req.file.filename}` : null;
@@ -163,7 +194,6 @@ router.post("/", upload.single("comprobante"), async (req, res) => {
     const diasMora = dias_mora_cuota || 0;
     const interes = interes_acumulado || "0";
     const estado = estado_cuota || "Pendiente";
-    const morosidad = monto_morosidad || "0";
 
     // Generar nuevo ID
     lastId += 1;
@@ -172,12 +202,11 @@ router.post("/", upload.single("comprobante"), async (req, res) => {
     const resultado = await query(
       `INSERT INTO cuota (
         id_cuota, id_cuota_c, cedula_emprendedor, semana, monto, monto_ves,
-        fecha_pagada, estado_cuota, dias_mora_cuota, interes_acumulado, 
-        monto_morosidad, confirmacionIFEMI, comprobante
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+        fecha_pagada, estado_cuota, dias_mora_cuota, interes_acumulado, confirmacionIFEMI, comprobante
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
         id_cuota, id_cuota_c, cedula_emprendedor, semana, monto, monto_ves,
-        fechaPagada, estado, diasMora, interes, morosidad, confirmacion, comprobantePath
+        fechaPagada, estado, diasMora, interes, confirmacion, comprobantePath
       ]
     );
 
@@ -192,6 +221,64 @@ router.post("/", upload.single("comprobante"), async (req, res) => {
 });
 
 // ========== RUTAS PARA ADMINISTRADOR ==========
+
+// Confirmar pago IFEMI
+router.put("/:id_cuota/confirmar-pago", async (req, res) => {
+  try {
+    const { id_cuota } = req.params;
+
+    const resultado = await query(
+      `UPDATE cuota 
+       SET confirmacionIFEMI = 'Confirmado'
+       WHERE id_cuota = $1 
+       RETURNING *`,
+      [id_cuota]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ error: "Cuota no encontrada" });
+    }
+
+    res.json({
+      message: "Pago confirmado exitosamente",
+      cuota: resultado.rows[0]
+    });
+  } catch (error) {
+    console.error("Error al confirmar pago:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Rechazar pago IFEMI
+router.put("/:id_cuota/rechazar-pago", async (req, res) => {
+  try {
+    const { id_cuota } = req.params;
+    const { motivo } = req.body;
+
+    const resultado = await query(
+      `UPDATE cuota 
+       SET confirmacionIFEMI = 'Rechazado',
+           estado_cuota = 'Pendiente',
+           fecha_pagada = NULL,
+           motivo_rechazo = $2
+       WHERE id_cuota = $1 
+       RETURNING *`,
+      [id_cuota, motivo]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ error: "Cuota no encontrada" });
+    }
+
+    res.json({
+      message: "Pago rechazado exitosamente",
+      cuota: resultado.rows[0]
+    });
+  } catch (error) {
+    console.error("Error al rechazar pago:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Obtener todos los contratos
 router.get("/contratos/todos", async (req, res) => {
@@ -235,7 +322,6 @@ router.post("/:id_cuota/pago-manual", async (req, res) => {
       `UPDATE cuota 
        SET estado_cuota = 'Pagado', 
            fecha_pagada = TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),
-           confirmacionIFEMI = 'Confirmado',
            dias_mora_cuota = 0
        WHERE id_cuota = $1 
        RETURNING *`,
@@ -256,16 +342,15 @@ router.post("/:id_cuota/pago-manual", async (req, res) => {
   }
 });
 
-// Recalcular cuotas pendientes
+// Recalcular cuotas pendientes BASADO EN CONFIGURACIÓN
 router.post("/recalcular/:id_contrato", async (req, res) => {
   try {
     const { id_contrato } = req.params;
-    const { nueva_frecuencia, nuevo_total_cuotas } = req.body;
-
-    // Validaciones básicas
-    if (!nueva_frecuencia || !nuevo_total_cuotas) {
-      return res.status(400).json({ error: "Frecuencia y total de cuotas son requeridos" });
-    }
+    
+    // Obtener configuración activa en lugar de pedir parámetros
+    const configuracion = await obtenerConfiguracionActiva();
+    const nueva_frecuencia = configuracion.frecuencia_pago;
+    const nuevo_total_cuotas = configuracion.numero_cuotas;
 
     // 1. Obtener información del contrato
     const contratoResult = await query(
@@ -299,7 +384,7 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
     // 3. Validaciones de negocio
     if (parseInt(nuevo_total_cuotas) <= cuotasPagadas.length) {
       return res.status(400).json({
-        error: `El total de cuotas debe ser mayor a ${cuotasPagadas.length} (cuotas ya pagadas)`
+        error: `El total de cuotas configurado (${nuevo_total_cuotas}) debe ser mayor a ${cuotasPagadas.length} (cuotas ya pagadas)`
       });
     }
 
@@ -336,15 +421,20 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
       const nuevaCuota = await query(
         `INSERT INTO cuota (
           id_cuota, id_cuota_c, cedula_emprendedor, semana, monto, monto_ves,
-          fecha_pagada, estado_cuota, dias_mora_cuota, interes_acumulado,
-          monto_morosidad, confirmacionIFEMI
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+          fecha_pagada, estado_cuota, dias_mora_cuota, interes_acumulado, confirmacionIFEMI
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
         [
-          lastId, id_contrato, contrato.cedula_emprendedor,
+          lastId, 
+          id_contrato, 
+          contrato.cedula_emprendedor,
           `Semana ${numeroCuota}`, 
           nuevoMontoCuota.toFixed(2), 
           nuevoMontoCuota.toFixed(2),
-          '', 'Pendiente', 0, '0', '0', 'En Espera'
+          '', // fecha_pagada ($7)
+          'Pendiente', // estado_cuota ($8)
+          0, // dias_mora_cuota ($9)
+          '0', // interes_acumulado ($10)
+          'En Espera' // confirmacionIFEMI ($11)
         ]
       );
 
@@ -352,7 +442,12 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
     }
 
     res.json({
-      message: "Cuotas recalculadas exitosamente",
+      message: "Cuotas recalculadas exitosamente usando configuración del sistema",
+      configuracion_usada: {
+        frecuencia: nueva_frecuencia,
+        total_cuotas: nuevo_total_cuotas,
+        cuotas_gracia: configuracion.cuotasGracia
+      },
       resumen: {
         cuotas_pagadas_mantenidas: cuotasPagadas.length,
         nuevas_cuotas_pendientes: nuevasCuotas.length,
@@ -447,6 +542,22 @@ router.put("/cuota/:id_cuota/estado", async (req, res) => {
     });
   } catch (error) {
     console.error("Error al actualizar estado:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Obtener todas las cuotas (para reportes)
+router.get("/todas", async (req, res) => {
+  try {
+    const resultado = await query(
+      `SELECT c.*, ct.numero_contrato, ct.cedula_emprendedor, ct.monto_devolver
+       FROM cuota c
+       JOIN contrato ct ON c.id_cuota_c = ct.id_contrato
+       ORDER BY c.id_cuota DESC`
+    );
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error("Error al obtener todas las cuotas:", error);
     res.status(500).json({ error: error.message });
   }
 });

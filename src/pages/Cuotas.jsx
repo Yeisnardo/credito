@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import apiCuotas from "../services/api_cuotas"; // Importar las APIs reales
+import apiCuotas from "../services/api_cuotas";
 
 const EmprendedorDashboard = ({ setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUserState] = useState(null);
-  const [vista, setVista] = useState('resumen'); // resumen | pendientes | historial
+  const [vista, setVista] = useState('resumen');
   const [contrato, setContrato] = useState(null);
   const [cuotasPendientes, setCuotasPendientes] = useState([]);
   const [historialPagos, setHistorialPagos] = useState([]);
@@ -29,7 +29,6 @@ const EmprendedorDashboard = ({ setUser }) => {
       try {
         const cedula = localStorage.getItem('cedula_usuario');
         if (cedula) {
-          // En un caso real, aquí obtendrías los datos del usuario de tu API
           const usuario = {
             nombre_completo: "Emprendedor Ejemplo",
             rol: "Emprendedor",
@@ -39,8 +38,7 @@ const EmprendedorDashboard = ({ setUser }) => {
           setUserState(usuario);
           if (setUser) setUser(usuario);
           
-          // Cargar datos REALES del emprendedor
-          cargarDatosEmprendedor(cedula);
+          await cargarDatosEmprendedor(cedula);
         }
       } catch (error) {
         console.error('Error al obtener datos:', error);
@@ -50,24 +48,19 @@ const EmprendedorDashboard = ({ setUser }) => {
     if (!user) fetchUserData();
   }, [setUser, user]);
 
-  // Cargar todos los datos del emprendedor
   const cargarDatosEmprendedor = async (cedula) => {
     try {
       setLoading(true);
       
-      // 1. Cargar contrato del emprendedor
       const contratoData = await apiCuotas.getContratoPorCedula(cedula);
       setContrato(contratoData);
 
-      // 2. Cargar cuotas pendientes
       const pendientesData = await apiCuotas.getCuotasPendientesEmprendedor(cedula);
       setCuotasPendientes(pendientesData);
 
-      // 3. Cargar historial de pagos
       const historialData = await apiCuotas.getHistorialPagosEmprendedor(cedula);
       setHistorialPagos(historialData);
 
-      // 4. Calcular estadísticas
       calcularEstadisticas(pendientesData, historialData, contratoData);
       
     } catch (error) {
@@ -78,7 +71,6 @@ const EmprendedorDashboard = ({ setUser }) => {
     }
   };
 
-  // Calcular estadísticas basadas en los datos reales
   const calcularEstadisticas = (pendientes, historial, contratoData) => {
     const totalPagado = historial.reduce((sum, pago) => {
       return sum + parseFloat(pago.monto || 0);
@@ -99,43 +91,39 @@ const EmprendedorDashboard = ({ setUser }) => {
     });
   };
 
-  // Función para pagar una cuota (simulada - integrar con pasarela de pago real)
-  const pagarCuota = async (cuotaId) => {
+  // FUNCIÓN CORREGIDA: registrarPagoManual para emprendedores
+  const registrarPagoManual = async (cuotaId) => {
     try {
       setLoading(true);
       
-      // Aquí integrarías con tu pasarela de pago real
-      // Por ahora simulamos el proceso
-      const confirmarPago = window.confirm(
-        `¿Estás seguro de que deseas pagar esta cuota?\n\nSerás redirigido a la pasarela de pago.`
-      );
+      const resultado = await apiCuotas.registrarPagoManual(cuotaId, {
+        metodo_pago: 'transferencia',
+        referencia_pago: `PAGO-${Date.now()}`
+      });
+
+      // Actualizar el estado local
+      const cuotasActualizadas = cuotasPendientes.filter(cuota => cuota.id_cuota !== cuotaId);
+      setCuotasPendientes(cuotasActualizadas);
       
-      if (confirmarPago) {
-        // Simular proceso de pago
-        alert('🔗 Redirigiendo a pasarela de pago...\n\nEn una implementación real, aquí se integraría con Mercado Pago, PayPal, etc.');
-        
-        // Después del pago exitoso, recargar los datos
-        setTimeout(() => {
-          if (user?.cedula) {
-            cargarDatosEmprendedor(user.cedula);
-          }
-        }, 2000);
+      // Recargar datos para actualizar historial y estadísticas
+      if (user?.cedula) {
+        await cargarDatosEmprendedor(user.cedula);
       }
+      
+      alert('✅ ' + resultado.message);
+      
     } catch (error) {
-      console.error('Error en proceso de pago:', error);
-      alert('❌ Error al procesar el pago. Por favor intenta nuevamente.');
+      console.error('Error registrando pago:', error);
+      alert('❌ Error al registrar el pago: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Descargar comprobante (simulado)
   const descargarComprobante = async (pagoId) => {
     try {
-      // En una implementación real, aquí generarías/descargarías el PDF
       alert(`📄 Generando comprobante para el pago #${pagoId}...\n\nEl comprobante se descargará automáticamente.`);
       
-      // Simular descarga
       setTimeout(() => {
         alert('✅ Comprobante descargado exitosamente');
       }, 1000);
@@ -145,7 +133,6 @@ const EmprendedorDashboard = ({ setUser }) => {
     }
   };
 
-  // Recargar datos
   const recargarDatos = () => {
     if (user?.cedula) {
       cargarDatosEmprendedor(user.cedula);
@@ -312,7 +299,7 @@ const EmprendedorDashboard = ({ setUser }) => {
                           </div>
                           <button 
                             className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors text-sm"
-                            onClick={() => pagarCuota(cuota.id_cuota)}
+                            onClick={() => registrarPagoManual(cuota.id_cuota)}
                             disabled={loading}
                           >
                             <i className="bx bx-credit-card mr-1"></i> Pagar
@@ -520,7 +507,7 @@ const EmprendedorDashboard = ({ setUser }) => {
                         <div className="mt-4 md:mt-0">
                           <button 
                             className="bg-indigo-600 text-white px-6 py-3 rounded-lg flex items-center hover:bg-indigo-700 transition-colors font-medium"
-                            onClick={() => pagarCuota(cuota.id_cuota)}
+                            onClick={() => registrarPagoManual(cuota.id_cuota)}
                             disabled={loading}
                           >
                             <i className="bx bx-credit-card mr-2"></i> 

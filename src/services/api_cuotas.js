@@ -34,15 +34,27 @@ export const getCuotasPorContrato = async (id_contrato) => {
   return response.data;
 };
 
-// Registrar pago manual (para administrador)
+// REGISTRAR PAGO MANUAL - FUNCIÓN FALTANTE
 export const registrarPagoManual = async (id_cuota, pagoData) => {
   const response = await api.post(`/api/cuotas/${id_cuota}/pago-manual`, pagoData);
   return response.data;
 };
 
-// Recalcular cuotas pendientes
-export const recalcularCuotasPendientes = async (id_contrato, configData) => {
-  const response = await api.post(`/api/cuotas/recalcular/${id_contrato}`, configData);
+// Confirmar pago IFEMI (para administrador)
+export const confirmarPagoIFEMI = async (id_cuota) => {
+  const response = await api.put(`/api/cuotas/${id_cuota}/confirmar-pago`);
+  return response.data;
+};
+
+// Rechazar pago IFEMI (para administrador)
+export const rechazarPagoIFEMI = async (id_cuota, motivo) => {
+  const response = await api.put(`/api/cuotas/${id_cuota}/rechazar-pago`, { motivo });
+  return response.data;
+};
+
+// Recalcular cuotas pendientes (sin parámetros, usa configuración)
+export const recalcularCuotasPendientes = async (id_contrato) => {
+  const response = await api.post(`/api/cuotas/recalcular/${id_contrato}`);
   return response.data;
 };
 
@@ -70,7 +82,9 @@ export default {
   getCuotasPagadas,
   getContratos,
   getCuotasPorContrato,
-  registrarPagoManual,
+  registrarPagoManual, // AGREGAR ESTA LÍNEA
+  confirmarPagoIFEMI,
+  rechazarPagoIFEMI,
   recalcularCuotasPendientes,
   getEstadisticasDashboard,
   getCuotasPendientesEmprendedor,
