@@ -1,36 +1,43 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: 'http://localhost:5000/api',
 });
 
-// Crear emprendimiento
-const createEmprendimiento = async (emprendimiento) => {
-  const response = await api.post('/api/emprendimientos', emprendimiento);
+// Obtener todas las clasificaciones
+export const getClasificaciones = async () => {
+  const response = await api.get('/clasificacion');
   return response.data;
 };
 
-// Obtener emprendimiento por cedula_emprendedor
-const getEmprendimiento = async (cedula_emprendedor) => {
-  const response = await api.get(`/api/emprendimientos/${cedula_emprendedor}`);
+// Crear clasificación
+export const createClasificacion = async (clasificacion) => {
+  const response = await api.post('/clasificacion', clasificacion);
   return response.data;
 };
 
-// Actualizar emprendimiento
-const updateEmprendimiento = async (cedula_emprendedor, emprendimiento) => {
-  const response = await api.put(`/api/emprendimientos/${cedula_emprendedor}`, emprendimiento);
+// Actualizar clasificación
+export const updateClasificacion = async (id_clasificacion, clasificacion) => {
+  const response = await api.put(`/clasificacion/${id_clasificacion}`, clasificacion);
   return response.data;
 };
 
-// Eliminar emprendimiento
-const deleteEmprendimiento = async (cedula_emprendedor) => {
-  const response = await api.delete(`/api/emprendimientos/${cedula_emprendedor}`);
+// Eliminar clasificación
+export const deleteClasificacion = async (id_clasificacion) => {
+  const response = await api.delete(`/clasificacion/${id_clasificacion}`);
+  return response.data;
+};
+
+// Obtener clasificación por ID
+export const getClasificacionById = async (id_clasificacion) => {
+  const response = await api.get(`/clasificacion/${id_clasificacion}`);
   return response.data;
 };
 
 export default {
-  createEmprendimiento,
-  getEmprendimiento,
-  updateEmprendimiento,
-  deleteEmprendimiento,
+  getClasificaciones,
+  createClasificacion,
+  updateClasificacion,
+  deleteClasificacion,
+  getClasificacionById,
 };

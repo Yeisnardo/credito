@@ -6,15 +6,17 @@ import Menu from "../components/Menu";
 import api from "../services/api_clasificacion";
 
 // Componente para mostrar cada sector
-const SectorCard = ({ sector, negocios, onRegistrarNegocio, onVerDetalles }) => (
+const SectorCard = ({ sector, clasificaciones, onRegistrarNegocio, onVerDetalles }) => (
   <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 flex flex-col justify-between border border-gray-100">
     <div>
       <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mx-auto mb-3">
         <i className="bx bx-category-alt text-indigo-600 text-xl"></i>
       </div>
-      <h2 className="text-xl font-bold mb-3 text-center text-indigo-700 truncate" title={sector}>{sector}</h2>
+      <h2 className="text-xl font-bold mb-3 text-center text-indigo-700 truncate" title={sector}>
+        {sector}
+      </h2>
       <p className="text-gray-500 text-sm text-center mb-4">
-        {negocios.length} negocio{negocios.length !== 1 ? 's' : ''}
+        {clasificaciones.filter(c => c.negocio).length} negocio{clasificaciones.filter(c => c.negocio).length !== 1 ? 's' : ''}
       </p>
     </div>
     <div className="flex flex-col space-y-2">
@@ -26,7 +28,7 @@ const SectorCard = ({ sector, negocios, onRegistrarNegocio, onVerDetalles }) => 
       </button>
       <button
         className="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-700 transition text-sm font-medium"
-        onClick={() => onVerDetalles(sector, negocios)}
+        onClick={() => onVerDetalles(sector, clasificaciones)}
       >
         Ver Detalles
       </button>
@@ -36,34 +38,37 @@ const SectorCard = ({ sector, negocios, onRegistrarNegocio, onVerDetalles }) => 
 
 const App = () => {
   const [menuOpen, setMenuOpen] = useState(true);
-  const [sectores, setSectores] = useState({});
+  const [clasificaciones, setClasificaciones] = useState([]);
   const [nuevoSector, setNuevoSector] = useState("");
   const [sectorSeleccionado, setSectorSeleccionado] = useState("");
   const [nuevoNegocio, setNuevoNegocio] = useState("");
   const [cargando, setCargando] = useState(true);
   const [mostrarFormSector, setMostrarFormSector] = useState(false);
 
-  // Cargar y agrupar sectores desde API
+  // Agrupar clasificaciones por sector
+  const sectoresAgrupados = clasificaciones.reduce((acc, item) => {
+    if (item.sector) {
+      if (!acc[item.sector]) acc[item.sector] = [];
+      acc[item.sector].push(item);
+    }
+    return acc;
+  }, {});
+
+  // Cargar clasificaciones desde API
+  const cargarClasificaciones = async () => {
+    try {
+      setCargando(true);
+      const data = await api.getClasificaciones();
+      setClasificaciones(data);
+    } catch (err) {
+      Swal.fire("Error", "No se pudieron cargar los sectores: " + err.message, "error");
+    } finally {
+      setCargando(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchSectores = async () => {
-      try {
-        setCargando(true);
-        const data = await api.getClasificaciones();
-        const agrupados = data.reduce((acc, item) => {
-          if (item.sector) {
-            if (!acc[item.sector]) acc[item.sector] = [];
-            if (item.negocio) acc[item.sector].push(item.negocio);
-          }
-          return acc;
-        }, {});
-        setSectores(agrupados);
-      } catch (err) {
-        Swal.fire("Error", "No se pudieron cargar los sectores: " + err.message, "error");
-      } finally {
-        setCargando(false);
-      }
-    };
-    fetchSectores();
+    cargarClasificaciones();
   }, []);
 
   // Función para registrar un sector
@@ -74,12 +79,8 @@ const App = () => {
     }
 
     try {
-      await api.createClasificacion({ sector: sectorTrimmed });
-      setSectores(prev => {
-        const nuevos = { ...prev };
-        if (!nuevos[sectorTrimmed]) nuevos[sectorTrimmed] = [];
-        return nuevos;
-      });
+      await api.createClasificacion({ sector: sectorTrimmed, negocio: null });
+      await cargarClasificaciones(); // Recargar datos
       Swal.fire("¡Éxito!", `Sector "${sectorTrimmed}" registrado.`, "success");
       setNuevoSector("");
       setMostrarFormSector(false);
@@ -98,12 +99,7 @@ const App = () => {
 
     try {
       await api.createClasificacion({ sector, negocio: negocioTrimmed });
-      setSectores(prev => {
-        const nuevos = { ...prev };
-        if (!nuevos[sector]) nuevos[sector] = [];
-        nuevos[sector].push(negocioTrimmed);
-        return nuevos;
-      });
+      await cargarClasificaciones(); // Recargar datos
       Swal.fire("¡Éxito!", `Negocio "${negocioTrimmed}" agregado a ${sector}.`, "success");
       setNuevoNegocio("");
     } catch (err) {
@@ -111,19 +107,63 @@ const App = () => {
     }
   };
 
+  // Función para editar un negocio
+  const handleEditarNegocio = async (clasificacion, nuevoNombre) => {
+    try {
+      await api.updateClasificacion(clasificacion.id_clasificacion, {
+        sector: clasificacion.sector,
+        negocio: nuevoNombre
+      });
+      await cargarClasificaciones(); // Recargar datos
+      return true;
+    } catch (err) {
+      Swal.fire("Error", "No se pudo actualizar el negocio: " + err.message, "error");
+      return false;
+    }
+  };
+
+  // Función para eliminar un negocio
+  const handleEliminarNegocio = async (clasificacion) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Eliminar el negocio "${clasificacion.negocio}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.deleteClasificacion(clasificacion.id_clasificacion);
+        await cargarClasificaciones(); // Recargar datos
+        Swal.fire('Eliminado', 'El negocio ha sido eliminado.', 'success');
+      } catch (err) {
+        Swal.fire("Error", "No se pudo eliminar el negocio: " + err.message, "error");
+      }
+    }
+  };
+
   // Ver detalles del sector
-  const handleVerDetalles = (sector, negocios) => {
+  const handleVerDetalles = (sector, clasificacionesSector) => {
+    const negocios = clasificacionesSector.filter(c => c.negocio);
+    
     Swal.fire({
       title: `Detalles de ${sector}`,
       html: `
         <div class="text-left">
           <p class="mb-3"><strong class="text-indigo-700">Sector:</strong> ${sector}</p>
-          <p class="mb-2"><strong class="text-indigo-700">Negocios:</strong></p>
+          <p class="mb-2"><strong class="text-indigo-700">Negocios (${negocios.length}):</strong></p>
           <ul class="max-h-60 overflow-y-auto mb-4">
-            ${negocios.length > 0 ? negocios.map((n, index) => `
+            ${negocios.length > 0 ? negocios.map((clasificacion, index) => `
               <li class="py-2 border-b border-gray-100 flex justify-between items-center">
-                <span>${n}</span>
-                <button class="edit-btn px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200 transition" data-index="${index}">Editar</button>
+                <span>${clasificacion.negocio}</span>
+                <div class="flex space-x-2">
+                  <button class="edit-btn px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200 transition" data-id="${clasificacion.id_clasificacion}">Editar</button>
+                  <button class="delete-btn px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition" data-id="${clasificacion.id_clasificacion}">Eliminar</button>
+                </div>
               </li>
             `).join("") : "<li class='text-gray-500 py-2'>No hay negocios registrados</li>"}
           </ul>
@@ -135,35 +175,45 @@ const App = () => {
       didOpen: () => {
         // Eventos para editar cada negocio
         document.querySelectorAll('.edit-btn').forEach(btn => {
-          btn.onclick = () => {
-            const index = parseInt(btn.dataset.index);
-            const oldName = negocios[index];
+          btn.onclick = async () => {
+            const idClasificacion = btn.dataset.id;
+            const clasificacion = clasificaciones.find(c => c.id_clasificacion == idClasificacion);
+            
+            if (!clasificacion) return;
 
-            Swal.fire({
+            const { value: newName } = await Swal.fire({
               title: 'Editar Negocio',
               input: 'text',
-              inputValue: oldName,
+              inputValue: clasificacion.negocio,
               showCancelButton: true,
               confirmButtonText: 'Guardar',
               cancelButtonText: 'Cancelar',
-              preConfirm: (newName) => {
-                if (!newName) {
-                  Swal.showValidationMessage('Por favor ingrese un nombre válido');
+              inputValidator: (value) => {
+                if (!value.trim()) {
+                  return 'Por favor ingrese un nombre válido';
                 }
-                return newName;
-              }
-            }).then(({ value }) => {
-              if (value) {
-                // Actualizar en estado
-                setSectores(prev => {
-                  const nuevos = { ...prev };
-                  nuevos[sector][index] = value.trim();
-                  return nuevos;
-                });
-                // Aquí puedes llamar a la API para guardar la edición si es necesario
-                Swal.fire('Guardado', `Negocio actualizado a "${value.trim()}"`, 'success');
               }
             });
+
+            if (newName) {
+              const success = await handleEditarNegocio(clasificacion, newName.trim());
+              if (success) {
+                Swal.close(); // Cerrar el modal de detalles
+              }
+            }
+          };
+        });
+
+        // Eventos para eliminar cada negocio
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.onclick = async () => {
+            const idClasificacion = btn.dataset.id;
+            const clasificacion = clasificaciones.find(c => c.id_clasificacion == idClasificacion);
+            
+            if (!clasificacion) return;
+
+            await handleEliminarNegocio(clasificacion);
+            Swal.close(); // Cerrar el modal de detalles
           };
         });
       }
@@ -217,6 +267,7 @@ const App = () => {
                   className="border border-gray-300 rounded-lg px-4 py-3 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300"
                   value={nuevoSector}
                   onChange={(e) => setNuevoSector(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleRegistrarSector()}
                 />
                 <button
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition"
@@ -229,7 +280,7 @@ const App = () => {
           )}
 
           {/* Formulario para agregar negocio */}
-          {Object.keys(sectores).length > 0 && (
+          {Object.keys(sectoresAgrupados).length > 0 && (
             <section className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-semibold text-indigo-700 mb-4 flex items-center">
                 <i className="bx bx-building mr-2"></i>
@@ -244,7 +295,7 @@ const App = () => {
                     onChange={(e) => setSectorSeleccionado(e.target.value)}
                   >
                     <option value="">Seleccione un sector</option>
-                    {Object.keys(sectores).map((sector, index) => (
+                    {Object.keys(sectoresAgrupados).map((sector, index) => (
                       <option key={index} value={sector}>{sector}</option>
                     ))}
                   </select>
@@ -257,6 +308,7 @@ const App = () => {
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-300"
                     value={nuevoNegocio}
                     onChange={(e) => setNuevoNegocio(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sectorSeleccionado && handleRegistrarNegocio(sectorSeleccionado)}
                     disabled={!sectorSeleccionado}
                   />
                 </div>
@@ -278,7 +330,7 @@ const App = () => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-800">Sectores Registrados</h3>
               <span className="text-sm text-gray-500">
-                {Object.keys(sectores).length} sector{Object.keys(sectores).length !== 1 ? 'es' : ''}
+                {Object.keys(sectoresAgrupados).length} sector{Object.keys(sectoresAgrupados).length !== 1 ? 'es' : ''}
               </span>
             </div>
             
@@ -286,7 +338,7 @@ const App = () => {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
               </div>
-            ) : Object.keys(sectores).length === 0 ? (
+            ) : Object.keys(sectoresAgrupados).length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
                 <i className="bx bx-inbox text-4xl text-gray-300 mb-3"></i>
                 <p className="text-gray-500">No hay sectores registrados</p>
@@ -299,14 +351,17 @@ const App = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {Object.entries(sectores).map(([sector, negocios], index) => (
+                {Object.entries(sectoresAgrupados).map(([sector, clasificacionesSector], index) => (
                   <SectorCard
                     key={index}
                     sector={sector}
-                    negocios={negocios}
+                    clasificaciones={clasificacionesSector}
                     onRegistrarNegocio={() => {
                       setSectorSeleccionado(sector);
-                      document.getElementById('negocio-input')?.focus();
+                      // Enfocar el input de negocio
+                      setTimeout(() => {
+                        document.querySelector('input[placeholder="Nombre del negocio"]')?.focus();
+                      }, 100);
                     }}
                     onVerDetalles={handleVerDetalles}
                   />

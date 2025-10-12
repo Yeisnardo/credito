@@ -139,6 +139,22 @@ const EmprendedorDashboard = ({ setUser }) => {
     }
   };
 
+  // Función para obtener el color y texto del estado de confirmación
+  const getEstadoConfirmacion = (confirmacionifemi) => {
+    switch (confirmacionifemi) {
+      case 'Confirmado':
+        return { color: 'green', text: 'Confirmado', icon: 'bx-check-circle' };
+      case 'Rechazado':
+        return { color: 'red', text: 'Rechazado', icon: 'bx-x-circle' };
+      case 'A Recibido':
+        return { color: 'blue', text: 'Por Confirmar', icon: 'bx-time-five' };
+      case 'En Espera':
+        return { color: 'gray', text: 'En Espera', icon: 'bx-time' };
+      default:
+        return { color: 'gray', text: 'Pendiente', icon: 'bx-time' };
+    }
+  };
+
   // Vista: Resumen
   if (vista === 'resumen') {
     return (
@@ -370,30 +386,36 @@ const EmprendedorDashboard = ({ setUser }) => {
                     <p className="text-gray-600">No hay pagos registrados</p>
                   </div>
                 ) : (
-                  historialPagos.slice(0, 3).map(pago => (
-                    <div key={pago.id_cuota} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-green-100 p-2 rounded-full">
-                          <i className="bx bx-check-circle text-green-600"></i>
+                  historialPagos.slice(0, 3).map(pago => {
+                    const estado = getEstadoConfirmacion(pago.confirmacionifemi);
+                    return (
+                      <div key={pago.id_cuota} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className={`bg-${estado.color}-100 p-2 rounded-full`}>
+                            <i className={`bx ${estado.icon} text-${estado.color}-600`}></i>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{pago.semana} pagada</p>
+                            <p className="text-xs text-gray-600">
+                              {pago.fecha_pagada} • Contrato: {pago.numero_contrato}
+                            </p>
+                            <span className={`text-xs px-2 py-1 rounded-full bg-${estado.color}-100 text-${estado.color}-800`}>
+                              {estado.text}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{pago.semana} pagada</p>
-                          <p className="text-xs text-gray-600">
-                            {pago.fecha_pagada} • Contrato: {pago.numero_contrato}
-                          </p>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-800">${pago.monto}</p>
+                          <button 
+                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                            onClick={() => descargarComprobante(pago.id_cuota)}
+                          >
+                            <i className="bx bx-download mr-1"></i>Comprobante
+                          </button>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-gray-800">${pago.monto}</p>
-                        <button 
-                          className="text-xs text-indigo-600 hover:text-indigo-800"
-                          onClick={() => descargarComprobante(pago.id_cuota)}
-                        >
-                          <i className="bx bx-download mr-1"></i>Comprobante
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
               
@@ -578,36 +600,46 @@ const EmprendedorDashboard = ({ setUser }) => {
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Semana</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Monto</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Contrato</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Confirmación IFEMI</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Comprobante</th>
                     </tr>
                   </thead>
                   <tbody>
                     {historialPagos.length === 0 ? (
                       <tr>
-                        <td colSpan="5" className="text-center py-8">
+                        <td colSpan="6" className="text-center py-8">
                           <i className="bx bx-file text-4xl text-gray-400 mb-4"></i>
                           <p className="text-gray-600">No hay pagos registrados</p>
                         </td>
                       </tr>
                     ) : (
-                      historialPagos.map(pago => (
-                        <tr key={pago.id_cuota} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4 text-sm text-gray-800">
-                            {pago.fecha_pagada || 'Fecha no disponible'}
-                          </td>
-                          <td className="py-3 px-4 text-sm text-gray-800">{pago.semana}</td>
-                          <td className="py-3 px-4 text-sm text-gray-800">${pago.monto}</td>
-                          <td className="py-3 px-4 text-sm text-gray-800">{pago.numero_contrato}</td>
-                          <td className="py-3 px-4">
-                            <button 
-                              className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg flex items-center hover:bg-indigo-100 transition-colors text-sm"
-                              onClick={() => descargarComprobante(pago.id_cuota)}
-                            >
-                              <i className="bx bx-download mr-1"></i> Descargar
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                      historialPagos.map(pago => {
+                        const estado = getEstadoConfirmacion(pago.confirmacionifemi);
+                        return (
+                          <tr key={pago.id_cuota} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4 text-sm text-gray-800">
+                              {pago.fecha_pagada || 'Fecha no disponible'}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800">{pago.semana}</td>
+                            <td className="py-3 px-4 text-sm text-gray-800">${pago.monto}</td>
+                            <td className="py-3 px-4 text-sm text-gray-800">{pago.numero_contrato}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${estado.color}-100 text-${estado.color}-800 flex items-center w-fit`}>
+                                <i className={`bx ${estado.icon} mr-1`}></i>
+                                {estado.text}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <button 
+                                className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg flex items-center hover:bg-indigo-100 transition-colors text-sm"
+                                onClick={() => descargarComprobante(pago.id_cuota)}
+                              >
+                                <i className="bx bx-download mr-1"></i> Descargar
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

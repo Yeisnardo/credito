@@ -61,16 +61,16 @@ const Aprobacion = () => {
     fetchRequerimientos();
   }, []);
 
-  // Carga de personas
+  // Carga de personas - CORREGIDO
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
         const data = await fetchPersonasRegistradas();
-        // Inicializar requerimientosVerificados en cada persona
+        // Usar 'vereficacion' de la base de datos
         const personasConVerificados = data.map((p) => ({
           ...p,
-          requerimientosVerificados: p.requerimientos_verificados || [],
+          requerimientosVerificados: p.vereficacion || [],
         }));
         setPersonasRegistradas(personasConVerificados);
       } catch (error) {
@@ -84,6 +84,7 @@ const Aprobacion = () => {
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
+  // Función para cargar detalles - CORREGIDA
   const verDetalles = async (persona) => {
     setPersonaSeleccionada(persona);
     setLoading(true);
@@ -97,10 +98,10 @@ const Aprobacion = () => {
           : [detalles]
         : [];
 
-      // Asegurar que cada detalle tenga su array de requerimientos verificados
+      // Usar el campo 'vereficacion' de la base de datos
       const detallesConVerificados = detallesFiltrados.map((detalle) => ({
         ...detalle,
-        requerimientosVerificados: detalle.requerimientos_verificados || [],
+        requerimientosVerificados: detalle.vereficacion || [],
       }));
 
       setResultado(detallesConVerificados);
@@ -211,7 +212,7 @@ const Aprobacion = () => {
     });
   };
 
-  // Función para enviar requerimientos verificados
+  // Función para enviar requerimientos verificados - CORREGIDA
   const handleEnviarRequerimientosVerificados = async () => {
     if (!personaSeleccionada || !resultado) {
       Swal.fire("Error", "No hay datos para guardar.", "error");
@@ -409,7 +410,7 @@ const Aprobacion = () => {
                   <h3 className="text-2xl font-bold text-gray-800">
                     {
                       personasRegistradas.filter(
-                        (p) => p.estatus === "aprobada"
+                        (p) => p.estatus?.toLowerCase() === "aprobada"
                       ).length
                     }
                   </h3>
@@ -427,7 +428,7 @@ const Aprobacion = () => {
                   <h3 className="text-2xl font-bold text-gray-800">
                     {
                       personasRegistradas.filter(
-                        (p) => p.estatus === "pendiente"
+                        (p) => p.estatus?.toLowerCase() === "pendiente"
                       ).length
                     }
                   </h3>
@@ -567,7 +568,7 @@ const Aprobacion = () => {
           )}
         </main>
 
-        {/* Modal detalles */}
+        {/* Modal detalles - CORREGIDO */}
         {modalOpen && personaSeleccionada && (
           <div className="bg-black/75 fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm transition-opacity duration-300">
             <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-transform duration-300 scale-100">
@@ -663,7 +664,7 @@ const Aprobacion = () => {
                           {/* Separador */}
                           <div className="border-t border-gray-200 my-6"></div>
 
-                          {/* Requerimientos */}
+                          {/* Requerimientos - CORREGIDO */}
                           <div className="mb-6">
                             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 block">
                               Requerimientos seleccionados
@@ -675,55 +676,65 @@ const Aprobacion = () => {
                                     r.id_requerimientos
                                   )
                                 )
-                                .map((r, idx) => (
-                                  <div
-                                    key={r.id_requerimientos}
-                                    className="flex items-center bg-gray-50 p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 transition duration-200"
-                                      checked={
-                                        req.requerimientosVerificados?.includes(
-                                          r.id_requerimientos
-                                        ) || false
-                                      }
-                                      onChange={async (e) => {
-                                        const checked = e.target.checked;
-                                        setResultado((prev) => {
-                                          if (!prev) return prev;
-                                          return prev.map((item) => {
-                                            if (
-                                              item.cedula_emprendedor !==
-                                              req.cedula_emprendedor
-                                            )
-                                              return item;
-                                            return {
-                                              ...item,
-                                              requerimientosVerificados: checked
-                                                ? [
-                                                    ...(item.requerimientosVerificados ||
-                                                      []),
-                                                    r.id_requerimientos,
-                                                  ]
-                                                : (
-                                                    item.requerimientosVerificados ||
-                                                    []
-                                                  ).filter(
-                                                    (id) =>
-                                                      id !== r.id_requerimientos
-                                                  ),
-                                            };
+                                .map((r, idx) => {
+                                  const estaVerificado = req.requerimientosVerificados?.includes(r.id_requerimientos);
+                                  return (
+                                    <div
+                                      key={r.id_requerimientos}
+                                      className={`flex items-center p-4 rounded-lg border transition-colors duration-200 ${
+                                        estaVerificado 
+                                          ? "bg-green-50 border-green-200" 
+                                          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 transition duration-200"
+                                        checked={estaVerificado || false}
+                                        onChange={(e) => {
+                                          const checked = e.target.checked;
+                                          setResultado((prev) => {
+                                            if (!prev) return prev;
+                                            return prev.map((item) => {
+                                              if (
+                                                item.cedula_emprendedor !==
+                                                req.cedula_emprendedor
+                                              )
+                                                return item;
+                                              return {
+                                                ...item,
+                                                requerimientosVerificados: checked
+                                                  ? [
+                                                      ...(item.requerimientosVerificados ||
+                                                        []),
+                                                      r.id_requerimientos,
+                                                    ]
+                                                  : (
+                                                      item.requerimientosVerificados ||
+                                                      []
+                                                    ).filter(
+                                                      (id) =>
+                                                        id !== r.id_requerimientos
+                                                    ),
+                                              };
+                                            });
                                           });
-                                        });
-                                      }}
-                                    />
-                                    <div className="w-3 h-3 bg-indigo-500 rounded-full ml-3 mr-4 flex-shrink-0"></div>
-                                    <span className="text-gray-700 font-medium">
-                                      {r.nombre_requerimiento}
-                                    </span>
-                                  </div>
-                                ))}
+                                        }}
+                                      />
+                                      <div className={`w-3 h-3 rounded-full ml-3 mr-4 flex-shrink-0 ${
+                                        estaVerificado ? "bg-green-500" : "bg-indigo-500"
+                                      }`}></div>
+                                      <span className={`font-medium ${
+                                        estaVerificado ? "text-green-700" : "text-gray-700"
+                                      }`}>
+                                        {r.nombre_requerimiento}
+                                        {estaVerificado && (
+                                          <span className="text-green-600 text-xs ml-2">✓ Verificado</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                             </div>
                           </div>
 

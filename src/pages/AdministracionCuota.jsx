@@ -141,16 +141,79 @@ const ContratosList = ({ contratos, loading, onVerCuotas, onGenerarReporte, onRe
   </section>
 );
 
-// Componente de Tabla de Cuotas CON BOTONES DE CONFIRMACIÓN
+// Componente de Tabla de Confirmación de Pagos
+const ConfirmacionPagosTable = ({ cuotasPorConfirmar, loading, onConfirmarPago, onRechazarPago }) => {
+  if (cuotasPorConfirmar.length === 0) return null;
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="bg-blue-100 p-2 rounded-full">
+            <i className="bx bx-time-five text-xl text-blue-600"></i>
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-blue-800">Pagos por Confirmar</h3>
+            <p className="text-blue-600 text-sm">
+              {cuotasPorConfirmar.length} pago(s) esperando confirmación
+            </p>
+          </div>
+        </div>
+        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+          {cuotasPorConfirmar.length}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-blue-200">
+              <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Semana</th>
+              <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Monto</th>
+              <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Fecha Pago</th>
+              <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cuotasPorConfirmar.map(cuota => (
+              <tr key={cuota.id_cuota} className="border-b border-blue-100 hover:bg-blue-100">
+                <td className="py-3 px-4 text-sm text-blue-800">{cuota.semana}</td>
+                <td className="py-3 px-4 text-sm text-blue-800">${cuota.monto}</td>
+                <td className="py-3 px-4 text-sm text-blue-800">
+                  {cuota.fecha_pagada ? cuota.fecha_pagada : '-'}
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex space-x-2">
+                    <button
+                      className="bg-green-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-green-700 transition-colors text-sm"
+                      onClick={() => onConfirmarPago(cuota.id_cuota)}
+                      disabled={loading}
+                    >
+                      <i className="bx bx-check mr-1"></i> Confirmar
+                    </button>
+                    <button
+                      className="bg-red-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-red-700 transition-colors text-sm"
+                      onClick={() => onRechazarPago(cuota.id_cuota)}
+                      disabled={loading}
+                    >
+                      <i className="bx bx-x mr-1"></i> Rechazar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// Componente de Tabla de Cuotas CON BOTONES DE CONFIRMACIÓN MEJORADOS
 const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago }) => {
   // Filtrar cuotas por confirmar (estado "A Recibido")
   const cuotasPorConfirmar = cuotasContrato.filter(cuota => 
     cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido'
-  );
-
-  // Filtrar cuotas confirmadas y rechazadas para el historial
-  const cuotasConfirmadas = cuotasContrato.filter(cuota => 
-    cuota.confirmacionifemi === 'Confirmado' || cuota.confirmacionifemi === 'Rechazado'
   );
 
   return (
@@ -241,7 +304,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago 
                       {cuota.fecha_pagada ? cuota.fecha_pagada : '-'}
                     </td>
                     <td className="py-3 px-4">
-                      {/* BOTONES DE CONFIRMACIÓN - SOLO PARA PAGOS CON ESTADO "A Recibido" */}
+                      {/* BOTONES DE CONFIRMACIÓN MEJORADOS */}
                       {cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido' && (
                         <div className="flex space-x-2">
                           <button
@@ -259,6 +322,17 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago 
                             <i className="bx bx-x mr-1"></i> Rechazar
                           </button>
                         </div>
+                      )}
+                      
+                      {/* BOTÓN DE CONFIRMACIÓN ADICIONAL PARA CUOTAS PAGADAS SIN CONFIRMACIÓN */}
+                      {cuota.estado_cuota === 'Pagado' && (!cuota.confirmacionifemi || cuota.confirmacionifemi === 'En Espera') && (
+                        <button
+                          className="bg-blue-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-blue-700 transition-colors text-sm"
+                          onClick={() => onConfirmarPago(cuota.id_cuota)}
+                          disabled={loading}
+                        >
+                          <i className="bx bx-check-double mr-1"></i> Confirmar Pago
+                        </button>
                       )}
                       
                       {/* ESTADO CONFIRMADO */}
@@ -535,9 +609,9 @@ const AdminDashboard = ({ setUser }) => {
       const totalCuotas = cuotasData.length;
       
       alert(`📊 Reporte de ${contrato.numero_contrato}\n
-Cuotas pagadas: ${cuotasPagadas}/${totalCuotas}\n
-Cuotas confirmadas: ${cuotasConfirmadas}\n
-Emprendedor: ${contrato.cedula_emprendedor}`);
+        Cuotas pagadas: ${cuotasPagadas}/${totalCuotas}\n
+        Cuotas confirmadas: ${cuotasConfirmadas}\n
+        Emprendedor: ${contrato.cedula_emprendedor}`);
     } catch (error) {
       console.error('Error generando reporte:', error);
       alert('Error al generar el reporte');
