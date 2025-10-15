@@ -313,31 +313,81 @@ router.get("/contrato/:id_contrato/cuotas", async (req, res) => {
 });
 
 // Registrar pago manual (administrador)
-router.post("/:id_cuota/pago-manual", async (req, res) => {
+// Ruta para registrar pago manual con comprobante
+// Ruta para registrar pago manual con comprobante (sin metodo_pago)
+// Ruta para registrar pago manual con comprobante (sin metodo_pago ni referencia_pago)
+router.post("/:id_cuota/pago-manual", upload.single("comprobante"), async (req, res) => {
   try {
     const { id_cuota } = req.params;
-    const { metodo_pago, referencia_pago } = req.body;
+    const { 
+      monto_pagado,
+      incluye_mora 
+    } = req.body;
 
+    // Verificar si se subió un comprobante
+    if (!req.file) {
+      return res.status(400).json({ error: "Se requiere un comprobante de pago" });
+    }
+
+    const comprobantePath = `/uploads/${req.file.filename}`;
+
+    // Obtener información de la cuota
+    const cuotaResult = await query(
+      'SELECT * FROM cuota WHERE id_cuota = $1',
+      [id_cuota]
+    );
+
+    if (cuotaResult.rows.length === 0) {
+      return res.status(404).json({ error: "Cuota no encontrada" });
+    }
+
+    const cuota = cuotaResult.rows[0];
+
+    // Calcular días de mora si aplica
+    let diasMora = 0;
+    if (incluye_mora === 'true' && cuota.fecha_hasta) {
+      const fechaHasta = new Date(cuota.fecha_hasta);
+      const hoy = new Date();
+      if (hoy > fechaHasta) {
+        const diffTime = hoy - fechaHasta;
+        diasMora = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
+    }
+
+    // Actualizar la cuota con el pago (sin metodo_pago ni referencia_pago)
     const resultado = await query(
       `UPDATE cuota 
        SET estado_cuota = 'Pagado', 
            fecha_pagada = TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD'),
-           dias_mora_cuota = 0
-       WHERE id_cuota = $1 
+           dias_mora_cuota = $1,
+           monto = $2,
+           comprobante = $3,
+           confirmacionIFEMI = 'A Recibido'
+       WHERE id_cuota = $4 
        RETURNING *`,
-      [id_cuota]
+      [
+        diasMora,
+        monto_pagado || cuota.monto,
+        comprobantePath,
+        id_cuota
+      ]
     );
-
-    if (resultado.rows.length === 0) {
-      return res.status(404).json({ error: "Cuota no encontrada" });
-    }
 
     res.json({
       message: "Pago registrado exitosamente",
-      cuota: resultado.rows[0]
+      cuota: resultado.rows[0],
+      comprobante: comprobantePath
     });
+
   } catch (error) {
     console.error("Error al registrar pago manual:", error);
+    
+    // Eliminar archivo subido en caso de error
+    if (req.file) {
+      const fs = require('fs');
+      fs.unlinkSync(req.file.path);
+    }
+    
     res.status(500).json({ error: error.message });
   }
 });

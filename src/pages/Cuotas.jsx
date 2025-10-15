@@ -425,54 +425,126 @@ const EmprendedorDashboard = ({ setUser }) => {
     </div>
   );
 
-  const registrarPagoManual = async (cuotaId) => {
-    try {
-      setLoading(true);
+const registrarPagoManual = async (cuotaId) => {
+  try {
+    setLoading(true);
+    
+    const cuota = cuotasPendientes.find(c => c.id_cuota === cuotaId);
+    const totalAPagar = calcularTotalConMora(cuota);
+    
+    // Validar que la cuota esté disponible para pago
+    if (!estaEnPeriodoPago(cuota) && !estaEnMora(cuota)) {
+      const hoy = new Date();
+      const fechaDesde = new Date(cuota.fecha_desde);
       
-      const cuota = cuotasPendientes.find(c => c.id_cuota === cuotaId);
-      const totalAPagar = calcularTotalConMora(cuota);
-      
-      if (!estaEnPeriodoPago(cuota) && !estaEnMora(cuota)) {
-        const hoy = new Date();
-        const fechaDesde = new Date(cuota.fecha_desde);
-        
-        if (hoy < fechaDesde) {
-          alert('❌ Esta cuota no está disponible para pago aún. Fecha de inicio: ' + cuota.fecha_desde);
-          return;
-        }
+      if (hoy < fechaDesde) {
+        alert('❌ Esta cuota no está disponible para pago aún. Fecha de inicio: ' + cuota.fecha_desde);
+        setLoading(false);
+        return;
       }
+    }
 
-      const mensajeConfirmacion = estaEnMora(cuota) 
-        ? `Esta cuota tiene ${diasMorosidad[cuota.id_cuota]} días de mora.\nMonto original: $${cuota.monto}\nInterés mora: +$${calcularInteresMorosidad(diasMorosidad[cuota.id_cuota], cuota.monto).toFixed(2)}\nTotal a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`
-        : `Confirmar pago de $${totalAPagar.toFixed(2)} por ${cuota.semana}?`;
+    // Mensaje de confirmación
+    const mensajeConfirmacion = estaEnMora(cuota) 
+      ? `⚠️ CUOTA EN MORA\n\n• ${cuota.semana}\n• Días de mora: ${diasMorosidad[cuota.id_cuota]}\n• Monto original: $${cuota.monto}\n• Interés mora: +$${calcularInteresMorosidad(diasMorosidad[cuota.id_cuota], cuota.monto).toFixed(2)}\n• Total a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`
+      : `✅ CONFIRMAR PAGO\n\n• ${cuota.semana}\n• Monto a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`;
 
-      if (!window.confirm(mensajeConfirmacion)) {
+    if (!window.confirm(mensajeConfirmacion)) {
+      setLoading(false);
+      return;
+    }
+
+    // Crear input para subir archivo
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.jpg,.jpeg,.png,.pdf';
+    input.style.display = 'none';
+    
+    // Manejar la selección del archivo
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) {
+        setLoading(false);
         return;
       }
 
-      const resultado = await apiCuotas.registrarPagoManual(cuotaId, {
-        metodo_pago: 'transferencia',
-        referencia_pago: `PAGO-${Date.now()}`,
-        monto_pagado: totalAPagar.toFixed(2),
-        incluye_mora: estaEnMora(cuota)
-      });
+      try {
+        // Validar tipo de archivo
+        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+          alert('❌ Formato no válido. Solo se permiten JPG, PNG o PDF.');
+          setLoading(false);
+          return;
+        }
 
-      const cuotasActualizadas = cuotasPendientes.filter(cuota => cuota.id_cuota !== cuotaId);
-      setCuotasPendientes(cuotasActualizadas);
-      
-      if (user?.cedula) {
-        await cargarDatosEmprendedor(user.cedula);
+        // Validar tamaño (5MB máximo)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('❌ El archivo es demasiado grande. Máximo 5MB.');
+          setLoading(false);
+          return;
+        }
+
+        // Mostrar información del archivo seleccionado
+        alert(`📄 Archivo seleccionado:\n• Nombre: ${file.name}\n• Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB\n\nProcesando pago...`);
+
+        // Crear FormData para enviar el archivo (solo comprobante y datos esenciales)
+        const formData = new FormData();
+        formData.append('comprobante', file);
+        formData.append('monto_pagado', totalAPagar.toFixed(2));
+        formData.append('incluye_mora', estaEnMora(cuota));
+
+        // Mostrar indicador de progreso
+        alert('⏳ Subiendo comprobante y registrando pago...');
+
+        // Llamar a la API
+        const resultado = await apiCuotas.registrarPagoManual(cuotaId, formData);
+
+        // Actualizar estado local
+        const cuotasActualizadas = cuotasPendientes.filter(c => c.id_cuota !== cuotaId);
+        setCuotasPendientes(cuotasActualizadas);
+        
+        // Recargar datos
+        if (user?.cedula) {
+          await cargarDatosEmprendedor(user.cedula);
+        }
+        
+        // Mostrar confirmación exitosa
+        alert('✅ ' + (resultado.message || 'Pago registrado exitosamente'));
+        
+      } catch (error) {
+        console.error('Error registrando pago:', error);
+        
+        // Mensaje de error específico
+        let mensajeError = '❌ Error al registrar el pago';
+        if (error.response?.data?.error) {
+          mensajeError += `: ${error.response.data.error}`;
+        } else if (error.message) {
+          mensajeError += `: ${error.message}`;
+        }
+        
+        alert(mensajeError);
+      } finally {
+        setLoading(false);
       }
-      
-      alert('✅ ' + resultado.message);
-      
-    } catch (error) {
-      console.error('Error registrando pago:', error);
-      alert('❌ Error al registrar el pago: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    // Agregar input al DOM y hacer click
+    document.body.appendChild(input);
+    input.click();
+    
+    // Limpiar después de la selección
+    setTimeout(() => {
+      if (document.body.contains(input)) {
+        document.body.removeChild(input);
+      }
+    }, 1000);
+    
+  } catch (error) {
+    console.error('Error en el proceso de pago:', error);
+    alert('❌ Error en el proceso de pago: ' + error.message);
+    setLoading(false);
+  }
+};
 
   const descargarComprobante = async (pagoId) => {
     try {

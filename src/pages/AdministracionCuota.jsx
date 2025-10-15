@@ -5,6 +5,122 @@ import Menu from "../components/Menu";
 import apiCuotas from "../services/api_cuotas";
 import apiConfiguracion from "../services/api_configuracion_contratos";
 
+// Componente para visualizar el comprobante
+const VisualizarComprobante = ({ comprobantePath, onClose }) => {
+  if (!comprobantePath) return null;
+
+  console.log('Visualizando comprobante:', comprobantePath); // ← Debug
+
+  // Construir la URL completa
+  const baseUrl = 'http://localhost:5000'; // Ajusta según tu backend
+  const comprobanteUrl = comprobantePath.startsWith('http') 
+    ? comprobantePath 
+    : `${baseUrl}${comprobantePath}`;
+
+  console.log('URL completa:', comprobanteUrl); // ← Debug
+
+  const esPDF = comprobanteUrl.toLowerCase().endsWith('.pdf');
+  const esImagen = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(comprobanteUrl);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-4xl max-h-[90vh] w-full overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800">Comprobante de Pago</h3>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              {comprobantePath}
+            </span>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <i className="bx bx-x text-2xl"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-4 max-h-[70vh] overflow-auto">
+          {esPDF ? (
+            <div className="w-full h-96">
+              <iframe
+                src={comprobanteUrl}
+                className="w-full h-full border-0"
+                title="Comprobante PDF"
+              />
+              <div className="mt-2 text-center text-sm text-gray-500">
+                Vista previa de PDF: {comprobanteUrl}
+              </div>
+            </div>
+          ) : esImagen ? (
+            <div className="flex flex-col items-center">
+              <img
+                src={comprobanteUrl}
+                alt="Comprobante de pago"
+                className="max-w-full max-h-96 object-contain rounded-lg shadow-md"
+                onError={(e) => {
+                  console.error('Error cargando imagen:', e);
+                  e.target.style.display = 'none';
+                }}
+              />
+              <div className="mt-2 text-center text-sm text-gray-500">
+                Vista previa de imagen: {comprobanteUrl}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <i className="bx bx-file text-4xl text-gray-400 mb-4"></i>
+              <p className="text-gray-600">Formato de archivo no soportado para vista previa</p>
+              <p className="text-sm text-gray-500 mt-2">Ruta: {comprobantePath}</p>
+              <a
+                href={comprobanteUrl}
+                download
+                className="inline-block mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <i className="bx bx-download mr-2"></i> Descargar Comprobante
+              </a>
+            </div>
+          )}
+        </div>
+        
+        <div className="p-4 border-t border-gray-200 flex justify-between">
+          <a
+            href={comprobanteUrl}
+            download
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-700 transition-colors"
+          >
+            <i className="bx bx-download mr-2"></i> Descargar
+          </a>
+          <button
+            onClick={onClose}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente de Botón para Ver Comprobante
+const BotonVerComprobante = ({ comprobantePath, onVerComprobante }) => {
+  if (!comprobantePath) {
+    return (
+      <span className="text-gray-400 text-xs">Sin comprobante</span>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => onVerComprobante(comprobantePath)}
+      className="bg-blue-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-blue-700 transition-colors text-sm"
+    >
+      <i className="bx bx-show mr-1"></i> Ver
+    </button>
+  );
+};
+
 // Componente de Tarjetas de Estadísticas
 const StatsCards = ({ stats }) => (
   <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -219,8 +335,21 @@ const EstadoCronometro = ({ cuota }) => {
   );
 };
 
-// Componente de Tabla de Cuotas CON BOTONES DE CONFIRMACIÓN
+// Componente de Tabla de Cuotas CON BOTONES DE CONFIRMACIÓN Y VISOR DE COMPROBANTES
 const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago, configuracion }) => {
+  // Estado para el comprobante visible
+  const [comprobanteVisible, setComprobanteVisible] = useState(null);
+
+  // Función para mostrar el comprobante
+  const verComprobante = (comprobantePath) => {
+    setComprobanteVisible(comprobantePath);
+  };
+
+  // Función para cerrar el visor
+  const cerrarComprobante = () => {
+    setComprobanteVisible(null);
+  };
+
   // Filtrar cuotas por confirmar
   const cuotasPorConfirmar = cuotasContrato.filter(cuota => 
     cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido'
@@ -255,6 +384,14 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
 
   return (
     <div>
+      {/* Visor de Comprobante */}
+      {comprobanteVisible && (
+        <VisualizarComprobante 
+          comprobantePath={comprobanteVisible}
+          onClose={cerrarComprobante}
+        />
+      )}
+
       {/* Banner de Cuotas por Confirmar */}
       {cuotasPorConfirmar.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
@@ -282,6 +419,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Semana</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Monto</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Fecha Pago</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Comprobante</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Acciones</th>
                 </tr>
               </thead>
@@ -292,6 +430,12 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                     <td className="py-3 px-4 text-sm text-blue-800">${cuota.monto}</td>
                     <td className="py-3 px-4 text-sm text-blue-800">
                       {cuota.fecha_pagada ? formatearFecha(cuota.fecha_pagada) : '-'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <BotonVerComprobante 
+                        comprobantePath={cuota.comprobante}
+                        onVerComprobante={verComprobante}
+                      />
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex space-x-2">
@@ -342,6 +486,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Estado</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Confirmación</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Fecha Pago</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Comprobante</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Días Mora</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Interés Mora</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Acciones</th>
@@ -350,7 +495,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
             <tbody>
               {cuotasContrato.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center py-8 text-gray-600">
+                  <td colSpan="10" className="text-center py-8 text-gray-600">
                     No hay cuotas registradas para este contrato
                   </td>
                 </tr>
@@ -438,6 +583,14 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
+                      </td>
+
+                      {/* NUEVA COLUMNA: COMPROBANTE */}
+                      <td className="py-3 px-4">
+                        <BotonVerComprobante 
+                          comprobantePath={cuota.comprobante}
+                          onVerComprobante={verComprobante}
+                        />
                       </td>
                       
                       {/* Días Mora */}

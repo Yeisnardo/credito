@@ -53,6 +53,11 @@ app.use('/api/cuotas', coutaAPI);
 app.use('/api/requerimiento_emprendedor', requerimientoEmprendedorAPI);
 app.use('/api/clasificacion', clasificacionEmprendimientoEmprendedorAPI);
 app.use('/api/configuracion', configAPi);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
+
+
+// Si estás en producción, asegúrate de que la carpeta uploads exista
+console.log('Ruta de uploads:', path.join(__dirname, 'uploads'));
 
 // Middleware de errores
 app.use((err, req, res, next) => {
