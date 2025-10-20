@@ -5,6 +5,7 @@ import Header from "../components/Header";
 import Menu from "../components/Menu";
 import apiCuotas from "../services/api_cuotas";
 import apiConfiguracion from "../services/api_configuracion_contratos";
+import { generarReciboPagoProfesional, generarResumenUsuario } from '../pdf/reciboPago';
 
 const EmprendedorDashboard = ({ setUser }) => {
   const navigate = useNavigate();
@@ -22,32 +23,45 @@ const EmprendedorDashboard = ({ setUser }) => {
     totalMora: 0
   });
   const [loading, setLoading] = useState(false);
-  
-  // NUEVOS ESTADOS PARA LAS FUNCIONALIDADES
   const [rates, setRates] = useState({ euro: 1, dolar: 1 });
   const [monedaPref, setMonedaPref] = useState('USD');
   const [diasRestantes, setDiasRestantes] = useState({});
   const [diasMorosidad, setDiasMorosidad] = useState({});
   const [configuracion, setConfiguracion] = useState({ porcentaje_mora: 2 });
 
+  // =============================================
+  // FUNCIONES PRINCIPALES
+  // =============================================
+
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
+  };
+
+  const handleViewPdf = () => {
+    const doc = generarResumenUsuario(user, stats);
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl);
+  };
+
+  const recargarDatos = () => {
+    if (user?.cedula) {
+      cargarDatosEmprendedor(user.cedula);
+    }
   };
 
   // =============================================
   // FUNCIONES AUXILIARES
   // =============================================
 
-  // Función para extraer el número de cuota del texto "Semana X"
   const extraerNumeroCuota = (textoSemana) => {
     if (!textoSemana) return 1;
-    
     const match = textoSemana.match(/Semana\s*(\d+)/i);
     return match ? parseInt(match[1]) : 1;
   };
 
   // =============================================
-  // 1. SISTEMA DE CRONÓMETROS - CÁLCULO DE TIEMPOS
+  // SISTEMA DE CRONÓMETROS - CÁLCULO DE TIEMPOS
   // =============================================
 
   const calcularDiasRestantes = () => {
@@ -88,7 +102,7 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // 2. CÁLCULO DE INTERESES DE MOROSIDAD
+  // CÁLCULO DE INTERESES DE MOROSIDAD
   // =============================================
 
   const calcularInteresMorosidad = (diasMora, montoOriginal) => {
@@ -112,8 +126,15 @@ const EmprendedorDashboard = ({ setUser }) => {
     return montoBase;
   };
 
+  const getInfoPorcentajeMora = () => {
+    if (!configuracion || !configuracion.porcentaje_mora) {
+      return "No configurado";
+    }
+    return `${configuracion.porcentaje_mora}% diario`;
+  };
+
   // =============================================
-  // 3. CONVERSIÓN MONETARIA
+  // CONVERSIÓN MONETARIA
   // =============================================
 
   const fetchRates = async () => {
@@ -144,60 +165,76 @@ const EmprendedorDashboard = ({ setUser }) => {
     }
   };
 
-  const getInfoPorcentajeMora = () => {
-    if (!configuracion || !configuracion.porcentaje_mora) {
-      return "No configurado";
+  // =============================================
+  // FUNCIONES PARA GESTIÓN DE RECIBOS PDF
+  // =============================================
+
+  const manejarReciboPago = async (pago, accion = 'visualizar') => {
+    try {
+      setLoading(true);
+      
+      // Validar que el pago esté confirmado
+      if (pago.confirmacionifemi !== 'Confirmado') {
+        alert('❌ Solo se pueden gestionar recibos de pagos confirmados');
+        setLoading(false);
+        return;
+      }
+
+      if (accion === 'visualizar') {
+        alert(`👁️ Visualizando recibo de pago para ${pago.semana}...`);
+        
+        // Generar y visualizar el PDF
+        const doc = generarReciboPagoProfesional(pago, user, contrato);
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Abrir en nueva pestaña
+        const nuevaVentana = window.open(pdfUrl, '_blank');
+        
+        if (nuevaVentana) {
+          nuevaVentana.onbeforeunload = () => {
+            URL.revokeObjectURL(pdfUrl);
+          };
+        } else {
+          alert('⚠️ Por favor permite las ventanas emergentes para visualizar el recibo');
+          URL.revokeObjectURL(pdfUrl);
+        }
+        
+      } else if (accion === 'descargar') {
+        alert(`📄 Descargando recibo de pago para ${pago.semana}...`);
+        
+        // Generar y descargar el PDF
+        const doc = generarReciboPagoProfesional(pago, user, contrato);
+        doc.save(`Recibo-Pago-${pago.semana}-${pago.numero_contrato}.pdf`);
+        
+        alert('✅ Recibo PDF descargado exitosamente');
+      }
+      
+    } catch (error) {
+      console.error(`Error ${accion === 'visualizar' ? 'visualizando' : 'descargando'} recibo:`, error);
+      alert(`❌ Error al ${accion === 'visualizar' ? 'visualizar' : 'descargar'} el recibo: ` + error.message);
+    } finally {
+      setLoading(false);
     }
-    return `${configuracion.porcentaje_mora}% diario`;
+  };
+
+  const descargarComprobante = async (pagoId) => {
+    try {
+      alert(`📄 Generando comprobante para el pago #${pagoId}...\n\nEl comprobante se descargará automáticamente.`);
+      
+      setTimeout(() => {
+        alert('✅ Comprobante descargado exitosamente');
+      }, 1000);
+    } catch (error) {
+      console.error('Error descargando comprobante:', error);
+      alert('❌ Error al descargar el comprobante');
+    }
   };
 
   // =============================================
-  // EFECTOS PARA ACTUALIZACIÓN AUTOMÁTICA
+  // CARGA DE DATOS DEL EMPRENDEDOR
   // =============================================
 
-  useEffect(() => {
-    fetchRates();
-  }, []);
-
-  useEffect(() => {
-    if (cuotasPendientes.length > 0) {
-      calcularDiasRestantes();
-      calcularDiasMorosidad();
-      
-      const interval = setInterval(() => {
-        calcularDiasRestantes();
-        calcularDiasMorosidad();
-      }, 1000 * 60 * 60);
-      
-      return () => clearInterval(interval);
-    }
-  }, [cuotasPendientes]);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const cedula = localStorage.getItem('cedula_usuario');
-        if (cedula) {
-          const usuario = {
-            nombre_completo: "Emprendedor Ejemplo",
-            rol: "Emprendedor",
-            estatus: "Activo",
-            cedula: cedula
-          };
-          setUserState(usuario);
-          if (setUser) setUser(usuario);
-          
-          await cargarDatosEmprendedor(cedula);
-        }
-      } catch (error) {
-        console.error('Error al obtener datos:', error);
-      }
-    };
-    
-    if (!user) fetchUserData();
-  }, [setUser, user]);
-
-  // FUNCIÓN CORREGIDA - CÁLCULO CORRECTO DE FECHAS
   const cargarDatosEmprendedor = async (cedula) => {
     try {
       setLoading(true);
@@ -216,7 +253,7 @@ const EmprendedorDashboard = ({ setUser }) => {
       // Obtener cuotas pendientes
       const pendientesData = await apiCuotas.getCuotasPendientesEmprendedor(cedula);
       
-      // ✅ CORRECCIÓN: Calcular fechas basándose en el número de cuota real
+      // Calcular fechas basándose en el número de cuota real
       const cuotasConFechas = pendientesData.map((cuota) => {
         // Si la cuota ya tiene fechas desde la API, úsalas
         if (cuota.fecha_desde && cuota.fecha_hasta) {
@@ -226,7 +263,7 @@ const EmprendedorDashboard = ({ setUser }) => {
           };
         }
         
-        // ✅ Calcular número de cuota real basado en el texto "Semana X"
+        // Calcular número de cuota real basado en el texto "Semana X"
         const numeroCuota = extraerNumeroCuota(cuota.semana);
         
         // Usar fecha base del contrato o fecha actual
@@ -234,7 +271,7 @@ const EmprendedorDashboard = ({ setUser }) => {
           new Date(contratoData.fecha_desde) : 
           new Date();
         
-        // ✅ Calcular basándose en el número de cuota real, no en el índice del array
+        // Calcular basándose en el número de cuota real, no en el índice del array
         const fechaDesde = new Date(fechaBase);
         fechaDesde.setDate(fechaBase.getDate() + ((numeroCuota - 1) * 7));
         
@@ -261,7 +298,7 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // FUNCIONES DE ESTADO MEJORADAS
+  // FUNCIONES DE ESTADO Y VALIDACIONES
   // =============================================
 
   const estaEnPeriodoPago = (cuota) => {
@@ -321,8 +358,172 @@ const EmprendedorDashboard = ({ setUser }) => {
     });
   };
 
+  const getEstadoConfirmacion = (confirmacionifemi) => {
+    switch (confirmacionifemi) {
+      case 'Confirmado':
+        return { 
+          color: 'green', 
+          text: 'Confirmado', 
+          icon: 'bx-check-circle',
+          puedeDescargar: true 
+        };
+      case 'Rechazado':
+        return { 
+          color: 'red', 
+          text: 'Rechazado', 
+          icon: 'bx-x-circle',
+          puedeDescargar: false 
+        };
+      case 'A Recibido':
+        return { 
+          color: 'blue', 
+          text: 'Por Confirmar', 
+          icon: 'bx-time-five',
+          puedeDescargar: false 
+        };
+      case 'En Espera':
+        return { 
+          color: 'gray', 
+          text: 'En Espera', 
+          icon: 'bx-time',
+          puedeDescargar: false 
+        };
+      default:
+        return { 
+          color: 'gray', 
+          text: 'Pendiente', 
+          icon: 'bx-time',
+          puedeDescargar: false 
+        };
+    }
+  };
+
   // =============================================
-  // COMPONENTES MEJORADOS
+  // REGISTRO DE PAGOS
+  // =============================================
+
+  const registrarPagoManual = async (cuotaId) => {
+    try {
+      setLoading(true);
+      
+      const cuota = cuotasPendientes.find(c => c.id_cuota === cuotaId);
+      const totalAPagar = calcularTotalConMora(cuota);
+      
+      // Validar que la cuota esté disponible para pago
+      if (!estaEnPeriodoPago(cuota) && !estaEnMora(cuota)) {
+        const hoy = new Date();
+        const fechaDesde = new Date(cuota.fecha_desde);
+        
+        if (hoy < fechaDesde) {
+          alert('❌ Esta cuota no está disponible para pago aún. Fecha de inicio: ' + cuota.fecha_desde);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Mensaje de confirmación
+      const mensajeConfirmacion = estaEnMora(cuota) 
+        ? `⚠️ CUOTA EN MORA\n\n• ${cuota.semana}\n• Días de mora: ${diasMorosidad[cuota.id_cuota]}\n• Monto original: $${cuota.monto}\n• Interés mora: +$${calcularInteresMorosidad(diasMorosidad[cuota.id_cuota], cuota.monto).toFixed(2)}\n• Total a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`
+        : `✅ CONFIRMAR PAGO\n\n• ${cuota.semana}\n• Monto a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`;
+
+      if (!window.confirm(mensajeConfirmacion)) {
+        setLoading(false);
+        return;
+      }
+
+      // Crear input para subir archivo
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.jpg,.jpeg,.png,.pdf';
+      input.style.display = 'none';
+      
+      // Manejar la selección del archivo
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+          setLoading(false);
+          return;
+        }
+
+        try {
+          // Validar tipo de archivo
+          const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+          if (!allowedTypes.includes(file.type)) {
+            alert('❌ Formato no válido. Solo se permiten JPG, PNG o PDF.');
+            setLoading(false);
+            return;
+          }
+
+          // Validar tamaño (5MB máximo)
+          if (file.size > 5 * 1024 * 1024) {
+            alert('❌ El archivo es demasiado grande. Máximo 5MB.');
+            setLoading(false);
+            return;
+          }
+
+          // Mostrar información del archivo seleccionado
+          alert(`📄 Archivo seleccionado:\n• Nombre: ${file.name}\n• Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB\n\nProcesando pago...`);
+
+          // Crear FormData para enviar el archivo
+          const formData = new FormData();
+          formData.append('comprobante', file);
+          formData.append('monto_pagado', totalAPagar.toFixed(2));
+          formData.append('incluye_mora', estaEnMora(cuota));
+
+          // Mostrar indicador de progreso
+          alert('⏳ Subiendo comprobante y registrando pago...');
+
+          // Llamar a la API
+          const resultado = await apiCuotas.registrarPagoManual(cuotaId, formData);
+
+          // Actualizar estado local
+          const cuotasActualizadas = cuotasPendientes.filter(c => c.id_cuota !== cuotaId);
+          setCuotasPendientes(cuotasActualizadas);
+          
+          // Recargar datos
+          if (user?.cedula) {
+            await cargarDatosEmprendedor(user.cedula);
+          }
+          
+          // Mostrar confirmación exitosa
+          alert('✅ ' + (resultado.message || 'Pago registrado exitosamente'));
+          
+        } catch (error) {
+          console.error('Error registrando pago:', error);
+          
+          let mensajeError = '❌ Error al registrar el pago';
+          if (error.response?.data?.error) {
+            mensajeError += `: ${error.response.data.error}`;
+          } else if (error.message) {
+            mensajeError += `: ${error.message}`;
+          }
+          
+          alert(mensajeError);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Agregar input al DOM y hacer click
+      document.body.appendChild(input);
+      input.click();
+      
+      // Limpiar después de la selección
+      setTimeout(() => {
+        if (document.body.contains(input)) {
+          document.body.removeChild(input);
+        }
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error en el proceso de pago:', error);
+      alert('❌ Error en el proceso de pago: ' + error.message);
+      setLoading(false);
+    }
+  };
+
+  // =============================================
+  // COMPONENTES REUTILIZABLES
   // =============================================
 
   const getDiasRestantesStyle = (dias) => {
@@ -425,165 +626,6 @@ const EmprendedorDashboard = ({ setUser }) => {
     </div>
   );
 
-const registrarPagoManual = async (cuotaId) => {
-  try {
-    setLoading(true);
-    
-    const cuota = cuotasPendientes.find(c => c.id_cuota === cuotaId);
-    const totalAPagar = calcularTotalConMora(cuota);
-    
-    // Validar que la cuota esté disponible para pago
-    if (!estaEnPeriodoPago(cuota) && !estaEnMora(cuota)) {
-      const hoy = new Date();
-      const fechaDesde = new Date(cuota.fecha_desde);
-      
-      if (hoy < fechaDesde) {
-        alert('❌ Esta cuota no está disponible para pago aún. Fecha de inicio: ' + cuota.fecha_desde);
-        setLoading(false);
-        return;
-      }
-    }
-
-    // Mensaje de confirmación
-    const mensajeConfirmacion = estaEnMora(cuota) 
-      ? `⚠️ CUOTA EN MORA\n\n• ${cuota.semana}\n• Días de mora: ${diasMorosidad[cuota.id_cuota]}\n• Monto original: $${cuota.monto}\n• Interés mora: +$${calcularInteresMorosidad(diasMorosidad[cuota.id_cuota], cuota.monto).toFixed(2)}\n• Total a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`
-      : `✅ CONFIRMAR PAGO\n\n• ${cuota.semana}\n• Monto a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`;
-
-    if (!window.confirm(mensajeConfirmacion)) {
-      setLoading(false);
-      return;
-    }
-
-    // Crear input para subir archivo
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.jpg,.jpeg,.png,.pdf';
-    input.style.display = 'none';
-    
-    // Manejar la selección del archivo
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Validar tipo de archivo
-        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-        if (!allowedTypes.includes(file.type)) {
-          alert('❌ Formato no válido. Solo se permiten JPG, PNG o PDF.');
-          setLoading(false);
-          return;
-        }
-
-        // Validar tamaño (5MB máximo)
-        if (file.size > 5 * 1024 * 1024) {
-          alert('❌ El archivo es demasiado grande. Máximo 5MB.');
-          setLoading(false);
-          return;
-        }
-
-        // Mostrar información del archivo seleccionado
-        alert(`📄 Archivo seleccionado:\n• Nombre: ${file.name}\n• Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB\n\nProcesando pago...`);
-
-        // Crear FormData para enviar el archivo (solo comprobante y datos esenciales)
-        const formData = new FormData();
-        formData.append('comprobante', file);
-        formData.append('monto_pagado', totalAPagar.toFixed(2));
-        formData.append('incluye_mora', estaEnMora(cuota));
-
-        // Mostrar indicador de progreso
-        alert('⏳ Subiendo comprobante y registrando pago...');
-
-        // Llamar a la API
-        const resultado = await apiCuotas.registrarPagoManual(cuotaId, formData);
-
-        // Actualizar estado local
-        const cuotasActualizadas = cuotasPendientes.filter(c => c.id_cuota !== cuotaId);
-        setCuotasPendientes(cuotasActualizadas);
-        
-        // Recargar datos
-        if (user?.cedula) {
-          await cargarDatosEmprendedor(user.cedula);
-        }
-        
-        // Mostrar confirmación exitosa
-        alert('✅ ' + (resultado.message || 'Pago registrado exitosamente'));
-        
-      } catch (error) {
-        console.error('Error registrando pago:', error);
-        
-        // Mensaje de error específico
-        let mensajeError = '❌ Error al registrar el pago';
-        if (error.response?.data?.error) {
-          mensajeError += `: ${error.response.data.error}`;
-        } else if (error.message) {
-          mensajeError += `: ${error.message}`;
-        }
-        
-        alert(mensajeError);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Agregar input al DOM y hacer click
-    document.body.appendChild(input);
-    input.click();
-    
-    // Limpiar después de la selección
-    setTimeout(() => {
-      if (document.body.contains(input)) {
-        document.body.removeChild(input);
-      }
-    }, 1000);
-    
-  } catch (error) {
-    console.error('Error en el proceso de pago:', error);
-    alert('❌ Error en el proceso de pago: ' + error.message);
-    setLoading(false);
-  }
-};
-
-  const descargarComprobante = async (pagoId) => {
-    try {
-      alert(`📄 Generando comprobante para el pago #${pagoId}...\n\nEl comprobante se descargará automáticamente.`);
-      
-      setTimeout(() => {
-        alert('✅ Comprobante descargado exitosamente');
-      }, 1000);
-    } catch (error) {
-      console.error('Error descargando comprobante:', error);
-      alert('❌ Error al descargar el comprobante');
-    }
-  };
-
-  const recargarDatos = () => {
-    if (user?.cedula) {
-      cargarDatosEmprendedor(user.cedula);
-    }
-  };
-
-  const getEstadoConfirmacion = (confirmacionifemi) => {
-    switch (confirmacionifemi) {
-      case 'Confirmado':
-        return { color: 'green', text: 'Confirmado', icon: 'bx-check-circle' };
-      case 'Rechazado':
-        return { color: 'red', text: 'Rechazado', icon: 'bx-x-circle' };
-      case 'A Recibido':
-        return { color: 'blue', text: 'Por Confirmar', icon: 'bx-time-five' };
-      case 'En Espera':
-        return { color: 'gray', text: 'En Espera', icon: 'bx-time' };
-      default:
-        return { color: 'gray', text: 'Pendiente', icon: 'bx-time' };
-    }
-  };
-
-  // =============================================
-  // COMPONENTES DE TARJETAS
-  // =============================================
-
   const TarjetaMora = () => (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 border-l-4 border-red-500">
       <div className="flex justify-between items-start">
@@ -598,6 +640,52 @@ const registrarPagoManual = async (cuotaId) => {
       </div>
     </div>
   );
+
+  // =============================================
+  // EFFECTS
+  // =============================================
+
+  useEffect(() => {
+    fetchRates();
+  }, []);
+
+  useEffect(() => {
+    if (cuotasPendientes.length > 0) {
+      calcularDiasRestantes();
+      calcularDiasMorosidad();
+      
+      const interval = setInterval(() => {
+        calcularDiasRestantes();
+        calcularDiasMorosidad();
+      }, 1000 * 60 * 60);
+      
+      return () => clearInterval(interval);
+    }
+  }, [cuotasPendientes]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const cedula = localStorage.getItem('cedula_usuario');
+        if (cedula) {
+          const usuario = {
+            nombre_completo: "Emprendedor Ejemplo",
+            rol: "Emprendedor",
+            estatus: "Activo",
+            cedula: cedula
+          };
+          setUserState(usuario);
+          if (setUser) setUser(usuario);
+          
+          await cargarDatosEmprendedor(cedula);
+        }
+      } catch (error) {
+        console.error('Error al obtener datos:', error);
+      }
+    };
+    
+    if (!user) fetchUserData();
+  }, [setUser, user]);
 
   // =============================================
   // VISTA: RESUMEN
@@ -1098,7 +1186,7 @@ const registrarPagoManual = async (cuotaId) => {
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Monto</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Contrato</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Confirmación IFEMI</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Comprobante</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1127,12 +1215,41 @@ const registrarPagoManual = async (cuotaId) => {
                               </span>
                             </td>
                             <td className="py-3 px-4">
-                              <button 
-                                className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg flex items-center hover:bg-indigo-100 transition-colors text-sm"
-                                onClick={() => descargarComprobante(pago.id_cuota)}
-                              >
-                                <i className="bx bx-download mr-1"></i> Descargar
-                              </button>
+                              <div className="flex space-x-2">
+                                {/* Botón para descargar comprobante */}
+                                <button 
+                                  className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg flex items-center hover:bg-indigo-100 transition-colors text-sm"
+                                  onClick={() => descargarComprobante(pago.id_cuota)}
+                                  title="Descargar comprobante de pago"
+                                >
+                                  <i className="bx bx-download mr-1"></i> Comprobante
+                                </button>
+                                
+                                {/* Botones para el recibo PDF - SOLO para confirmados */}
+                                {estado.puedeDescargar && (
+                                  <>
+                                    <button 
+                                      className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg flex items-center hover:bg-blue-100 transition-colors text-sm"
+                                      onClick={() => manejarReciboPago(pago, 'visualizar')}
+                                      title="Visualizar recibo antes de descargar"
+                                      disabled={loading}
+                                    >
+                                      <i className="bx bx-show mr-1"></i> 
+                                      {loading ? 'Cargando...' : 'Ver Recibo'}
+                                    </button>
+                                    
+                                    <button 
+                                      className="bg-green-50 text-green-700 px-3 py-1 rounded-lg flex items-center hover:bg-green-100 transition-colors text-sm"
+                                      onClick={() => manejarReciboPago(pago, 'descargar')}
+                                      title="Descargar recibo oficial PDF"
+                                      disabled={loading}
+                                    >
+                                      <i className="bx bx-download mr-1"></i> 
+                                      {loading ? 'Procesando...' : 'Descargar PDF'}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );

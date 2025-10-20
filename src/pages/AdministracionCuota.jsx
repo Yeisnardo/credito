@@ -335,7 +335,7 @@ const EstadoCronometro = ({ cuota }) => {
   );
 };
 
-// Componente de Tabla de Cuotas CON BOTONES DE CONFIRMACIÓN Y VISOR DE COMPROBANTES
+// Componente de Tabla de Cuotas CON CUOTAS ORDENADAS
 const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago, configuracion }) => {
   // Estado para el comprobante visible
   const [comprobanteVisible, setComprobanteVisible] = useState(null);
@@ -350,8 +350,22 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
     setComprobanteVisible(null);
   };
 
-  // Filtrar cuotas por confirmar
-  const cuotasPorConfirmar = cuotasContrato.filter(cuota => 
+  // Función para extraer el número de semana
+  const extraerNumeroCuota = (textoSemana) => {
+    if (!textoSemana) return 0;
+    const match = textoSemana.match(/Semana\s*(\d+)/i);
+    return match ? parseInt(match[1]) : 0;
+  };
+
+  // ORDENAR LAS CUOTAS POR NÚMERO DE SEMANA
+  const cuotasOrdenadas = [...cuotasContrato].sort((a, b) => {
+    const numA = extraerNumeroCuota(a.semana);
+    const numB = extraerNumeroCuota(b.semana);
+    return numA - numB;
+  });
+
+  // Filtrar cuotas por confirmar (usando las cuotas ordenadas)
+  const cuotasPorConfirmar = cuotasOrdenadas.filter(cuota => 
     cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido'
   );
 
@@ -463,7 +477,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
         </div>
       )}
 
-      {/* Tabla Principal de Todas las Cuotas CON BOTONES DE CONFIRMACIÓN */}
+      {/* Tabla Principal de Todas las Cuotas ORDENADAS */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold text-gray-800">
@@ -493,14 +507,14 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
               </tr>
             </thead>
             <tbody>
-              {cuotasContrato.length === 0 ? (
+              {cuotasOrdenadas.length === 0 ? (
                 <tr>
                   <td colSpan="10" className="text-center py-8 text-gray-600">
                     No hay cuotas registradas para este contrato
                   </td>
                 </tr>
               ) : (
-                cuotasContrato.map(cuota => {
+                cuotasOrdenadas.map(cuota => {
                   const diasMora = calcularDiasMora(cuota.fecha_hasta);
                   const interesMora = calcularInteresMora(cuota.monto, diasMora);
                   
@@ -517,7 +531,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                     >
                       {/* Semana */}
                       <td className="py-3 px-4">
-                        <div className="text-sm text-gray-800">{cuota.semana}</div>
+                        <div className="text-sm text-gray-800 font-semibold">{cuota.semana}</div>
                         <div className="text-xs text-gray-500">ID: {cuota.id_cuota}</div>
                       </td>
                       
