@@ -160,7 +160,7 @@ CREATE TABLE configuracion_contratos (
     porcentaje_interes TEXT,
     porcentaje_mora TEXT,
     numero_cuotas TEXT NOT NULL ,
-    cuotasGracia TEXT NOT NULL,
+    cuotasgracias TEXT NOT NULL,
     frecuencia_pago TEXT NOT NULL ,
     dias_personalizados TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -177,6 +177,7 @@ CREATE TABLE historial_configuracion_contratos (
     porcentaje_mora NUMERIC(5, 2) NOT NULL,
     numero_cuotas INTEGER NOT NULL,
     frecuencia_pago VARCHAR(20) NOT NULL,
+    cuotasgracias TEXT NOT NULL,
     dias_personalizados INTEGER,
     fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -305,5 +306,5 @@ VALUES ('31234567', 'Carlos Alberto Mendoza Ruiz', '1990-03-25', '555-9876', 'ca
 INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
 VALUES ('31234567', 'CarlosMendoza', 'carlos2024', 'Administrador', 'Activo');
 
-INSERT INTO configuracion_contratos ( moneda, porcentaje_flat, porcentaje_interes, porcentaje_mora, numero_cuotas, cuotasGracia, frecuencia_pago, dias_personalizados) 
+INSERT INTO configuracion_contratos ( moneda, porcentaje_flat, porcentaje_interes, porcentaje_mora, numero_cuotas, cuotasgracias, frecuencia_pago, dias_personalizados) 
 VALUES ('USD', 5, 10, 2, 12, 2, 'Mensual', 0 );

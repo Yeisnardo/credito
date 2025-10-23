@@ -4,21 +4,27 @@ const api = axios.create({
   baseURL: 'http://localhost:5000',
 });
 
-// Crear otra persona (crearPersona2)
-const createPersona2 = async (persona) => {
+// Crear una nueva persona (versión completa)
+const createPersona = async (persona) => {
   const response = await api.post('/api/persona', persona);
   return response.data;
 };
 
-// Crear una nueva persona
-const createPersona = async (persona) => {
-  const response = await api.post('/api/persona', persona);
+// Crear persona con campos básicos
+const createPersonaBasica = async (persona) => {
+  const response = await api.post('/api/persona/basica', persona);
   return response.data;
 };
 
 // Obtener una persona por cédula
 const getPersona = async (cedula) => {
   const response = await api.get(`/api/persona/${cedula}`);
+  return response.data;
+};
+
+// Obtener todas las personas
+const getPersonas = async () => {
+  const response = await api.get('/api/persona');
   return response.data;
 };
 
@@ -35,9 +41,10 @@ const deletePersona = async (cedula) => {
 };
 
 export default {
-  createPersona2,
   createPersona,
+  createPersonaBasica,
   getPersona,
+  getPersonas,
   updatePersona,
   deletePersona,
 };

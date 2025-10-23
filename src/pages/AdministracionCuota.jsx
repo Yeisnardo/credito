@@ -990,7 +990,7 @@ const AdminDashboard = ({ setUser }) => {
         `Configuración que se aplicará:\n` +
         `• Frecuencia: ${configuracion.frecuencia_pago}\n` +
         `• Total de cuotas: ${configuracion.numero_cuotas}\n` +
-        `• Cuotas de gracia: ${configuracion.cuotasGracia || 0}\n` +
+        `• Cuotas de gracia: ${configuracion.cuotasgracias || 0}\n` +
         `• Tasa de mora: ${configuracion.porcentaje_mora}%\n\n` +
         `Esta acción eliminará todas las cuotas pendientes y las recreará según la configuración actual.`
       );

@@ -18,7 +18,7 @@ const ConfiguracionContratos = () => {
     numero_cuotas: "",
     frecuencia_pago: "mensual",
     dias_personalizados: "",
-    cuotasGracia: ""
+    cuotasgracias: ""
   });
   const [mensaje, setMensaje] = useState("");
   const [tipoMensaje, setTipoMensaje] = useState("");
@@ -44,7 +44,7 @@ const ConfiguracionContratos = () => {
             numero_cuotas: configActual.numero_cuotas || "",
             frecuencia_pago: configActual.frecuencia_pago || "mensual",
             dias_personalizados: configActual.dias_personalizados || "",
-            cuotasGracia: configActual.cuotasGracia || ""
+            cuotasgracias: configActual.cuotasgracias || ""
           });
         }
 
@@ -77,7 +77,7 @@ const ConfiguracionContratos = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    if (["porcentaje_flat", "porcentaje_interes", "porcentaje_mora", "numero_cuotas", "dias_personalizados", "cuotasGracia"].includes(name)) {
+    if (["porcentaje_flat", "porcentaje_interes", "porcentaje_mora", "numero_cuotas", "dias_personalizados", "cuotasgracias"].includes(name)) {
       // Validar que sea número válido
       const numValue = value === "" ? "" : (isNaN(Number(value)) ? "" : Number(value));
       setConfiguracion(prev => ({
@@ -110,7 +110,7 @@ const ConfiguracionContratos = () => {
     }
 
     // Validar que cuotas de gracia no sea mayor que número de cuotas
-    if (configuracion.cuotasGracia > configuracion.numero_cuotas) {
+    if (configuracion.cuotasgracias > configuracion.numero_cuotas) {
       mostrarMensaje("Las cuotas de gracia no pueden ser más que el número total de cuotas", "error");
       return false;
     }
@@ -153,19 +153,19 @@ const ConfiguracionContratos = () => {
 
   // Calcular rangos de fechas para vista previa
   const calcularRangoFechasPorCuota = () => {
-    const { numero_cuotas, frecuencia_pago, dias_personalizados, cuotasGracia } = configuracion;
+    const { numero_cuotas, frecuencia_pago, dias_personalizados, cuotasgracias } = configuracion;
     
     if (!numero_cuotas || numero_cuotas < 1) return [];
 
     const fechaInicio = new Date();
     const rangos = [];
     const cuotas = Number(numero_cuotas);
-    const cuotasGraciaNum = Number(cuotasGracia) || 0;
+    const cuotasgraciasNum = Number(cuotasgracias) || 0;
 
-    for (let i = 1; i <= cuotas + cuotasGraciaNum; i++) {
+    for (let i = 1; i <= cuotas + cuotasgraciasNum; i++) {
       const desde = new Date(fechaInicio);
       const hasta = new Date(fechaInicio);
-      const offset = i <= cuotasGraciaNum ? 0 : i - cuotasGraciaNum;
+      const offset = i <= cuotasgraciasNum ? 0 : i - cuotasgraciasNum;
 
       switch (frecuencia_pago) {
         case "diario":
@@ -196,7 +196,7 @@ const ConfiguracionContratos = () => {
 
       rangos.push({
         cuota: i,
-        tipo: i <= cuotasGraciaNum ? "Gracia" : "Pago",
+        tipo: i <= cuotasgraciasNum ? "Gracia" : "Pago",
         desde: desde.toLocaleDateString('es-ES'),
         hasta: hasta.toLocaleDateString('es-ES'),
       });
@@ -422,8 +422,8 @@ const ConfiguracionContratos = () => {
                     </label>
                     <input
                       type="number"
-                      name="cuotasGracia"
-                      value={configuracion.cuotasGracia}
+                      name="cuotasgracias"
+                      value={configuracion.cuotasgracias}
                       onChange={handleChange}
                       min="0"
                       max={configuracion.numero_cuotas || 0}
@@ -487,7 +487,7 @@ const ConfiguracionContratos = () => {
                   <div><span className="font-medium">Interés:</span> {configuracion.porcentaje_interes || '0'}%</div>
                   <div><span className="font-medium">Mora:</span> {configuracion.porcentaje_mora || '0'}%</div>
                   <div><span className="font-medium">Cuotas:</span> {configuracion.numero_cuotas || '0'}</div>
-                  <div><span className="font-medium">Gracia:</span> {configuracion.cuotasGracia || '0'}</div>
+                  <div><span className="font-medium">Gracia:</span> {configuracion.cuotasgracias || '0'}</div>
                   <div className="col-span-2">
                     <span className="font-medium">Frecuencia:</span> {getFrecuenciaTexto()}
                   </div>
@@ -589,7 +589,7 @@ const ConfiguracionContratos = () => {
                         <td className="px-4 py-3 text-sm">{item.porcentaje_interes}%</td>
                         <td className="px-4 py-3 text-sm">{item.porcentaje_mora}%</td>
                         <td className="px-4 py-3 text-sm">{item.numero_cuotas}</td>
-                        <td className="px-4 py-3 text-sm">{item.cuotasGracia || 0}</td>
+                        <td className="px-4 py-3 text-sm">{item.cuotasgracias || 0}</td>
                         <td className="px-4 py-3 text-sm capitalize">{item.frecuencia_pago}</td>
                       </tr>
                     ))}
