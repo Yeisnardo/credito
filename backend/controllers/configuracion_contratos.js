@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       porcentaje_interes,
       porcentaje_mora,
       numero_cuotas,
-      cuotasGracia,
+      cuotasgracias,
       frecuencia_pago,
       dias_personalizados,
     } = req.body;
@@ -65,7 +65,7 @@ router.post('/', async (req, res) => {
         porcentaje_interes,
         porcentaje_mora,
         numero_cuotas,
-        cuotasGracia,
+        cuotasgracias,
         frecuencia_pago,
         dias_personalizados
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
         porcentaje_interes,
         porcentaje_mora,
         numero_cuotas,
-        cuotasGracia,
+        cuotasgracias,
         frecuencia_pago,
         dias_personalizados,
       ]
@@ -92,9 +92,10 @@ router.post('/', async (req, res) => {
         porcentaje_interes,
         porcentaje_mora,
         numero_cuotas,
+        cuotasgracias,
         frecuencia_pago,
         dias_personalizados
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         nuevaConfiguracion.id,
         moneda,
@@ -102,6 +103,7 @@ router.post('/', async (req, res) => {
         parseFloat(porcentaje_interes) || 0,
         parseFloat(porcentaje_mora) || 0,
         parseInt(numero_cuotas) || 0,
+        cuotasgracias ? parseInt(cuotasgracias) : 0,
         frecuencia_pago,
         dias_personalizados ? parseInt(dias_personalizados) : null
       ]
@@ -127,7 +129,7 @@ router.put('/:id', async (req, res) => {
       porcentaje_interes,
       porcentaje_mora,
       numero_cuotas,
-      cuotasGracia,
+      cuotasgracias,
       frecuencia_pago,
       dias_personalizados,
     } = req.body;
@@ -140,7 +142,7 @@ router.put('/:id', async (req, res) => {
         porcentaje_interes = $3,
         porcentaje_mora = $4,
         numero_cuotas = $5,
-        cuotasGracia = $6,
+        cuotasgracias = $6,
         frecuencia_pago = $7,
         dias_personalizados = $8,
         fecha_actualizacion = CURRENT_TIMESTAMP
@@ -151,7 +153,7 @@ router.put('/:id', async (req, res) => {
         porcentaje_interes,
         porcentaje_mora,
         numero_cuotas,
-        cuotasGracia,
+        cuotasgracias,
         frecuencia_pago,
         dias_personalizados,
         id,
@@ -173,9 +175,10 @@ router.put('/:id', async (req, res) => {
         porcentaje_interes,
         porcentaje_mora,
         numero_cuotas,
+        cuotasgracias,
         frecuencia_pago,
         dias_personalizados
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         id,
         moneda,
@@ -183,6 +186,7 @@ router.put('/:id', async (req, res) => {
         parseFloat(porcentaje_interes) || 0,
         parseFloat(porcentaje_mora) || 0,
         parseInt(numero_cuotas) || 0,
+        cuotasgracias ? parseInt(cuotasgracias) : 0,
         frecuencia_pago,
         dias_personalizados ? parseInt(dias_personalizados) : null
       ]

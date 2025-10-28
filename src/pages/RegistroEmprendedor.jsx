@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { motion } from "framer-motion"; // Importar motion
-import { locationData } from "../components/Venezuela";
+import { motion } from "framer-motion";
+import { locationData, getEstados, getMunicipiosByEstado } from "../components/Venezuela";
 import miImagen from "../assets/imagenes/logo_ifemi.jpg";
 
 import personaService from "../services/api_persona";
@@ -22,8 +22,8 @@ const RegistroEmprendedor = () => {
     edad: "",
     telefono: "",
     correo: "",
-    estado: "Yaracuy",
-    municipio: "Independencia",
+    estado: "",
+    municipio: "",
     direccion: "",
     tipo_persona: "Emprendedor",
     cedula_emprendedor: "",
@@ -44,10 +44,13 @@ const RegistroEmprendedor = () => {
   const [sectores, setSectores] = useState([]);
   const [sectorSeleccionado, setSectorSeleccionado] = useState("");
   const [negocioSeleccionado, setNegocioSeleccionado] = useState("");
-
   const [municipios, setMunicipios] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Cargar clasificaciones y gestionar municipios
+  // Estados disponibles
+  const estados = getEstados();
+
+  // Cargar clasificaciones
   useEffect(() => {
     const fetchClasificaciones = async () => {
       try {
@@ -57,24 +60,32 @@ const RegistroEmprendedor = () => {
         setSectores(sectoresUnicos);
       } catch (error) {
         console.error("Error cargando clasificaciones:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudieron cargar las clasificaciones",
+        });
       }
     };
     fetchClasificaciones();
+  }, []);
 
+  // Gestionar municipios cuando cambia el estado
+  useEffect(() => {
     if (datos.estado) {
-      const estadoActual = locationData.find((e) => e.estado === datos.estado);
-      if (estadoActual) {
-        setMunicipios(estadoActual.municipios);
-        if (
-          datos.estado === "Yaracuy" &&
-          (!datos.municipio || datos.municipio === "")
-        ) {
-          setDatos((prev) => ({ ...prev, municipio: "Independencia" }));
-        }
-      } else {
-        setMunicipios([]);
-        setDatos((prev) => ({ ...prev, municipio: "" }));
+      const municipiosEstado = getMunicipiosByEstado(datos.estado);
+      setMunicipios(municipiosEstado);
+      
+      // Si el municipio actual no está en los municipios del nuevo estado, resetearlo
+      if (!municipiosEstado.includes(datos.municipio)) {
+        setDatos((prev) => ({ 
+          ...prev, 
+          municipio: municipiosEstado[0] || "" 
+        }));
       }
+    } else {
+      setMunicipios([]);
+      setDatos((prev) => ({ ...prev, municipio: "" }));
     }
   }, [datos.estado]);
 
@@ -89,66 +100,188 @@ const RegistroEmprendedor = () => {
           cedula_usuario: soloNumeros,
         }));
       }
+    } else if (campo === "telefono") {
+      const soloNumeros = valor.replace(/\D/g, "");
+      if (soloNumeros.length <= 11) {
+        setDatos((prev) => ({ ...prev, [campo]: soloNumeros }));
+      }
     } else {
       setDatos((prev) => ({ ...prev, [campo]: valor }));
     }
   };
 
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const validateStep1 = () => {
+    if (!datos.cedula.trim() || datos.cedula.length < 6 || datos.cedula.length > 9) {
+      Swal.fire({
+        icon: "error",
+        title: "Cédula inválida",
+        text: "La cédula debe tener entre 6 y 9 dígitos",
+      });
+      return false;
+    }
+
+    if (!datos.nombre_completo.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Nombre requerido",
+        text: "Por favor ingresa tu nombre completo",
+      });
+      return false;
+    }
+
+    if (!datos.edad) {
+      Swal.fire({
+        icon: "error",
+        title: "Fecha requerida",
+        text: "Por favor ingresa tu fecha de nacimiento",
+      });
+      return false;
+    }
+
+    if (!datos.telefono.trim() || datos.telefono.length < 10) {
+      Swal.fire({
+        icon: "error",
+        title: "Teléfono inválido",
+        text: "El teléfono debe tener al menos 10 dígitos",
+      });
+      return false;
+    }
+
+    if (!datos.correo.trim() || !validateEmail(datos.correo)) {
+      Swal.fire({
+        icon: "error",
+        title: "Correo inválido",
+        text: "Por favor ingresa un correo electrónico válido",
+      });
+      return false;
+    }
+
+    if (!datos.estado.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Estado requerido",
+        text: "Por favor selecciona un estado",
+      });
+      return false;
+    }
+
+    if (!datos.municipio.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Municipio requerido",
+        text: "Por favor selecciona un municipio",
+      });
+      return false;
+    }
+
+    if (!datos.direccion.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Dirección requerida",
+        text: "Por favor ingresa tu dirección",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (!sectorSeleccionado) {
+      Swal.fire({
+        icon: "error",
+        title: "Sector requerido",
+        text: "Por favor selecciona un sector",
+      });
+      return false;
+    }
+
+    if (!negocioSeleccionado) {
+      Swal.fire({
+        icon: "error",
+        title: "Tipo de negocio requerido",
+        text: "Por favor selecciona un tipo de negocio",
+      });
+      return false;
+    }
+
+    if (!datos.nombre_emprendimiento.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Nombre requerido",
+        text: "Por favor ingresa el nombre de tu emprendimiento",
+      });
+      return false;
+    }
+
+    if (!datos.consejo_nombre.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Consejo requerido",
+        text: "Por favor selecciona un consejo comunal",
+      });
+      return false;
+    }
+
+    if (!datos.comuna.trim()) {
+      Swal.fire({
+        icon: "error",
+        title: "Comuna requerida",
+        text: "Por favor selecciona una comuna",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateStep3 = () => {
+    if (!datos.usuario.trim() || datos.usuario.length < 3) {
+      Swal.fire({
+        icon: "error",
+        title: "Usuario inválido",
+        text: "El usuario debe tener al menos 3 caracteres",
+      });
+      return false;
+    }
+
+    if (!datos.clave.trim() || datos.clave.length < 6) {
+      Swal.fire({
+        icon: "error",
+        title: "Contraseña inválida",
+        text: "La contraseña debe tener al menos 6 caracteres",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleNext = () => {
-    const validations = [
-      () => {
-        if (
-          !datos.cedula.trim() ||
-          datos.cedula.length < 6 ||
-          datos.cedula.length > 9 ||
-          !datos.nombre_completo.trim() ||
-          !datos.edad.toString().trim() ||
-          !datos.telefono.trim() ||
-          !datos.correo.trim()
-        ) {
-          Swal.fire({
-            icon: "error",
-            title: "Campos incompletos",
-            text: "Por favor, completa todos los datos personales correctamente. La cédula debe tener entre 6 y 9 dígitos y solo números.",
-          });
-          return false;
-        }
-        return true;
-      },
-      () => {
-        if (
-          !sectorSeleccionado ||
-          !negocioSeleccionado ||
-          !datos.consejo_nombre.trim() ||
-          !datos.comuna.trim()
-        ) {
-          Swal.fire({
-            icon: "error",
-            title: "Campos incompletos",
-            text: "Por favor, completa todos los campos del paso 2, incluyendo consejo y comuna.",
-          });
-          return false;
-        }
-        return true;
-      },
-      () => {
-        if (!datos.usuario.trim() || !datos.clave.trim()) {
-          Swal.fire({
-            icon: "error",
-            title: "Campos incompletos",
-            text: "Por favor, ingresa usuario y contraseña.",
-          });
-          return false;
-        }
-        return true;
-      },
-    ];
+    let isValid = false;
 
-    if (validations[paso - 1] && !validations[paso - 1]()) return;
+    switch (paso) {
+      case 1:
+        isValid = validateStep1();
+        break;
+      case 2:
+        isValid = validateStep2();
+        break;
+      case 3:
+        isValid = validateStep3();
+        break;
+      default:
+        isValid = false;
+    }
 
-    if (paso < 3) {
+    if (isValid && paso < 3) {
       setPaso(paso + 1);
-    } else {
+    } else if (isValid && paso === 3) {
       handleFinalizar();
     }
   };
@@ -158,11 +291,47 @@ const RegistroEmprendedor = () => {
   };
 
   const handleFinalizar = async () => {
+    setLoading(true);
     try {
+      // Verificar si la cédula ya existe
+      try {
+        await personaService.getPersonaByCedula(datos.cedula);
+        Swal.fire({
+          icon: "error",
+          title: "Cédula ya registrada",
+          text: "Esta cédula ya se encuentra registrada en el sistema",
+        });
+        setLoading(false);
+        return;
+      } catch (error) {
+        // Cédula disponible
+        console.log("Cédula disponible");
+      }
+
+      // Verificar si el usuario ya existe
+      try {
+        await usuarioService.getUsuarioByUser(datos.usuario);
+        Swal.fire({
+          icon: "error",
+          title: "Usuario ya existe",
+          text: "Este nombre de usuario ya está en uso, elige otro",
+        });
+        setLoading(false);
+        return;
+      } catch (error) {
+        // Usuario disponible
+        console.log("Usuario disponible");
+      }
+
+      // Calcular edad desde fecha de nacimiento
+      const edadCalculada = Math.floor(
+        (new Date() - new Date(datos.edad)) / (365.25 * 24 * 60 * 60 * 1000)
+      );
+
       const personaData = {
         cedula: datos.cedula,
         nombre_completo: datos.nombre_completo,
-        edad: parseInt(datos.edad) || 0,
+        edad: datos.edad,
         telefono: datos.telefono,
         email: datos.correo,
         estado: datos.estado,
@@ -188,29 +357,436 @@ const RegistroEmprendedor = () => {
         nombre_emprendimiento: datos.nombre_emprendimiento,
         consejo_nombre: datos.consejo_nombre,
         comuna: datos.comuna,
-        direccion_emprendimiento: datos.direccion_emprendimiento,
+        direccion_emprendimiento: datos.direccion_emprendimiento || datos.direccion,
       };
       await emprendimientoService.createEmprendimiento(emprendimientoData);
 
-      Swal.fire({
+      await Swal.fire({
         icon: "success",
-        title: "Registro completo",
-        text: "Todos los datos han sido registrados.",
+        title: "¡Registro exitoso!",
+        text: "Tu registro se ha completado correctamente",
+        timer: 3000,
+        showConfirmButton: false
       });
+
       navigate("/Login");
     } catch (error) {
       console.error("Error en registro:", error);
+      let errorMessage = "Hubo un problema al guardar los datos";
+      
+      if (error.response) {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+      
       Swal.fire({
         icon: "error",
         title: "Error en el registro",
-        text: "Hubo un problema al guardar los datos.",
+        text: errorMessage,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Renderizar campos del formulario
+  const renderPaso1 = () => (
+    <motion.div
+      id="paso-1"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      className="space-y-4"
+    >
+      <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
+        Datos Personales
+      </h3>
+      
+      <div className="flex flex-wrap gap-4">
+        {/* Cédula */}
+        <div className="w-full md:w-[45%]">
+          <label htmlFor="cedula" className="block mb-1 text-sm font-medium text-gray-600">
+            Cédula de Identidad
+          </label>
+          <motion.input
+            type="text"
+            id="cedula"
+            value={datos.cedula}
+            onChange={(e) => handleChange("cedula", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            placeholder="Ingresa tu cédula"
+            required
+            whileFocus={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
+
+        {/* Nombre Completo */}
+        <div className="w-full md:w-[45%]">
+          <label htmlFor="nombre_completo" className="block mb-1 text-sm font-medium text-gray-600">
+            Nombre Completo
+          </label>
+          <motion.input
+            type="text"
+            id="nombre_completo"
+            value={datos.nombre_completo}
+            onChange={(e) => handleChange("nombre_completo", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            placeholder="Ingresa tu nombre completo"
+            required
+            whileFocus={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
+
+        {/* Fecha de Nacimiento */}
+        <div className="w-full md:w-[45%]">
+          <label htmlFor="edad" className="block mb-1 text-sm font-medium text-gray-600">
+            Fecha de Nacimiento
+          </label>
+          <motion.input
+            type="date"
+            id="edad"
+            value={datos.edad}
+            onChange={(e) => handleChange("edad", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            required
+            whileFocus={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
+
+        {/* Teléfono */}
+        <div className="w-full md:w-[45%]">
+          <label htmlFor="telefono" className="block mb-1 text-sm font-medium text-gray-600">
+            Número de Teléfono
+          </label>
+          <motion.input
+            type="tel"
+            id="telefono"
+            value={datos.telefono}
+            onChange={(e) => handleChange("telefono", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            placeholder="Ingresa tu teléfono"
+            required
+            whileFocus={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
+
+        {/* Correo */}
+        <div className="w-full md:w-[93%]">
+          <label htmlFor="correo" className="block mb-1 text-sm font-medium text-gray-600">
+            Correo Electrónico
+          </label>
+          <motion.input
+            type="email"
+            id="correo"
+            value={datos.correo}
+            onChange={(e) => handleChange("correo", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            placeholder="Ingresa tu correo electrónico"
+            required
+            whileFocus={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          />
+        </div>
+
+        {/* Estado */}
+        <div className="w-full md:w-[45%]">
+          <label htmlFor="estado" className="block mb-1 text-sm font-medium text-gray-600">
+            Estado
+          </label>
+          <select
+            id="estado"
+            value={datos.estado}
+            onChange={(e) => handleChange("estado", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+          >
+            <option value="">Seleccione un estado</option>
+            {estados.map((estado) => (
+              <option key={estado} value={estado}>
+                {estado}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Municipio */}
+        <div className="w-full md:w-[45%]">
+          <label htmlFor="municipio" className="block mb-1 text-sm font-medium text-gray-600">
+            Municipio
+          </label>
+          <select
+            id="municipio"
+            value={datos.municipio}
+            onChange={(e) => handleChange("municipio", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            disabled={!datos.estado}
+          >
+            <option value="">Seleccione un municipio</option>
+            {municipios.map((municipio) => (
+              <option key={municipio} value={municipio}>
+                {municipio}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Dirección */}
+        <div className="w-full md:w-[93%]">
+          <label htmlFor="direccion" className="block mb-1 text-sm font-medium text-gray-600">
+            Dirección Actual
+          </label>
+          <input
+            type="text"
+            id="direccion"
+            value={datos.direccion}
+            onChange={(e) => handleChange("direccion", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            placeholder="Ingresa tu dirección actual"
+            required
+          />
+        </div>
+      </div>
+
+      <motion.button
+        onClick={handleNext}
+        whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+        transition={{ duration: 0.3 }}
+        className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300 mt-4"
+      >
+        Siguiente
+      </motion.button>
+
+      <div className="mt-4 flex justify-center">
+        <motion.button
+          onClick={() => navigate("/Login")}
+          whileHover={{ scale: 1.05, textShadow: "0 0 4px #000" }}
+          className="text-blue-600 hover:underline font-medium"
+        >
+          Regresar al login
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+
+  const renderPaso2 = () => (
+    <motion.div
+      id="paso-2"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      className="space-y-4"
+    >
+      <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
+        Datos del Consejo y Emprendimiento
+      </h3>
+      
+      <div className="flex flex-wrap gap-4">
+        {/* Sector */}
+        <div className="w-full md:w-[45%]">
+          <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="tipo_sector">
+            Tipo de Sector
+          </label>
+          <select
+            id="tipo_sector"
+            value={sectorSeleccionado}
+            onChange={(e) => {
+              setSectorSeleccionado(e.target.value);
+              setNegocioSeleccionado("");
+            }}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+          >
+            <option value="">Seleccione un sector</option>
+            {sectores.map((sec) => (
+              <option key={sec} value={sec}>
+                {sec}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Tipo de Negocio */}
+        <div className="w-full md:w-[45%]">
+          <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="tipo_negocio">
+            Tipo de Negocio
+          </label>
+          <select
+            id="tipo_negocio"
+            value={negocioSeleccionado}
+            onChange={(e) => {
+              setNegocioSeleccionado(e.target.value);
+              handleChange("tipo_negocio", e.target.value);
+            }}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            disabled={!sectorSeleccionado}
+          >
+            <option value="">Seleccione tipo de negocio</option>
+            {sectorSeleccionado &&
+              clasificaciones
+                .filter((c) => c.sector === sectorSeleccionado)
+                .map((c) => (
+                  <option key={c.negocio} value={c.negocio}>
+                    {c.negocio}
+                  </option>
+                ))}
+          </select>
+        </div>
+
+        {/* Nombre del Emprendimiento */}
+        <div className="w-full">
+          <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="nombre_emprendimiento">
+            Nombre del Emprendimiento
+          </label>
+          <input
+            type="text"
+            id="nombre_emprendimiento"
+            value={datos.nombre_emprendimiento}
+            onChange={(e) => handleChange("nombre_emprendimiento", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            placeholder="Ingresa el nombre del emprendimiento"
+          />
+        </div>
+
+        {/* Dirección del Emprendimiento */}
+        <div className="w-full">
+          <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="direccion_emprendimiento">
+            Dirección del Emprendimiento
+          </label>
+          <input
+            type="text"
+            id="direccion_emprendimiento"
+            value={datos.direccion_emprendimiento}
+            onChange={(e) => handleChange("direccion_emprendimiento", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+            placeholder="Ingresa la dirección del emprendimiento"
+          />
+        </div>
+
+        {/* Consejo Nombre */}
+        <div className="w-full md:w-[45%]">
+          <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="consejo_nombre">
+            Nombre del Consejo Comunal
+          </label>
+          <select
+            id="consejo_nombre"
+            value={datos.consejo_nombre}
+            onChange={(e) => handleChange("consejo_nombre", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+          >
+            <option value="">Selecciona el consejo</option>
+            <option value="DON JUANCHO">DON JUANCHO</option>
+            <option value="ALTO PRADO">ALTO PRADO</option>
+            <option value="SECTOR JUVENTUD">SECTOR JUVENTUD</option>
+            {/* ... otros consejos ... */}
+          </select>
+        </div>
+
+        {/* Comuna */}
+        <div className="w-full md:w-[45%]">
+          <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="comuna">
+            Nombre de la Comuna
+          </label>
+          <select
+            id="comuna"
+            value={datos.comuna}
+            onChange={(e) => handleChange("comuna", e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+          >
+            <option value="">Selecciona la comuna</option>
+            <option value="Comuna 1">William Lara Vive</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="flex justify-between mt-4 gap-4">
+        <motion.button
+          onClick={handleBack}
+          whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+          transition={{ duration: 0.3 }}
+          className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
+        >
+          Anterior
+        </motion.button>
+        <motion.button
+          onClick={handleNext}
+          whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+          transition={{ duration: 0.3 }}
+          className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
+        >
+          Siguiente
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+
+  const renderPaso3 = () => (
+    <motion.div
+      id="paso-3"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      className="space-y-4"
+    >
+      <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
+        Datos de Usuario
+      </h3>
+      
+      {/* Usuario */}
+      <div>
+        <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="usuario">
+          Nombre de Usuario
+        </label>
+        <input
+          type="text"
+          id="usuario"
+          value={datos.usuario}
+          onChange={(e) => handleChange("usuario", e.target.value)}
+          className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+          placeholder="Nombre de usuario"
+        />
+      </div>
+
+      {/* Contraseña */}
+      <div>
+        <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="clave">
+          Contraseña
+        </label>
+        <input
+          type="password"
+          id="clave"
+          value={datos.clave}
+          onChange={(e) => handleChange("clave", e.target.value)}
+          className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
+          placeholder="Contraseña"
+        />
+      </div>
+
+      <div className="flex justify-between mt-4 gap-4">
+        <motion.button
+          onClick={handleBack}
+          whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+          transition={{ duration: 0.3 }}
+          className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
+        >
+          Anterior
+        </motion.button>
+        <motion.button
+          onClick={handleFinalizar}
+          whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
+          transition={{ duration: 0.3 }}
+          className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
+          disabled={loading}
+        >
+          {loading ? "Procesando..." : "Finalizar"}
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+
   return (
     <div className="flex min-h-screen bg-gray-50 font-serif">
-      {/* Logo izquierda con animación */}
+      {/* Logo izquierda */}
       <motion.aside
         initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -227,14 +803,14 @@ const RegistroEmprendedor = () => {
         </div>
       </motion.aside>
 
-      {/* Formulario paso a paso con animación */}
+      {/* Formulario */}
       <motion.div
         initial={{ x: 100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.8 }}
         className="flex-1 flex items-center justify-center p-8"
       >
-        <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-8 ">
+        <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-8">
           {/* Título */}
           <motion.h2
             initial={{ y: -20, opacity: 0 }}
@@ -250,32 +826,15 @@ const RegistroEmprendedor = () => {
             {[1, 2, 3].map((n) => (
               <motion.button
                 key={n}
-                onClick={() => {
-                  if (n <= paso) {
-                    setPaso(n);
-                    document
-                      .querySelector(`#paso-${n}`)
-                      ?.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
+                onClick={() => n <= paso && setPaso(n)}
                 whileHover={{ scale: 1.1 }}
                 className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer ${
                   paso === n ? "bg-[#1A2C5B] scale-125" : "bg-gray-300"
                 }`}
               >
                 {n < paso ? (
-                  <svg
-                    className="w-4 h-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
                   <span className="text-white font-semibold">{n}</span>
@@ -284,419 +843,10 @@ const RegistroEmprendedor = () => {
             ))}
           </div>
 
-          {/* Paso 1 */}
-          {paso === 1 && (
-            <motion.div
-              id="paso-1"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-4"
-            >
-              {/* Campos paso 1 */}
-              <div className="flex flex-wrap gap-4">
-                {[
-                  { label: "Cédula de Identidad", type: "text", id: "cedula" },
-                  {
-                    label: "Nombre Completo",
-                    type: "text",
-                    id: "nombre_completo",
-                  },
-                  { label: "Edad", type: "date", id: "edad", min: "0" },
-                  { label: "Número de Teléfono", type: "tel", id: "telefono" },
-                  { label: "Correo Electrónico", type: "email", id: "correo" },
-                  { label: "Dirección Actual", type: "text", id: "direccion" },
-                ].map(({ label, type, id, min }) => (
-                  <div key={id} className="w-full md:w-[45%]">
-                    <label
-                      htmlFor={id}
-                      className="block mb-1 text-sm font-medium text-gray-600"
-                    >
-                      {label}
-                    </label>
-                    <motion.input
-                      type={type}
-                      id={id}
-                      value={datos[id]}
-                      onChange={(e) => handleChange(id, e.target.value)}
-                      className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                      placeholder={`Ingresa ${label.toLowerCase()}`}
-                      min={min}
-                      required
-                      whileFocus={{ scale: 1.02 }}
-                      transition={{ duration: 0.2 }}
-                    />
-                  </div>
-                ))}
-              </div>
-              {/* Botón Siguiente */}
-              <motion.button
-                onClick={handleNext}
-                whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
-                transition={{ duration: 0.3 }}
-                className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
-              >
-                Siguiente
-              </motion.button>
-              {/* Regresar al login */}
-              <div className="mt-4 flex justify-center">
-                <motion.button
-                  onClick={() => navigate("/Login")}
-                  whileHover={{ scale: 1.05, textShadow: "0 0 4px #000" }}
-                  className="text-blue-600 hover:underline font-medium"
-                >
-                  Regresar al login
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Paso 2 */}
-          {paso === 2 && (
-            <motion.div
-              id="paso-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-4"
-            >
-              <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
-                Datos del Consejo y Emprendimiento
-              </h3>
-              {/* Campos paso 2 */}
-              <div className="flex flex-wrap gap-4">
-                {/* Sector */}
-                <div className="w-[45%]">
-                  <label
-                    className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="tipo_sector"
-                  >
-                    Tipo de Sector
-                  </label>
-                  <select
-                    id="tipo_sector"
-                    value={sectorSeleccionado}
-                    onChange={(e) => {
-                      setSectorSeleccionado(e.target.value);
-                      setNegocioSeleccionado("");
-                    }}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                  >
-                    <option value="">Seleccione un sector</option>
-                    {sectores.map((sec) => (
-                      <option key={sec} value={sec}>
-                        {sec}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {/* Tipo de Negocio */}
-                <div className="w-[45%]">
-                  <label
-                    className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="tipo_negocio"
-                  >
-                    Tipo de Negocio
-                  </label>
-                  <select
-                    id="tipo_negocio"
-                    value={negocioSeleccionado}
-                    onChange={(e) => {
-                      setNegocioSeleccionado(e.target.value);
-                      handleChange("tipo_negocio", e.target.value);
-                    }}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                  >
-                    <option value="">Seleccione tipo de negocio</option>
-                    {sectorSeleccionado &&
-                      clasificaciones
-                        .filter((c) => c.sector === sectorSeleccionado)
-                        .map((c) => (
-                          <option key={c.negocio} value={c.negocio}>
-                            {c.negocio}
-                          </option>
-                        ))}
-                  </select>
-                </div>
-                {/* Nombre del Emprendimiento */}
-                <div className="w-[180%]">
-                  <label
-                    className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="nombre_emprendimiento"
-                  >
-                    Nombre del Emprendimiento
-                  </label>
-                  <input
-                    type="text"
-                    id="nombre_emprendimiento"
-                    value={datos.nombre_emprendimiento}
-                    onChange={(e) =>
-                      handleChange("nombre_emprendimiento", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                    placeholder="Ingresa el nombre del emprendimiento"
-                  />
-                </div>
-                {/* Dirección del Emprendimiento */}
-                <div className="w-[200%]">
-                  <label
-                    className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="direccion_emprendimiento"
-                  >
-                    Dirección del Emprendimiento
-                  </label>
-                  <input
-                    type="text"
-                    id="direccion_emprendimiento"
-                    value={datos.direccion_emprendimiento}
-                    onChange={(e) =>
-                      handleChange("direccion_emprendimiento", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                    placeholder="Ingresa la dirección del emprendimiento"
-                  />
-                </div>
-                {/* Consejo Nombre */}
-                <div className="w-[45%]">
-                  <label
-                    className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="consejo_nombre"
-                  >
-                    Nombre del Consejo Comunal
-                  </label>
-                  <select
-                    id="consejo_nombre"
-                    value={datos.consejo_nombre}
-                    onChange={(e) =>
-                      handleChange("consejo_nombre", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                    placeholder="Ingresa el nombre del consejo"
-                  >
-                  <option value="">Selecciona el consejo</option>
-                  <option value="DON JUANCHO">DON JUANCHO</option>
-                  <option value="ALTO PRADO">ALTO PRADO</option>
-                  <option value="SECTOR JUVENTUD">SECTOR JUVENTUD</option>
-                  <option value="SABANETA">SABANETA</option>
-                  <option value="BRISAS DEL TERMINAL">BRISAS DEL TERMINAL</option>
-                  <option value="LA ROSALEDA">LA ROSALEDA</option>
-                  <option value="SAVAYO II">SAVAYO II</option>
-                  <option value="LUISA CACERES DE ARISMENDI">LUISA CACERES DE ARISMENDI</option>
-                  <option value="LOS PINOS">LOS PINOS</option>
-                  <option value="FLORENCIO HERNANDEZ">FLORENCIO HERNANDEZ</option>
-                  <option value="LA VILLA">LA VILLA</option>
-                  <option value="BRISAS DEL ESTADIUM">BRISAS DEL ESTADIUM</option>
-                  <option value="PALOTAL EN MARCHA">PALOTAL EN MARCHA</option>
-                  <option value="RECTA DE APOLONIO">RECTA DE APOLONIO</option>
-                  <option value="VISTA ALEGRE">VISTA ALEGRE</option>
-                  <option value="24 DE JULIO">24 DE JULIO</option>
-                  <option value="EL SAMAN">EL SAMAN</option>
-                  <option value="PRADOS II III Y COLINAS">PRADOS II III Y COLINAS</option>
-                  <option value="PRADOS DEL NORTE I">PRADOS DEL NORTE I</option>
-                  <option value="VILLA ESPERANZA SAVAYO I">VILLA ESPERANZA SAVAYO I</option>
-                  <option value="CAÑAVERAL">CAÑAVERAL</option>
-                  <option value="LA HACIENDA">LA HACIENDA</option>
-                  <option value="FUNDO EL CARMEN">FUNDO EL CARMEN</option>
-                  <option value="VIJAGUAL">VIJAGUAL</option>
-                  <option value="TAMANAVARE">TAMANAVARE</option>
-                  <option value="JOSE PIEDRAS">JOSE PIEDRAS</option>
-                  <option value="LAS MADRES VENCEDORAS">LAS MADRES VENCEDORAS</option>
-                  <option value="CANAIMA SUR">CANAIMA SUR</option>
-                  <option value="LOS SAUCES">LOS SAUCES</option>
-                  <option value="CULANTRILLO">CULANTRILLO</option>
-                  <option value="CHAGUANTRILLO">CHAGUANTRILLO</option>
-                  <option value="LA CEIBA">LA CEIBA</option>
-                  <option value="COROCITO CARLOS BONILLA">COROCITO CARLOS BONILLA</option>
-                  <option value="RUIZ PINEDA SUR DE PIEDRA GRANDE">RUIZ PINEDA SUR DE PIEDRA GRANDE</option>
-                  <option value="RUIZ PINEDA (NO INDICA)">RUIZ PINEDA (NO INDICA)</option>
-                  <option value="UNIDOS POR SAN JOSE">UNIDOS POR SAN JOSE</option>
-                  <option value="EL CEMENTERIO">EL CEMENTERIO</option>
-                  <option value="RAUL LEONI">RAUL LEONI</option>
-                  <option value="LA NEGRITA MAMPOSTAL">LA NEGRITA MAMPOSTAL</option>
-                  <option value="RESISTENCIA INDIGENA CANOABO">RESISTENCIA INDIGENA CANOABO</option>
-                  <option value="NAZARENO DE GUAYABAL Y PARADERO">NAZARENO DE GUAYABAL Y PARADERO</option>
-                  <option value="SAN JOSE">SAN JOSE</option>
-                  <option value="SANTA LUCIA">SANTA LUCIA</option>
-                  <option value="ALICIA PIETRI DE CALDERA">ALICIA PIETRI DE CALDERA</option>
-                  <option value="ALTO YURUBI">ALTO YURUBI</option>
-                  <option value="SAN MIGUEL NORTE">SAN MIGUEL NORTE</option>
-                  <option value="MANUEL CEDEÑO (SIN NOMBRE COMERCIAL)">MANUEL CEDEÑO (SIN NOMBRE COMERCIAL)</option>
-                  <option value="SAN MIGUEL 2006">SAN MIGUEL 2006</option>
-                  <option value="CANAIMA NORTE">CANAIMA NORTE</option>
-                  <option value="LA MONTAÑA 2007">LA MONTAÑA 2007</option>
-                  <option value="CALLEJON CASCABEL NORTE">CALLEJON CASCABEL NORTE</option>
-                  <option value="SAN JUAN">SAN JUAN</option>
-                  <option value="RAFAEL CALDERA 1 DE MARZO">RAFAEL CALDERA 1 DE MARZO</option>
-                  <option value="SIMON BOLIVAR">SIMON BOLIVAR</option>
-                  <option value="COROCITO II">COROCITO II</option>
-                  <option value="ANTONIO JOSE DE SUCRE">ANTONIO JOSE DE SUCRE</option>
-                  <option value="VIRGEN DEL VALLE UNIDO">VIRGEN DEL VALLE UNIDO</option>
-                  <option value="SANTA ELENA">SANTA ELENA</option>
-                  <option value="CASCABEL SUR">CASCABEL SUR</option>
-                  <option value="SAN RAFAEL (NO INDICA)">SAN RAFAEL (NO INDICA)</option>
-                  <option value="EL CAMPITO">EL CAMPITO</option>
-                  <option value="BARRIO ALEGRIA">BARRIO ALEGRIA</option>
-                  </select>
-                </div>
-                {/* Comuna */}
-                <div className="w-[45%]">
-                  <label
-                    className="block mb-1 text-sm font-medium text-gray-600"
-                    htmlFor="comuna"
-                  >
-                    Nombre de la Comuna
-                  </label>
-                  <select
-                    id="comuna"
-                    value={datos.comuna}
-                    onChange={(e) => handleChange("comuna", e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                  >
-                    <option value="">Selecciona la comuna</option>
-                    <option value="Comuna 1">William Lara Vive</option>
-                  </select>
-                </div>
-              </div>
-              {/* Botones paso */}
-              <div className="flex justify-between mt-4">
-                <motion.button
-                  onClick={handleBack}
-                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
-                >
-                  Anterior
-                </motion.button>
-                <motion.button
-                  onClick={handleNext}
-                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
-                >
-                  Siguiente
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Paso 3 */}
-          {paso === 3 && (
-            <motion.div
-              id="paso-3"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-4"
-            >
-              <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
-                Datos de Usuario
-              </h3>
-              {/* Cédula del Emprendedor */}
-              <div style={{ display: "none" }}>
-                <label
-                  className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="cedula_usuario"
-                >
-                  Cédula del Emprendedor
-                </label>
-                <input
-                  type="text"
-                  id="cedula_usuario"
-                  value={datos.cedula}
-                  readOnly
-                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 bg-gray-100 cursor-not-allowed"
-                  placeholder="Cédula del emprendedor"
-                />
-              </div>
-              {/* Usuario */}
-              <div>
-                <label
-                  className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="usuario"
-                >
-                  Nombre de Usuario
-                </label>
-                <input
-                  type="text"
-                  id="usuario"
-                  value={datos.usuario}
-                  onChange={(e) => handleChange("usuario", e.target.value)}
-                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                  placeholder="Nombre de usuario"
-                />
-              </div>
-              {/* Contraseña */}
-              <div>
-                <label
-                  className="block mb-1 text-sm font-medium text-gray-600"
-                  htmlFor="clave"
-                >
-                  Contraseña
-                </label>
-                <input
-                  type="password"
-                  id="clave"
-                  value={datos.clave}
-                  onChange={(e) => handleChange("clave", e.target.value)}
-                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                  placeholder="Contraseña"
-                />
-              </div>
-              {/* Ocultos */}
-              <div style={{ display: "none" }}>
-                <label
-                  htmlFor="estatus"
-                  className="block mb-1 text-sm font-medium text-gray-600"
-                >
-                  Estatus
-                </label>
-                <select
-                  id="estatus"
-                  value={datos.estatus}
-                  onChange={(e) => handleChange("estatus", e.target.value)}
-                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                >
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
-                </select>
-              </div>
-              <div style={{ display: "none" }}>
-                <label
-                  htmlFor="rol"
-                  className="block mb-1 text-sm font-medium text-gray-600"
-                >
-                  Rol
-                </label>
-                <select
-                  id="rol"
-                  value={datos.rol}
-                  onChange={(e) => handleChange("rol", e.target.value)}
-                  className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-                >
-                  <option value="Emprendedor">Emprendedor</option>
-                </select>
-              </div>
-              {/* Botones */}
-              <div className="flex justify-between mt-4">
-                <motion.button
-                  onClick={handleBack}
-                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
-                >
-                  Anterior
-                </motion.button>
-                <motion.button
-                  onClick={handleFinalizar}
-                  whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg"
-                >
-                  Finalizar
-                </motion.button>
-              </div>
-            </motion.div>
-          )}
+          {/* Renderizar pasos */}
+          {paso === 1 && renderPaso1()}
+          {paso === 2 && renderPaso2()}
+          {paso === 3 && renderPaso3()}
         </div>
       </motion.div>
     </div>

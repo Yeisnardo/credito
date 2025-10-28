@@ -4,40 +4,40 @@ const api = axios.create({
   baseURL: 'http://localhost:5000/api',
 });
 
-// Obtener todas las clasificaciones
-export const getClasificaciones = async () => {
-  const response = await api.get('/clasificacion');
+// Obtener todos los emprendimientos
+export const getEmprendimientos = async () => {
+  const response = await api.get('/emprendimientos');
   return response.data;
 };
 
-// Crear clasificación
-export const createClasificacion = async (clasificacion) => {
-  const response = await api.post('/clasificacion', clasificacion);
+// Crear emprendimiento
+export const createEmprendimiento = async (emprendimiento) => {
+  const response = await api.post('/emprendimientos', emprendimiento);
   return response.data;
 };
 
-// Actualizar clasificación
-export const updateClasificacion = async (id_clasificacion, clasificacion) => {
-  const response = await api.put(`/clasificacion/${id_clasificacion}`, clasificacion);
+// Actualizar emprendimiento
+export const updateEmprendimiento = async (cedula_emprendedor, emprendimiento) => {
+  const response = await api.put(`/emprendimientos/${cedula_emprendedor}`, emprendimiento);
   return response.data;
 };
 
-// Eliminar clasificación
-export const deleteClasificacion = async (id_clasificacion) => {
-  const response = await api.delete(`/clasificacion/${id_clasificacion}`);
+// Eliminar emprendimiento
+export const deleteEmprendimiento = async (cedula_emprendedor) => {
+  const response = await api.delete(`/emprendimientos/${cedula_emprendedor}`);
   return response.data;
 };
 
-// Obtener clasificación por ID
-export const getClasificacionById = async (id_clasificacion) => {
-  const response = await api.get(`/clasificacion/${id_clasificacion}`);
+// Obtener emprendimiento por cédula del emprendedor
+export const getEmprendimientoByCedula = async (cedula_emprendedor) => {
+  const response = await api.get(`/emprendimientos/${cedula_emprendedor}`);
   return response.data;
 };
 
 export default {
-  getClasificaciones,
-  createClasificacion,
-  updateClasificacion,
-  deleteClasificacion,
-  getClasificacionById,
+  getEmprendimientos,
+  createEmprendimiento,
+  updateEmprendimiento,
+  deleteEmprendimiento,
+  getEmprendimientoByCedula,
 };

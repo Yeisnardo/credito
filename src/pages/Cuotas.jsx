@@ -15,6 +15,13 @@ const EmprendedorDashboard = ({ setUser }) => {
   const [contrato, setContrato] = useState(null);
   const [cuotasPendientes, setCuotasPendientes] = useState([]);
   const [historialPagos, setHistorialPagos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [rates, setRates] = useState({ euro: 1, dolar: 1 });
+  const [monedaPref, setMonedaPref] = useState('USD');
+  const [diasRestantes, setDiasRestantes] = useState({});
+  const [diasMorosidad, setDiasMorosidad] = useState({});
+  const [configuracion, setConfiguracion] = useState({ porcentaje_mora: 2 });
+
   const [stats, setStats] = useState({
     totalPagado: 0,
     totalPendiente: 0,
@@ -22,12 +29,34 @@ const EmprendedorDashboard = ({ setUser }) => {
     progreso: 0,
     totalMora: 0
   });
-  const [loading, setLoading] = useState(false);
-  const [rates, setRates] = useState({ euro: 1, dolar: 1 });
-  const [monedaPref, setMonedaPref] = useState('USD');
-  const [diasRestantes, setDiasRestantes] = useState({});
-  const [diasMorosidad, setDiasMorosidad] = useState({});
-  const [configuracion, setConfiguracion] = useState({ porcentaje_mora: 2 });
+
+  // =============================================
+  // FUNCIONES DE ORDENAMIENTO - CORREGIDAS
+  // =============================================
+
+  const extraerNumeroCuota = (textoSemana) => {
+    if (!textoSemana) return 0;
+    
+    // Buscar números en el texto (ej: "Semana 1", "Semana 10", etc.)
+    const match = textoSemana.match(/(\d+)/);
+    return match ? parseInt(match[1]) : 0;
+  };
+
+  const ordenarCuotasNumericamente = (cuotas) => {
+    return [...cuotas].sort((a, b) => {
+      const numeroA = extraerNumeroCuota(a.semana);
+      const numeroB = extraerNumeroCuota(b.semana);
+      return numeroA - numeroB;
+    });
+  };
+
+  const formatearNombreCuota = (textoSemana) => {
+    const numero = extraerNumeroCuota(textoSemana);
+    if (numero > 0) {
+      return `Cuota ${numero}`;
+    }
+    return textoSemana;
+  };
 
   // =============================================
   // FUNCIONES PRINCIPALES
@@ -48,16 +77,6 @@ const EmprendedorDashboard = ({ setUser }) => {
     if (user?.cedula) {
       cargarDatosEmprendedor(user.cedula);
     }
-  };
-
-  // =============================================
-  // FUNCIONES AUXILIARES
-  // =============================================
-
-  const extraerNumeroCuota = (textoSemana) => {
-    if (!textoSemana) return 1;
-    const match = textoSemana.match(/Semana\s*(\d+)/i);
-    return match ? parseInt(match[1]) : 1;
   };
 
   // =============================================
@@ -173,7 +192,6 @@ const EmprendedorDashboard = ({ setUser }) => {
     try {
       setLoading(true);
       
-      // Validar que el pago esté confirmado
       if (pago.confirmacionifemi !== 'Confirmado') {
         alert('❌ Solo se pueden gestionar recibos de pagos confirmados');
         setLoading(false);
@@ -183,12 +201,10 @@ const EmprendedorDashboard = ({ setUser }) => {
       if (accion === 'visualizar') {
         alert(`👁️ Visualizando recibo de pago para ${pago.semana}...`);
         
-        // Generar y visualizar el PDF
         const doc = generarReciboPagoProfesional(pago, user, contrato);
         const pdfBlob = doc.output('blob');
         const pdfUrl = URL.createObjectURL(pdfBlob);
         
-        // Abrir en nueva pestaña
         const nuevaVentana = window.open(pdfUrl, '_blank');
         
         if (nuevaVentana) {
@@ -203,7 +219,6 @@ const EmprendedorDashboard = ({ setUser }) => {
       } else if (accion === 'descargar') {
         alert(`📄 Descargando recibo de pago para ${pago.semana}...`);
         
-        // Generar y descargar el PDF
         const doc = generarReciboPagoProfesional(pago, user, contrato);
         doc.save(`Recibo-Pago-${pago.semana}-${pago.numero_contrato}.pdf`);
         
@@ -232,30 +247,28 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // CARGA DE DATOS DEL EMPRENDEDOR
+  // CARGA DE DATOS DEL EMPRENDEDOR - CORREGIDA
   // =============================================
 
   const cargarDatosEmprendedor = async (cedula) => {
     try {
       setLoading(true);
       
-      // Cargar configuración primero
       const configData = await apiConfiguracion.getConfiguracionActiva();
       setConfiguracion(configData);
 
       const contratoData = await apiCuotas.getContratoPorCedula(cedula);
       setContrato(contratoData);
 
-      // Obtener historial primero para saber cuántas cuotas se han pagado
+      // OBTENER Y ORDENAR HISTORIAL DE PAGOS
       const historialData = await apiCuotas.getHistorialPagosEmprendedor(cedula);
-      setHistorialPagos(historialData);
+      const historialOrdenado = ordenarCuotasNumericamente(historialData);
+      setHistorialPagos(historialOrdenado);
 
-      // Obtener cuotas pendientes
+      // OBTENER Y ORDENAR CUOTAS PENDIENTES
       const pendientesData = await apiCuotas.getCuotasPendientesEmprendedor(cedula);
       
-      // Calcular fechas basándose en el número de cuota real
       const cuotasConFechas = pendientesData.map((cuota) => {
-        // Si la cuota ya tiene fechas desde la API, úsalas
         if (cuota.fecha_desde && cuota.fecha_hasta) {
           return {
             ...cuota,
@@ -263,15 +276,11 @@ const EmprendedorDashboard = ({ setUser }) => {
           };
         }
         
-        // Calcular número de cuota real basado en el texto "Semana X"
         const numeroCuota = extraerNumeroCuota(cuota.semana);
-        
-        // Usar fecha base del contrato o fecha actual
         const fechaBase = contratoData?.fecha_desde ? 
           new Date(contratoData.fecha_desde) : 
           new Date();
         
-        // Calcular basándose en el número de cuota real, no en el índice del array
         const fechaDesde = new Date(fechaBase);
         fechaDesde.setDate(fechaBase.getDate() + ((numeroCuota - 1) * 7));
         
@@ -286,8 +295,11 @@ const EmprendedorDashboard = ({ setUser }) => {
         };
       });
 
-      setCuotasPendientes(cuotasConFechas);
-      calcularEstadisticas(cuotasConFechas, historialData, contratoData);
+      // ORDENAR LAS CUOTAS PENDIENTES NUMÉRICAMENTE
+      const cuotasOrdenadas = ordenarCuotasNumericamente(cuotasConFechas);
+      
+      setCuotasPendientes(cuotasOrdenadas);
+      calcularEstadisticas(cuotasOrdenadas, historialOrdenado, contratoData);
       
     } catch (error) {
       console.error('Error cargando datos del emprendedor:', error);
@@ -409,7 +421,6 @@ const EmprendedorDashboard = ({ setUser }) => {
       const cuota = cuotasPendientes.find(c => c.id_cuota === cuotaId);
       const totalAPagar = calcularTotalConMora(cuota);
       
-      // Validar que la cuota esté disponible para pago
       if (!estaEnPeriodoPago(cuota) && !estaEnMora(cuota)) {
         const hoy = new Date();
         const fechaDesde = new Date(cuota.fecha_desde);
@@ -421,23 +432,20 @@ const EmprendedorDashboard = ({ setUser }) => {
         }
       }
 
-      // Mensaje de confirmación
       const mensajeConfirmacion = estaEnMora(cuota) 
-        ? `⚠️ CUOTA EN MORA\n\n• ${cuota.semana}\n• Días de mora: ${diasMorosidad[cuota.id_cuota]}\n• Monto original: $${cuota.monto}\n• Interés mora: +$${calcularInteresMorosidad(diasMorosidad[cuota.id_cuota], cuota.monto).toFixed(2)}\n• Total a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`
-        : `✅ CONFIRMAR PAGO\n\n• ${cuota.semana}\n• Monto a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`;
+        ? `⚠️ CUOTA EN MORA\n\n• ${formatearNombreCuota(cuota.semana)}\n• Días de mora: ${diasMorosidad[cuota.id_cuota]}\n• Monto original: $${cuota.monto}\n• Interés mora: +$${calcularInteresMorosidad(diasMorosidad[cuota.id_cuota], cuota.monto).toFixed(2)}\n• Total a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`
+        : `✅ CONFIRMAR PAGO\n\n• ${formatearNombreCuota(cuota.semana)}\n• Monto a pagar: $${totalAPagar.toFixed(2)}\n\n¿Continuar con el pago?`;
 
       if (!window.confirm(mensajeConfirmacion)) {
         setLoading(false);
         return;
       }
 
-      // Crear input para subir archivo
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.jpg,.jpeg,.png,.pdf';
       input.style.display = 'none';
       
-      // Manejar la selección del archivo
       input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) {
@@ -446,7 +454,6 @@ const EmprendedorDashboard = ({ setUser }) => {
         }
 
         try {
-          // Validar tipo de archivo
           const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
           if (!allowedTypes.includes(file.type)) {
             alert('❌ Formato no válido. Solo se permiten JPG, PNG o PDF.');
@@ -454,38 +461,30 @@ const EmprendedorDashboard = ({ setUser }) => {
             return;
           }
 
-          // Validar tamaño (5MB máximo)
           if (file.size > 5 * 1024 * 1024) {
             alert('❌ El archivo es demasiado grande. Máximo 5MB.');
             setLoading(false);
             return;
           }
 
-          // Mostrar información del archivo seleccionado
           alert(`📄 Archivo seleccionado:\n• Nombre: ${file.name}\n• Tamaño: ${(file.size / 1024 / 1024).toFixed(2)} MB\n\nProcesando pago...`);
 
-          // Crear FormData para enviar el archivo
           const formData = new FormData();
           formData.append('comprobante', file);
           formData.append('monto_pagado', totalAPagar.toFixed(2));
           formData.append('incluye_mora', estaEnMora(cuota));
 
-          // Mostrar indicador de progreso
           alert('⏳ Subiendo comprobante y registrando pago...');
 
-          // Llamar a la API
           const resultado = await apiCuotas.registrarPagoManual(cuotaId, formData);
 
-          // Actualizar estado local
           const cuotasActualizadas = cuotasPendientes.filter(c => c.id_cuota !== cuotaId);
           setCuotasPendientes(cuotasActualizadas);
           
-          // Recargar datos
           if (user?.cedula) {
             await cargarDatosEmprendedor(user.cedula);
           }
           
-          // Mostrar confirmación exitosa
           alert('✅ ' + (resultado.message || 'Pago registrado exitosamente'));
           
         } catch (error) {
@@ -504,11 +503,9 @@ const EmprendedorDashboard = ({ setUser }) => {
         }
       };
 
-      // Agregar input al DOM y hacer click
       document.body.appendChild(input);
       input.click();
       
-      // Limpiar después de la selección
       setTimeout(() => {
         if (document.body.contains(input)) {
           document.body.removeChild(input);
@@ -523,22 +520,132 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // COMPONENTES REUTILIZABLES
+  // COMPONENTES VISUALES MEJORADOS
   // =============================================
 
-  const getDiasRestantesStyle = (dias) => {
-    if (dias <= 0) return "text-red-600 font-bold";
-    if (dias <= 3) return "text-orange-600 font-semibold";
-    if (dias <= 7) return "text-yellow-600";
-    return "text-green-600";
-  };
+  const LayoutContainer = ({ children, title, subtitle, icon, actionButton }) => (
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 font-sans">
+      {menuOpen && <Menu />}
 
-  const getDiasMorosidadStyle = (dias) => {
-    if (dias <= 0) return "text-gray-600";
-    if (dias <= 7) return "text-orange-600 font-semibold";
-    if (dias <= 30) return "text-red-600 font-semibold";
-    return "text-red-700 font-bold";
-  };
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
+        <Header toggleMenu={toggleMenu} />
+        
+        <main className="flex-1 p-6">
+          <div className="mb-8 mt-16">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
+                  <i className={`bx ${icon} text-3xl text-blue-600`}></i>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+                  <p className="text-gray-600 mt-1">{subtitle}</p>
+                  {contrato && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                        Contrato: {contrato.numero_contrato}
+                      </span>
+                      <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                        Mora: {getInfoPorcentajeMora()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                {actionButton}
+                <button 
+                  className="bg-white border border-gray-200 text-gray-700 px-4 py-3 rounded-xl flex items-center gap-2 hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
+                  onClick={recargarDatos}
+                  disabled={loading}
+                >
+                  <i className={`bx bx-refresh ${loading ? 'animate-spin' : ''}`}></i>
+                  {loading ? 'Actualizando...' : 'Actualizar'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {children}
+        </main>
+
+        <footer className="mt-auto p-6 bg-white border-t border-gray-200">
+          <div className="text-center text-sm text-gray-600">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <i className="bx bx-copyright"></i>
+              <span>{new Date().getFullYear()} IFEMI & UPTYAB</span>
+            </div>
+            <p className="text-gray-500">Panel del Emprendedor - Sistema de Gestión de Cuotas</p>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+
+  const StatsCard = ({ titulo, valor, subtitulo, color, icono, trend }) => (
+    <div className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border-l-4 border-${color}-500 group hover:scale-105 transform-gpu`}>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">{titulo}</h3>
+          <p className={`text-3xl font-bold text-${color}-600 mb-1`}>{valor}</p>
+          <p className="text-gray-500 text-sm">{subtitulo}</p>
+        </div>
+        <div className={`bg-${color}-50 p-3 rounded-xl group-hover:scale-110 transition-transform duration-300`}>
+          <i className={`bx ${icono} text-2xl text-${color}-600`}></i>
+        </div>
+      </div>
+      {trend && (
+        <div className={`mt-4 flex items-center text-sm ${
+          trend === 'positive' ? 'text-green-600' : 
+          trend === 'warning' ? 'text-amber-600' : 'text-blue-600'
+        }`}>
+          <i className={`bx ${
+            trend === 'positive' ? 'bx-trending-up' : 
+            trend === 'warning' ? 'bx-trending-down' : 'bx-minus'
+          } mr-1`}></i>
+          <span>Estado actual</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const StatsGrid = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <StatsCard
+        titulo="Total Pagado"
+        valor={`$${stats.totalPagado.toLocaleString()}`}
+        subtitulo="Monto cancelado"
+        color="green"
+        icono="bx-check-circle"
+        trend="positive"
+      />
+      <StatsCard
+        titulo="Por Pagar"
+        valor={`$${stats.totalPendiente.toLocaleString()}`}
+        subtitulo="Saldo pendiente"
+        color="amber"
+        icono="bx-time"
+        trend="warning"
+      />
+      <StatsCard
+        titulo="Próximas Cuotas"
+        valor={stats.proximasCuotas}
+        subtitulo="Por vencer"
+        color="blue"
+        icono="bx-calendar-event"
+        trend="neutral"
+      />
+      <StatsCard
+        titulo="Progreso"
+        valor={`${stats.progreso}%`}
+        subtitulo="Del total"
+        color="purple"
+        icono="bx-trending-up"
+        trend="positive"
+      />
+    </div>
+  );
 
   const EstadoCronometro = ({ cuota }) => {
     const diasRest = diasRestantes[cuota.id_cuota];
@@ -546,34 +653,42 @@ const EmprendedorDashboard = ({ setUser }) => {
     
     if (cuota.estado_cuota === "Pagado") {
       return (
-        <span className="text-green-600 font-semibold flex items-center">
-          <i className="bx bx-check-circle text-lg mr-1"></i>
+        <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+          <i className="bx bx-check-circle"></i>
           Pagado
         </span>
       );
     }
     
     if (diasRest > 0) {
+      const estilo = diasRest <= 3 ? "bg-orange-100 text-orange-800" : 
+                    diasRest <= 7 ? "bg-yellow-100 text-yellow-800" : 
+                    "bg-blue-100 text-blue-800";
+      
       return (
-        <span className={`font-semibold ${getDiasRestantesStyle(diasRest)} flex items-center`}>
-          <i className="bx bx-timer text-lg mr-1"></i>
+        <span className={`${estilo} px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1`}>
+          <i className="bx bx-timer"></i>
           {diasRest} días
         </span>
       );
     }
     
     if (diasMora > 0) {
+      const estilo = diasMora <= 7 ? "bg-orange-100 text-orange-800" : 
+                    diasMora <= 30 ? "bg-red-100 text-red-800" : 
+                    "bg-red-200 text-red-900";
+      
       return (
-        <span className={`font-semibold ${getDiasMorosidadStyle(diasMora)} flex items-center`}>
-          <i className="bx bx-error-alt text-lg mr-1"></i>
+        <span className={`${estilo} px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1`}>
+          <i className="bx bx-error-alt"></i>
           {diasMora} días de mora
         </span>
       );
     }
     
     return (
-      <span className="text-orange-600 font-semibold flex items-center">
-        <i className="bx bx-time-five text-lg mr-1"></i>
+      <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
+        <i className="bx bx-time-five"></i>
         Vencido hoy
       </span>
     );
@@ -587,58 +702,520 @@ const EmprendedorDashboard = ({ setUser }) => {
     if (diasMora === 0) return null;
 
     return (
-      <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-red-700 font-medium">Mora acumulada:</span>
-          <span className="text-red-700 font-bold">+${interes.toFixed(2)}</span>
+      <div className="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
+        <div className="flex items-center gap-2 mb-2">
+          <i className="bx bx-error text-red-600"></i>
+          <span className="text-red-700 font-semibold">Cuota en Mora</span>
         </div>
-        <div className="flex justify-between items-center text-sm mt-1">
-          <span className="text-red-800 font-medium">Total a pagar:</span>
-          <span className="text-red-800 font-bold">${totalConMora.toFixed(2)}</span>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="text-red-600">Días de mora:</div>
+          <div className="text-red-700 font-semibold text-right">{diasMora} días</div>
+          
+          <div className="text-red-600">Interés acumulado:</div>
+          <div className="text-red-700 font-semibold text-right">+${interes.toFixed(2)}</div>
+          
+          <div className="text-red-800 font-semibold">Total a pagar:</div>
+          <div className="text-red-800 font-bold text-right">${totalConMora.toFixed(2)}</div>
         </div>
-        <div className="text-xs text-red-600 mt-1">
+        <div className="text-xs text-red-600 mt-2">
           {diasMora} días × {getInfoPorcentajeMora()}
         </div>
       </div>
     );
   };
 
-  const ConversionMonetaria = ({ monto }) => (
-    <div className="text-xs text-gray-500 mt-1">
-      ≈ {convertirAVes(monto)} Bs (Tasa actual: {rates.dolar?.toFixed(2)} Bs/$)
-    </div>
-  );
-
   const RangoFechasCuota = ({ cuota }) => (
-    <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600">
-        <div className="flex items-center">
-          <i className="bx bx-calendar-plus mr-1 text-green-600"></i>
-          <span className="font-medium">Disponible desde:</span>
-          <span className="ml-1">{cuota.fecha_desde}</span>
+    <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <div className="flex items-center gap-2 text-gray-700">
+          <div className="bg-green-100 p-2 rounded-lg">
+            <i className="bx bx-calendar-plus text-green-600"></i>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500">Disponible desde</div>
+            <div className="font-semibold">{cuota.fecha_desde}</div>
+          </div>
         </div>
-        <div className="flex items-center">
-          <i className="bx bx-calendar-minus mr-1 text-red-600"></i>
-          <span className="font-medium">Vence el:</span>
-          <span className="ml-1">{cuota.fecha_hasta}</span>
+        <div className="flex items-center gap-2 text-gray-700">
+          <div className="bg-red-100 p-2 rounded-lg">
+            <i className="bx bx-calendar-minus text-red-600"></i>
+          </div>
+          <div>
+            <div className="font-medium text-gray-500">Vence el</div>
+            <div className="font-semibold">{cuota.fecha_hasta}</div>
+          </div>
         </div>
       </div>
     </div>
   );
 
-  const TarjetaMora = () => (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 border-l-4 border-red-500">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">Mora Acumulada</h2>
-          <p className="text-3xl font-bold text-red-600">${stats.totalMora.toFixed(2)}</p>
-          <p className="text-gray-500 text-sm">Intereses por pagar</p>
-        </div>
-        <div className="bg-red-100 p-2 rounded-full">
-          <i className="bx bx-error-alt text-2xl text-red-600"></i>
+  const ConversionMonetaria = ({ monto }) => (
+    <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+      <i className="bx bx-transfer"></i>
+      <span>≈ {convertirAVes(monto)} Bs (Tasa: {rates.dolar?.toFixed(2)} Bs/$)</span>
+    </div>
+  );
+
+  const AlertMessage = ({ tipo, mensaje }) => {
+    const config = {
+      error: { icon: 'bx-error', color: 'red' },
+      warning: { icon: 'bx-time', color: 'orange' },
+      success: { icon: 'bx-check', color: 'green' }
+    }[tipo];
+
+    return (
+      <div className={`mt-3 p-3 bg-${config.color}-50 border border-${config.color}-200 rounded-xl flex items-center gap-2 text-${config.color}-700`}>
+        <i className={`bx ${config.icon} text-${config.color}-600`}></i>
+        <span className="text-sm font-medium">{mensaje}</span>
+      </div>
+    );
+  };
+
+  const CuotaCard = ({ cuota, esResumen = false }) => {
+    const totalConMora = calcularTotalConMora(cuota);
+    const puedePagar = estaEnPeriodoPago(cuota) || estaEnMora(cuota);
+
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              {/* USAR NOMBRE FORMATEADO EN LUGAR DEL ORIGINAL */}
+              <h3 className="text-lg font-semibold text-gray-900">{formatearNombreCuota(cuota.semana)}</h3>
+              <EstadoCronometro cuota={cuota} />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
+              <div className="flex items-center gap-2">
+                <i className="bx bx-file text-gray-400"></i>
+                <span>Contrato: {cuota.numero_contrato}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <i className="bx bx-dollar text-gray-400"></i>
+                <span>Monto: ${cuota.monto}</span>
+              </div>
+            </div>
+            
+            <RangoFechasCuota cuota={cuota} />
+            <InfoMorosidad cuota={cuota} />
+            <ConversionMonetaria monto={cuota.monto} />
+            
+            {estaVencida(cuota) && !estaEnMora(cuota) && (
+              <AlertMessage tipo="error" mensaje="Esta cuota está vencida. Contacta a IFEMI." />
+            )}
+            
+            {estaPorVencer(cuota) && (
+              <AlertMessage tipo="warning" mensaje="Esta cuota vence pronto. Realiza el pago a tiempo." />
+            )}
+          </div>
+          
+          <div className="flex flex-col gap-3 min-w-[140px]">
+            <button 
+              className={`px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 font-semibold text-sm ${
+                puedePagar
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transform hover:scale-105'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
+              onClick={() => puedePagar && registrarPagoManual(cuota.id_cuota)}
+              disabled={loading || !puedePagar}
+            >
+              <i className="bx bx-credit-card"></i>
+              {loading ? 'Procesando...' : 
+               estaEnMora(cuota) ? 'Pagar con Mora' :
+               !puedePagar ? 'No disponible' : 
+               'Pagar Ahora'}
+            </button>
+            
+            {!puedePagar && (
+              <p className="text-xs text-gray-500 text-center">
+                Disponible el {cuota.fecha_desde}
+              </p>
+            )}
+          </div>
         </div>
       </div>
+    );
+  };
+
+  const NavigationTabs = () => (
+    <div className="flex space-x-1 bg-white rounded-2xl p-2 border border-gray-200 shadow-sm mb-8">
+      <TabButton 
+        activo={vista === 'resumen'} 
+        onClick={() => setVista('resumen')}
+        icon="bx-home"
+        label="Resumen"
+        badge={null}
+      />
+      <TabButton 
+        activo={vista === 'pendientes'} 
+        onClick={() => setVista('pendientes')}
+        icon="bx-time"
+        label="Pendientes"
+        badge={cuotasPendientes.length}
+      />
+      <TabButton 
+        activo={vista === 'historial'} 
+        onClick={() => setVista('historial')}
+        icon="bx-history"
+        label="Historial"
+        badge={historialPagos.length}
+      />
     </div>
+  );
+
+  const TabButton = ({ activo, onClick, icon, label, badge }) => (
+    <button
+      className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
+        activo 
+          ? 'bg-blue-600 text-white shadow-lg' 
+          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+      }`}
+      onClick={onClick}
+    >
+      <i className={`bx ${icon} text-lg`}></i>
+      <span>{label}</span>
+      {badge !== null && badge > 0 && (
+        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+          activo ? 'bg-white text-blue-600' : 'bg-blue-100 text-blue-600'
+        }`}>
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+
+  const SectionCard = ({ title, badge, action, children }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          {badge !== null && (
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              {badge}
+            </span>
+          )}
+        </div>
+        {action}
+      </div>
+      <div className="p-6">
+        {children}
+      </div>
+    </div>
+  );
+
+  const ActionButton = ({ icon, label, color, onClick }) => (
+    <button
+      className={`bg-${color}-50 text-${color}-700 p-4 rounded-xl flex flex-col items-center justify-center hover:bg-${color}-100 transition-all duration-200 group hover:scale-105`}
+      onClick={onClick}
+    >
+      <i className={`bx ${icon} text-2xl mb-2 group-hover:scale-110 transition-transform`}></i>
+      <span className="text-sm font-medium text-center">{label}</span>
+    </button>
+  );
+
+  const EmptyState = ({ icon, title, description, action }) => (
+    <div className="text-center py-8">
+      <i className={`bx ${icon} text-4xl text-gray-400 mb-4`}></i>
+      <p className="text-gray-600 font-medium">{title}</p>
+      {description && <p className="text-gray-500 text-sm mt-1">{description}</p>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+
+  const PagoItem = ({ pago }) => {
+    const estado = getEstadoConfirmacion(pago.confirmacionifemi);
+    
+    return (
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+        <div className="flex items-center gap-4">
+          <div className={`bg-${estado.color}-100 p-3 rounded-lg`}>
+            <i className={`bx ${estado.icon} text-${estado.color}-600 text-xl`}></i>
+          </div>
+          <div>
+            {/* USAR NOMBRE FORMATEADO EN LUGAR DEL ORIGINAL */}
+            <p className="font-medium text-gray-900">{formatearNombreCuota(pago.semana)} pagada</p>
+            <p className="text-sm text-gray-600">
+              {pago.fecha_pagada} • Contrato: {pago.numero_contrato}
+            </p>
+            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-${estado.color}-100 text-${estado.color}-800 mt-1`}>
+              <i className={`bx ${estado.icon}`}></i>
+              {estado.text}
+            </span>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-gray-900">${pago.monto}</p>
+          <button 
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-1"
+            onClick={() => descargarComprobante(pago.id_cuota)}
+          >
+            <i className="bx bx-download"></i>Comprobante
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const PagoTableRow = ({ pago }) => {
+    const estado = getEstadoConfirmacion(pago.confirmacionifemi);
+    
+    return (
+      <tr className="hover:bg-gray-50 transition-colors">
+        <td className="py-4 px-6 text-sm text-gray-900">
+          {pago.fecha_pagada || 'Fecha no disponible'}
+        </td>
+        {/* USAR NOMBRE FORMATEADO EN LUGAR DEL ORIGINAL */}
+        <td className="py-4 px-6 text-sm text-gray-900">{formatearNombreCuota(pago.semana)}</td>
+        <td className="py-4 px-6 text-sm text-gray-900 font-semibold">${pago.monto}</td>
+        <td className="py-4 px-6 text-sm text-gray-900">{pago.numero_contrato}</td>
+        <td className="py-4 px-6">
+          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-${estado.color}-100 text-${estado.color}-800`}>
+            <i className={`bx ${estado.icon}`}></i>
+            {estado.text}
+          </span>
+        </td>
+        <td className="py-4 px-6">
+          <div className="flex gap-2">
+            <button 
+              className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-blue-100 transition-colors text-sm font-medium"
+              onClick={() => descargarComprobante(pago.id_cuota)}
+            >
+              <i className="bx bx-download"></i> Comprobante
+            </button>
+            
+            {estado.puedeDescargar && (
+              <>
+                <button 
+                  className="bg-green-50 text-green-700 px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-green-100 transition-colors text-sm font-medium"
+                  onClick={() => manejarReciboPago(pago, 'visualizar')}
+                  disabled={loading}
+                >
+                  <i className="bx bx-show"></i> 
+                  {loading ? 'Cargando...' : 'Ver Recibo'}
+                </button>
+                
+                <button 
+                  className="bg-purple-50 text-purple-700 px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-purple-100 transition-colors text-sm font-medium"
+                  onClick={() => manejarReciboPago(pago, 'descargar')}
+                  disabled={loading}
+                >
+                  <i className="bx bx-download"></i> 
+                  {loading ? 'Procesando...' : 'PDF'}
+                </button>
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  // =============================================
+  // VISTAS PRINCIPALES
+  // =============================================
+
+  const VistaResumen = () => (
+    <LayoutContainer
+      title="Mi Panel de Cuotas"
+      subtitle={`Bienvenido/a, ${user?.nombre_completo?.split(' ')[0] || 'Emprendedor'}`}
+      icon="bx-home"
+      actionButton={
+        <div className="flex gap-3">
+          <button 
+            className="bg-white border border-gray-200 text-gray-700 px-4 py-3 rounded-xl flex items-center gap-2 hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
+            onClick={handleViewPdf}
+          >
+            <i className="bx bx-file"></i>
+            Generar Reporte
+          </button>
+        </div>
+      }
+    >
+      <NavigationTabs />
+      
+      <StatsGrid />
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+        <SectionCard
+          title="📅 Próximas Cuotas a Vencer"
+          badge={cuotasPendientes.length}
+          action={
+            cuotasPendientes.length > 3 && (
+              <button 
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                onClick={() => setVista('pendientes')}
+              >
+                Ver todas <i className="bx bx-chevron-right"></i>
+              </button>
+            )
+          }
+        >
+          <div className="space-y-4">
+            {cuotasPendientes.length === 0 ? (
+              <EmptyState 
+                icon="bx-party"
+                title="🎉 No tienes cuotas pendientes"
+                description="Has completado todos tus pagos pendientes"
+              />
+            ) : (
+              // LAS CUOTAS YA VIENEN ORDENADAS DESDE LA CARGA
+              cuotasPendientes.slice(0, 3).map(cuota => (
+                <CuotaCard key={cuota.id_cuota} cuota={cuota} esResumen={true} />
+              ))
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="🚀 Acciones Rápidas"
+          badge={null}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <ActionButton
+              icon="bx-file"
+              label="Solicitar crédito"
+              color="indigo"
+              onClick={() => navigate('/Requeri_solicit')}
+            />
+            <ActionButton
+              icon="bx-credit-card"
+              label="Ver cuotas"
+              color="green"
+              onClick={() => setVista('pendientes')}
+            />
+            <ActionButton
+              icon="bx-bank"
+              label="Información bancaria"
+              color="blue"
+              onClick={() => navigate('/Banco')}
+            />
+            <ActionButton
+              icon="bx-history"
+              label="Historial de pagos"
+              color="purple"
+              onClick={() => setVista('historial')}
+            />
+          </div>
+        </SectionCard>
+      </div>
+
+      <SectionCard
+        title="📋 Actividad Reciente"
+        badge={historialPagos.length}
+        action={
+          historialPagos.length > 3 && (
+            <button 
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+              onClick={() => setVista('historial')}
+            >
+              Ver todo <i className="bx bx-chevron-right"></i>
+            </button>
+          )
+        }
+      >
+        <div className="space-y-3">
+          {historialPagos.length === 0 ? (
+            <EmptyState 
+              icon="bx-file"
+              title="No hay pagos registrados"
+              description="Tu historial de pagos aparecerá aquí"
+            />
+          ) : (
+            // EL HISTORIAL YA VIENE ORDENADO DESDE LA CARGA
+            historialPagos.slice(0, 3).map(pago => (
+              <PagoItem key={pago.id_cuota} pago={pago} />
+            ))
+          )}
+        </div>
+      </SectionCard>
+    </LayoutContainer>
+  );
+
+  const VistaPendientes = () => (
+    <LayoutContainer
+      title="Mis Cuotas Pendientes"
+      subtitle="Gestiona tus pagos dentro del período establecido"
+      icon="bx-time"
+      actionButton={
+        <div className="bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-semibold">
+          {cuotasPendientes.length} pendientes
+        </div>
+      }
+    >
+      <NavigationTabs />
+      
+      <SectionCard
+        title="Lista de Cuotas Pendientes"
+        badge={cuotasPendientes.length}
+      >
+        <div className="space-y-6">
+          {cuotasPendientes.length === 0 ? (
+            <EmptyState 
+              icon="bx-party"
+              title="🎉 No tienes cuotas pendientes"
+              description="Has completado todos tus pagos pendientes"
+              action={
+                <button 
+                  className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                  onClick={() => setVista('resumen')}
+                >
+                  Volver al resumen
+                </button>
+              }
+            />
+          ) : (
+            // LAS CUOTAS YA VIENEN ORDENADAS DESDE LA CARGA
+            cuotasPendientes.map(cuota => (
+              <CuotaCard key={cuota.id_cuota} cuota={cuota} />
+            ))
+          )}
+        </div>
+      </SectionCard>
+    </LayoutContainer>
+  );
+
+  const VistaHistorial = () => (
+    <LayoutContainer
+      title="Mi Historial de Pagos"
+      subtitle="Registro de todos tus pagos realizados"
+      icon="bx-history"
+      actionButton={null}
+    >
+      <NavigationTabs />
+      
+      <SectionCard
+        title="Historial Completo de Pagos"
+        badge={historialPagos.length}
+      >
+        {historialPagos.length === 0 ? (
+          <EmptyState 
+            icon="bx-file"
+            title="No hay pagos registrados"
+            description="Tu historial de pagos aparecerá aquí"
+          />
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-gray-200">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  {['Fecha', 'Cuota', 'Monto', 'Contrato', 'Estado', 'Acciones'].map(header => (
+                    <th key={header} className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {/* EL HISTORIAL YA VIENE ORDENADO DESDE LA CARGA */}
+                {historialPagos.map(pago => (
+                  <PagoTableRow key={pago.id_cuota} pago={pago} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+    </LayoutContainer>
   );
 
   // =============================================
@@ -688,597 +1265,30 @@ const EmprendedorDashboard = ({ setUser }) => {
   }, [setUser, user]);
 
   // =============================================
-  // VISTA: RESUMEN
+  // RENDER PRINCIPAL
   // =============================================
 
-  if (vista === 'resumen') {
+  if (loading && !user) {
     return (
-      <div className="flex min-h-screen bg-gray-50 font-sans">
-        {menuOpen && <Menu />}
-
-        <div className={`flex-1 flex flex-col transition-margin duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
-          <Header toggleMenu={toggleMenu} />
-          
-          <main className="flex-1 p-6 bg-gray-50">
-            {/* Encabezado */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 mt-12">
-              <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
-                  <i className="bx bx-home text-3xl text-indigo-600"></i>
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-800">Mi Panel de Cuotas</h1>
-                  <p className="text-gray-600">
-                    Bienvenido/a, {user?.nombre_completo?.split(' ')[0] || 'Emprendedor'}
-                    {contrato && ` - Contrato: ${contrato.numero_contrato}`}
-                  </p>
-                  <p className="text-sm text-orange-600 font-medium mt-1">
-                    Tasa de mora: {getInfoPorcentajeMora()}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex space-x-3">
-                <button 
-                  className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors"
-                  onClick={recargarDatos}
-                  disabled={loading}
-                >
-                  <i className="bx bx-refresh mr-2"></i>
-                  {loading ? 'Actualizando...' : 'Actualizar'}
-                </button>
-                <div className="flex space-x-2 bg-white rounded-lg p-1 border border-gray-200">
-                  <button 
-                    className={`px-3 py-1 rounded-md transition-colors ${
-                      vista === 'resumen' 
-                        ? 'bg-indigo-600 text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    onClick={() => setVista('resumen')}
-                  >
-                    Resumen
-                  </button>
-                  <button 
-                    className={`px-3 py-1 rounded-md transition-colors ${
-                      vista === 'pendientes' 
-                        ? 'bg-amber-500 text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    onClick={() => setVista('pendientes')}
-                  >
-                    Pendientes ({cuotasPendientes.length})
-                  </button>
-                  <button 
-                    className={`px-3 py-1 rounded-md transition-colors ${
-                      vista === 'historial' 
-                        ? 'bg-green-600 text-white' 
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    onClick={() => setVista('historial')}
-                  >
-                    Historial
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Tarjetas de resumen */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-              {/* Total Pagado */}
-              <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 border-l-4 border-green-500">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-700 mb-2">Total Pagado</h2>
-                    <p className="text-3xl font-bold text-green-600">${stats.totalPagado.toLocaleString()}</p>
-                    <p className="text-gray-500 text-sm">Monto cancelado</p>
-                  </div>
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <i className="bx bx-check-circle text-2xl text-green-600"></i>
-                  </div>
-                </div>
-              </div>
-
-              {/* Por Pagar */}
-              <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 border-l-4 border-amber-500">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-700 mb-2">Por Pagar</h2>
-                    <p className="text-3xl font-bold text-amber-600">${stats.totalPendiente.toLocaleString()}</p>
-                    <p className="text-gray-500 text-sm">Saldo pendiente</p>
-                  </div>
-                  <div className="bg-amber-100 p-2 rounded-full">
-                    <i className="bx bx-time text-2xl text-amber-600"></i>
-                  </div>
-                </div>
-              </div>
-
-              {/* Próximas Cuotas */}
-              <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 border-l-4 border-blue-500">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-700 mb-2">Próximas Cuotas</h2>
-                    <p className="text-3xl font-bold text-blue-600">{stats.proximasCuotas}</p>
-                    <p className="text-gray-500 text-sm">Por vencer</p>
-                  </div>
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <i className="bx bx-calendar-event text-2xl text-blue-600"></i>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progreso */}
-              <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 border-l-4 border-purple-500">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-700 mb-2">Progreso</h2>
-                    <p className="text-3xl font-bold text-purple-600">{stats.progreso}%</p>
-                    <p className="text-gray-500 text-sm">Del total</p>
-                  </div>
-                  <div className="bg-purple-100 p-2 rounded-full">
-                    <i className="bx bx-trending-up text-2xl text-purple-600"></i>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mora Acumulada */}
-              <TarjetaMora />
-            </section>
-
-            {/* Próximas Cuotas y Acciones Rápidas */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Próximas Cuotas */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-lg font-semibold text-gray-800">📅 Próximas Cuotas a Vencer</h2>
-                  <span className="bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs font-medium">
-                    {cuotasPendientes.length} pendientes
-                  </span>
-                </div>
-                
-                <div className="space-y-4">
-                  {cuotasPendientes.length === 0 ? (
-                    <div className="text-center py-8">
-                      <i className="bx bx-party text-4xl text-green-500 mb-4"></i>
-                      <p className="text-gray-600">🎉 No tienes cuotas pendientes</p>
-                    </div>
-                  ) : (
-                    cuotasPendientes.slice(0, 3).map(cuota => (
-                      <div key={cuota.id_cuota} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-semibold text-gray-800">{cuota.semana}</h3>
-                            <p className="text-sm text-gray-600">Contrato: {cuota.numero_contrato}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
-                              <span className="flex items-center">
-                                <i className="bx bx-dollar mr-1"></i>${cuota.monto}
-                              </span>
-                              <EstadoCronometro cuota={cuota} />
-                            </div>
-                            <RangoFechasCuota cuota={cuota} />
-                            <InfoMorosidad cuota={cuota} />
-                            <ConversionMonetaria monto={cuota.monto} />
-                          </div>
-                          <button 
-                            className={`px-4 py-2 rounded-lg flex items-center transition-colors text-sm ${
-                              estaEnPeriodoPago(cuota) || estaEnMora(cuota)
-                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                            onClick={() => (estaEnPeriodoPago(cuota) || estaEnMora(cuota)) && registrarPagoManual(cuota.id_cuota)}
-                            disabled={loading || (!estaEnPeriodoPago(cuota) && !estaEnMora(cuota))}
-                          >
-                            <i className="bx bx-credit-card mr-1"></i> 
-                            {loading ? 'Procesando...' : 
-                             estaEnMora(cuota) ? 'Pagar con Mora' :
-                             !estaEnPeriodoPago(cuota) ? 'No disponible' : 
-                             'Pagar'}
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  
-                  {cuotasPendientes.length > 3 && (
-                    <button 
-                      className="w-full text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium py-2"
-                      onClick={() => setVista('pendientes')}
-                    >
-                      Ver todas las cuotas pendientes ({cuotasPendientes.length}) <i className="bx bx-chevron-right"></i>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Acciones Rápidas */}
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-6">🚀 Acciones Rápidas</h2>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    className="bg-indigo-50 text-indigo-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-indigo-100 transition-colors"
-                    onClick={() => navigate('/Requeri_solicit')}
-                  >
-                    <i className="bx bx-file text-2xl mb-2"></i>
-                    <span className="text-sm font-medium">Solicitar crédito</span>
-                  </button>
-                  
-                  <button 
-                    className="bg-green-50 text-green-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-green-100 transition-colors"
-                    onClick={() => setVista('pendientes')}
-                  >
-                    <i className="bx bx-credit-card text-2xl mb-2"></i>
-                    <span className="text-sm font-medium">Ver cuotas</span>
-                  </button>
-                  
-                  <button 
-                    className="bg-blue-50 text-blue-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-blue-100 transition-colors"
-                    onClick={() => navigate('/Banco')}
-                  >
-                    <i className="bx bx-bank text-2xl mb-2"></i>
-                    <span className="text-sm font-medium">Información bancaria</span>
-                  </button>
-                  
-                  <button 
-                    className="bg-purple-50 text-purple-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-purple-100 transition-colors"
-                    onClick={() => setVista('historial')}
-                  >
-                    <i className="bx bx-history text-2xl mb-2"></i>
-                    <span className="text-sm font-medium">Historial de pagos</span>
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {/* Actividad Reciente */}
-            <section className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">📋 Actividad Reciente</h2>
-              
-              <div className="space-y-4">
-                {historialPagos.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-gray-600">No hay pagos registrados</p>
-                  </div>
-                ) : (
-                  historialPagos.slice(0, 3).map(pago => {
-                    const estado = getEstadoConfirmacion(pago.confirmacionifemi);
-                    return (
-                      <div key={pago.id_cuota} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className={`bg-${estado.color}-100 p-2 rounded-full`}>
-                            <i className={`bx ${estado.icon} text-${estado.color}-600`}></i>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">{pago.semana} pagada</p>
-                            <p className="text-xs text-gray-600">
-                              {pago.fecha_pagada} • Contrato: {pago.numero_contrato}
-                            </p>
-                            <span className={`text-xs px-2 py-1 rounded-full bg-${estado.color}-100 text-${estado.color}-800`}>
-                              {estado.text}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-800">${pago.monto}</p>
-                          <button 
-                            className="text-xs text-indigo-600 hover:text-indigo-800"
-                            onClick={() => descargarComprobante(pago.id_cuota)}
-                          >
-                            <i className="bx bx-download mr-1"></i>Comprobante
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-              
-              {historialPagos.length > 3 && (
-                <button 
-                  className="w-full mt-4 text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                  onClick={() => setVista('historial')}
-                >
-                  Ver todo el historial <i className="bx bx-chevron-right"></i>
-                </button>
-              )}
-            </section>
-          </main>
-
-          <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-600">
-            © {new Date().getFullYear()} IFEMI & UPTYAB. Panel del Emprendedor
-          </footer>
-        </div>
-      </div>
-    );
-  }
-
-  // =============================================
-  // VISTA: CUOTAS PENDIENTES
-  // =============================================
-
-  if (vista === 'pendientes') {
-    return (
-      <div className="flex min-h-screen bg-gray-50 font-sans">
-        {menuOpen && <Menu />}
-
-        <div className={`flex-1 flex flex-col transition-margin duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
-          <Header toggleMenu={toggleMenu} />
-          
-          <main className="flex-1 p-6 bg-gray-50">
-            {/* Encabezado */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 mt-12">
-              <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                <button 
-                  className="bg-white p-2 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer"
-                  onClick={() => setVista('resumen')}
-                >
-                  <i className="bx bx-arrow-back text-xl text-indigo-600"></i>
-                </button>
-                <div className="bg-white p-3 rounded-full shadow-md">
-                  <i className="bx bx-time text-2xl text-amber-600"></i>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800">Mis Cuotas Pendientes</h1>
-                  <p className="text-gray-600">Gestiona tus pagos dentro del período establecido</p>
-                  <p className="text-sm text-orange-600 font-medium mt-1">
-                    Tasa de mora: {getInfoPorcentajeMora()}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium">
-                  {cuotasPendientes.length} pendientes
-                </span>
-                <button 
-                  className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors"
-                  onClick={recargarDatos}
-                  disabled={loading}
-                >
-                  <i className="bx bx-refresh mr-2"></i>
-                  {loading ? 'Actualizando...' : 'Actualizar'}
-                </button>
-              </div>
-            </div>
-
-            {/* Lista de Cuotas Pendientes */}
-            <section className="bg-white rounded-xl shadow-sm p-6">
-              <div className="space-y-6">
-                {cuotasPendientes.length === 0 ? (
-                  <div className="text-center py-8">
-                    <i className="bx bx-party text-4xl text-green-500 mb-4"></i>
-                    <p className="text-gray-600">🎉 No tienes cuotas pendientes</p>
-                    <button 
-                      className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-                      onClick={() => setVista('resumen')}
-                    >
-                      Volver al resumen
-                    </button>
-                  </div>
-                ) : (
-                  cuotasPendientes.map(cuota => (
-                    <div key={cuota.id_cuota} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <h3 className="text-lg font-semibold text-gray-800">{cuota.semana}</h3>
-                            <EstadoCronometro cuota={cuota} />
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                            <div className="flex items-center">
-                              <i className="bx bx-file mr-2"></i>
-                              Contrato: {cuota.numero_contrato}
-                            </div>
-                            <div className="flex items-center">
-                              <i className="bx bx-dollar mr-2"></i>
-                              Monto: ${cuota.monto}
-                              <ConversionMonetaria monto={cuota.monto} />
-                            </div>
-                          </div>
-                          
-                          <RangoFechasCuota cuota={cuota} />
-                          
-                          <InfoMorosidad cuota={cuota} />
-                          
-                          {estaVencida(cuota) && !estaEnMora(cuota) && (
-                            <div className="mt-3 flex items-center text-red-600 text-sm">
-                              <i className="bx bx-error mr-1"></i>
-                              ⚠️ Esta cuota está vencida. Contacta a IFEMI.
-                            </div>
-                          )}
-                          
-                          {estaPorVencer(cuota) && (
-                            <div className="mt-3 flex items-center text-orange-600 text-sm">
-                              <i className="bx bx-time mr-1"></i>
-                              ⏳ Esta cuota vence pronto. Realiza el pago a tiempo.
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="mt-4 md:mt-0">
-                          <button 
-                            className={`px-6 py-3 rounded-lg flex items-center transition-colors font-medium ${
-                              estaEnPeriodoPago(cuota) || estaEnMora(cuota)
-                                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                            onClick={() => (estaEnPeriodoPago(cuota) || estaEnMora(cuota)) && registrarPagoManual(cuota.id_cuota)}
-                            disabled={loading || (!estaEnPeriodoPago(cuota) && !estaEnMora(cuota))}
-                          >
-                            <i className="bx bx-credit-card mr-2"></i> 
-                            {loading ? 'Procesando...' : 
-                             estaEnMora(cuota) ? 'Pagar con Mora' :
-                             !estaEnPeriodoPago(cuota) ? 'No disponible' : 
-                             'Pagar Ahora'}
-                          </button>
-                          
-                          {!estaEnPeriodoPago(cuota) && !estaEnMora(cuota) && (
-                            <p className="text-xs text-gray-500 mt-2 text-center">
-                              Disponible el {cuota.fecha_desde}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          </main>
-
-          <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-600">
-            © {new Date().getFullYear()} IFEMI & UPTYAB. Cuotas Pendientes
-          </footer>
-        </div>
-      </div>
-    );
-  }
-
-  // =============================================
-  // VISTA: HISTORIAL DE PAGOS
-  // =============================================
-
-  if (vista === 'historial') {
-    return (
-      <div className="flex min-h-screen bg-gray-50 font-sans">
-        {menuOpen && <Menu />}
-
-        <div className={`flex-1 flex flex-col transition-margin duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
-          <Header toggleMenu={toggleMenu} />
-          
-          <main className="flex-1 p-6 bg-gray-50">
-            {/* Encabezado */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 mt-12">
-              <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                <button 
-                  className="bg-white p-2 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer"
-                  onClick={() => setVista('resumen')}
-                >
-                  <i className="bx bx-arrow-back text-xl text-indigo-600"></i>
-                </button>
-                <div className="bg-white p-3 rounded-full shadow-md">
-                  <i className="bx bx-history text-2xl text-green-600"></i>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800">Mi Historial de Pagos</h1>
-                  <p className="text-gray-600">Registro de todos tus pagos realizados</p>
-                </div>
-              </div>
-              
-              <button 
-                className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors"
-                onClick={recargarDatos}
-                disabled={loading}
-              >
-                <i className="bx bx-refresh mr-2"></i>
-                {loading ? 'Actualizando...' : 'Actualizar'}
-              </button>
-            </div>
-
-            {/* Tabla de Historial */}
-            <section className="bg-white rounded-xl shadow-sm p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Fecha</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Semana</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Monto</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Contrato</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Confirmación IFEMI</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historialPagos.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="text-center py-8">
-                          <i className="bx bx-file text-4xl text-gray-400 mb-4"></i>
-                          <p className="text-gray-600">No hay pagos registrados</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      historialPagos.map(pago => {
-                        const estado = getEstadoConfirmacion(pago.confirmacionifemi);
-                        return (
-                          <tr key={pago.id_cuota} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-3 px-4 text-sm text-gray-800">
-                              {pago.fecha_pagada || 'Fecha no disponible'}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800">{pago.semana}</td>
-                            <td className="py-3 px-4 text-sm text-gray-800">${pago.monto}</td>
-                            <td className="py-3 px-4 text-sm text-gray-800">{pago.numero_contrato}</td>
-                            <td className="py-3 px-4">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${estado.color}-100 text-${estado.color}-800 flex items-center w-fit`}>
-                                <i className={`bx ${estado.icon} mr-1`}></i>
-                                {estado.text}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex space-x-2">
-                                {/* Botón para descargar comprobante */}
-                                <button 
-                                  className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg flex items-center hover:bg-indigo-100 transition-colors text-sm"
-                                  onClick={() => descargarComprobante(pago.id_cuota)}
-                                  title="Descargar comprobante de pago"
-                                >
-                                  <i className="bx bx-download mr-1"></i> Comprobante
-                                </button>
-                                
-                                {/* Botones para el recibo PDF - SOLO para confirmados */}
-                                {estado.puedeDescargar && (
-                                  <>
-                                    <button 
-                                      className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg flex items-center hover:bg-blue-100 transition-colors text-sm"
-                                      onClick={() => manejarReciboPago(pago, 'visualizar')}
-                                      title="Visualizar recibo antes de descargar"
-                                      disabled={loading}
-                                    >
-                                      <i className="bx bx-show mr-1"></i> 
-                                      {loading ? 'Cargando...' : 'Ver Recibo'}
-                                    </button>
-                                    
-                                    <button 
-                                      className="bg-green-50 text-green-700 px-3 py-1 rounded-lg flex items-center hover:bg-green-100 transition-colors text-sm"
-                                      onClick={() => manejarReciboPago(pago, 'descargar')}
-                                      title="Descargar recibo oficial PDF"
-                                      disabled={loading}
-                                    >
-                                      <i className="bx bx-download mr-1"></i> 
-                                      {loading ? 'Procesando...' : 'Descargar PDF'}
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </main>
-
-          <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-600">
-            © {new Date().getFullYear()} IFEMI & UPTYAB. Historial de Pagos
-          </footer>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-h-screen bg-gray-50 font-sans">
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 items-center justify-center">
         <div className="text-center">
-          <i className="bx bx-loader-circle bx-spin text-4xl text-indigo-600 mb-4"></i>
-          <p className="text-gray-600">Cargando panel del emprendedor...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Cargando panel del emprendedor...</p>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  switch (vista) {
+    case 'resumen':
+      return <VistaResumen />;
+    case 'pendientes':
+      return <VistaPendientes />;
+    case 'historial':
+      return <VistaHistorial />;
+    default:
+      return <VistaResumen />;
+  }
 };
 
 export default EmprendedorDashboard;
