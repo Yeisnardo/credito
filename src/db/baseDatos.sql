@@ -114,18 +114,25 @@ CREATE TABLE contrato (
   id_contrato INT PRIMARY KEY,
   numero_contrato VARCHAR(20) NOT NULL,
   cedula_emprendedor VARCHAR(20),
-  monto_aprob_euro TEXT,
-  monto_bs TEXT,
-  cincoflat TEXT,
-  diezinteres TEXT,
-  monto_devolver TEXT,
-  monto_semanal TEXT,
-  monto_cuota TEXT,
+  monto_aprob_euro DECIMAL(15,2),
+  monto_bs DECIMAL(15,2),
+  monto_bs_neto DECIMAL(15,2),
+  monto_restado DECIMAL(15,2),
+  diezinteres DECIMAL(15,2),
+  monto_devolver DECIMAL(15,2),
+  monto_semanal DECIMAL(15,2),
+  monto_cuota DECIMAL(15,2),
+  frecuencia_pago_contrato VARCHAR(50),
+  cuotas VARCHAR(20),
+  gracia VARCHAR(20),
+  interes VARCHAR(20),
+  morosidad VARCHAR(20),
+  dias_personalizados TEXT,
   fecha_desde DATE,
   fecha_hasta DATE,
   estatus VARCHAR(20),
   FOREIGN KEY (cedula_emprendedor) REFERENCES n_contrato (cedula_emprendedor)
-); 
+);
 
 CREATE TABLE deposito(
   id_deposito SERIAL PRIMARY KEY,
@@ -180,6 +187,19 @@ CREATE TABLE historial_configuracion_contratos (
     cuotasgracias TEXT NOT NULL,
     dias_personalizados INTEGER,
     fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE bitacora (
+    id_bitacora SERIAL PRIMARY KEY,
+    cedula_usuario VARCHAR(20) NOT NULL,
+    usuario VARCHAR(100) NOT NULL,
+    accion VARCHAR(200) NOT NULL,
+    metodo VARCHAR(10) NOT NULL,
+    ruta VARCHAR(500) NOT NULL,
+    estado INTEGER NOT NULL,
+    ip VARCHAR(45),
+    datos_adicionales JSONB,
+    fecha TIMESTAMP DEFAULT NOW()
 );
 
 ----------------------------------------------------------------------------------

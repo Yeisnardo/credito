@@ -20,10 +20,19 @@ const Gestion = ({ user, setUser }) => {
     cedula_emprendedor: "",
     monto_aprob_euro: "",
     monto_bs: "",
+    monto_bs_neto: "",
+    monto_restado: "",
     cincoflat: "",
     diezinteres: "",
     monto_devolver: "",
     monto_semanal: "",
+    monto_cuota: "",
+    frecuencia_pago_contrato: "",
+    cuotas: "",
+    gracia: "",
+    interes: "",
+    morosidad: "",
+    dias_personalizados: "",
     fecha_desde: "",
     fecha_hasta: "",
     estatus: "Pendiente",
@@ -59,8 +68,28 @@ const Gestion = ({ user, setUser }) => {
       try {
         const data = await apiconfiguracionDesdeAPI.getConfiguracion();
         setConfiguracion(data);
+
+        console.log("Configuración cargada:", data);
+
+        // Establecer todos los valores desde la configuración con nombres correctos
+        setFormData((prev) => ({
+          ...prev,
+          frecuencia_pago_contrato: data.frecuencia_pago || "Semanal",
+          cuotas: data.numero_cuotas || "No definida",
+          gracia: data.cuotasgracias || "No definida",
+          interes: data.porcentaje_interes || "No definida",
+          morosidad: data.porcentaje_mora || "No definida",
+        }));
       } catch (error) {
         console.error("Error cargando configuración", error);
+        setFormData((prev) => ({
+          ...prev,
+          frecuencia_pago_contrato: "Semanal",
+          cuotas: "No definida",
+          gracia: "No definida",
+          interes: "No definida",
+          morosidad: "No definida",
+        }));
       }
     };
     fetchConfiguracion();
@@ -87,7 +116,8 @@ const Gestion = ({ user, setUser }) => {
     }
   };
 
-  // Función para calcular monto en Bs según configuración
+  // Función para calcular montos en Bs según configuración
+  // Función para calcular montos en Bs según configuración
   useEffect(() => {
     if (
       !rates.euro ||
@@ -99,20 +129,41 @@ const Gestion = ({ user, setUser }) => {
 
     const montoEuro = parseFloat(formData.monto_aprob_euro);
     if (isNaN(montoEuro)) {
-      setFormData((prev) => ({ ...prev, monto_bs: "" }));
+      setFormData((prev) => ({
+        ...prev,
+        monto_bs: "",
+        monto_bs_neto: "",
+        monto_restado: "", // Cambiar cincoflat por monto_restado
+      }));
       return;
     }
 
-    // Decide la tasa según la moneda en la configuración
     const tasa =
       configuracion.moneda === "USD"
         ? rates.dolar
         : configuracion.moneda === "EUR"
         ? rates.euro
-        : 1; // Si la moneda es DOP, asumimos que el monto ya está en DOP, o define la tasa como 1
+        : 1;
 
-    const montoBs = (montoEuro * tasa).toFixed(2);
-    setFormData((prev) => ({ ...prev, monto_bs: montoBs }));
+    const porcentajeFlat = parseFloat(configuracion.porcentaje_flat) || 0;
+
+    // Calcular monto total en Bs
+    const montoBsTotal = (montoEuro * tasa).toFixed(2);
+
+    // Calcular el monto restado (flat) en Bs
+    const montoRestado = ((montoEuro * tasa * porcentajeFlat) / 100).toFixed(2);
+
+    // Calcular monto neto en Bs (restando el flat)
+    const montoBsNeto = (
+      parseFloat(montoBsTotal) - parseFloat(montoRestado)
+    ).toFixed(2);
+
+    setFormData((prev) => ({
+      ...prev,
+      monto_bs: montoBsTotal,
+      monto_bs_neto: montoBsNeto,
+      monto_restado: montoRestado, // Cambiar cincoflat por monto_restado
+    }));
   }, [formData.monto_aprob_euro, rates, configuracion]);
 
   // Agrupar contratos por cédula de emprendedor
@@ -132,6 +183,49 @@ const Gestion = ({ user, setUser }) => {
       setContratosAgrupados(agrupados);
     }
   }, [empleadores]);
+
+  // Actualizar montos y cálculos cuando monto_aprob_euro cambie
+  useEffect(() => {
+    if (configuracion && formData.monto_aprob_euro) {
+      const montoEuro = parseFloat(formData.monto_aprob_euro);
+      const porcentajeFlat = parseFloat(configuracion.porcentaje_flat) || 0;
+      const porcentajeInteres =
+        parseFloat(configuracion.porcentaje_interes) || 0;
+      const porcentajeMorosidad =
+        parseFloat(configuracion.porcentaje_mora) || 0;
+      const numeroCuotas = parseFloat(configuracion.numero_cuotas) || 18;
+
+      if (!isNaN(montoEuro)) {
+        const flatAmount = ((montoEuro * porcentajeFlat) / 100).toFixed(2);
+        const interesAmount = ((montoEuro * porcentajeInteres) / 100).toFixed(
+          2
+        );
+        const montoDevolver = (montoEuro + parseFloat(interesAmount)).toFixed(
+          2
+        );
+        const montoSemanal = (parseFloat(montoDevolver) / numeroCuotas).toFixed(
+          2
+        );
+        const morosidadAmount = (
+          (montoEuro * porcentajeMorosidad) /
+          100
+        ).toFixed(2);
+
+        setFormData((prev) => ({
+          ...prev,
+          diezinteres: interesAmount,
+          monto_devolver: montoDevolver,
+          monto_semanal: montoSemanal,
+          monto_cuota: montoSemanal,
+          // Mantener los valores de configuración
+          cuotas: configuracion.numero_cuotas || "No definida",
+          gracia: configuracion.cuotasgracias || "No definida",
+          interes: configuracion.porcentaje_interes || "No definida",
+          morosidad: configuracion.porcentaje_mora || "No definida",
+        }));
+      }
+    }
+  }, [formData.monto_aprob_euro, configuracion]);
 
   const handleVerComprobante = (url) => {
     setComprobanteModal(url);
@@ -154,14 +248,12 @@ const Gestion = ({ user, setUser }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
 
-    // Limpiar error previo
     setDepositoData((prev) => ({
       ...prev,
       sizeError: "",
     }));
 
     if (file) {
-      // Validar tipo de archivo
       const validTypes = ["image/jpeg", "image/png", "image/gif"];
       if (!validTypes.includes(file.type)) {
         setDepositoData((prev) => ({
@@ -171,8 +263,7 @@ const Gestion = ({ user, setUser }) => {
         return;
       }
 
-      // Validar tamaño (máximo 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB en bytes
+      const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
         setDepositoData((prev) => ({
@@ -182,19 +273,17 @@ const Gestion = ({ user, setUser }) => {
         return;
       }
 
-      // Crear preview si la imagen es válida
       const reader = new FileReader();
       reader.onload = (e) => {
         setDepositoData((prev) => ({
           ...prev,
           comprobante: file,
           comprobantePreview: e.target.result,
-          sizeError: "", // Limpiar error si todo está bien
+          sizeError: "",
         }));
       };
       reader.readAsDataURL(file);
     } else {
-      // Si no hay archivo, limpiar todo
       setDepositoData((prev) => ({
         ...prev,
         comprobante: null,
@@ -205,19 +294,33 @@ const Gestion = ({ user, setUser }) => {
   };
 
   // Función para calcular fechas
-  const calcularFechas = (fechaInicioStr) => {
-    const fechaInicio = new Date(fechaInicioStr);
-    const fechahasta = new Date(fechaInicio);
-    // Sumamos 20 semanas (20 * 7 días)
-    fechahasta.setDate(fechahasta.getDate() + 20 * 7);
-    // Formatear fechas (ejemplo: YYYY-MM-DD)
-    const formatDate = (date) => date.toISOString().split("T")[0];
+const calcularFechas = (fechaInicioStr) => {
+  const fechaInicio = new Date(fechaInicioStr);
+  const fechahasta = new Date(fechaInicio);
+  const numeroCuotas = parseFloat(configuracion?.numero_cuotas) || 18;
+  const frecuencia = configuracion?.frecuencia_pago || "Semanal";
 
-    return {
-      desde: formatDate(fechaInicio),
-      hasta: formatDate(fechahasta),
-    };
+  // Calcular fecha final basado en la frecuencia y número de cuotas
+  if (frecuencia === "diario") {
+    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 1);
+  } else if (frecuencia === "semanal") {
+    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
+  } else if (frecuencia === "quincenal") {
+    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 15);
+  } else if (frecuencia === "mensual") {
+    fechahasta.setMonth(fechahasta.getMonth() + numeroCuotas);
+  } else {
+    // Por defecto semanal o para Personalizado (usaremos semanal como base)
+    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
+  }
+
+  const formatDate = (date) => date.toISOString().split("T")[0];
+
+  return {
+    desde: formatDate(fechaInicio),
+    hasta: formatDate(fechahasta),
   };
+};
 
   // Cuando la fechaDesde cambie, actualizar fecha_hasta
   React.useEffect(() => {
@@ -228,7 +331,7 @@ const Gestion = ({ user, setUser }) => {
         fecha_hasta: hasta,
       }));
     }
-  }, [formData.fecha_desde]);
+  }, [formData.fecha_desde, configuracion]);
 
   // Inicializar la fecha desde con la fecha actual
   React.useEffect(() => {
@@ -239,35 +342,6 @@ const Gestion = ({ user, setUser }) => {
       fecha_desde: formatDate,
     }));
   }, []);
-
-  // Actualizar montos y cálculos cuando monto_aprob_euro cambie
-  useEffect(() => {
-    if (configuracion && formData.monto_aprob_euro) {
-      const montoEuro = parseFloat(formData.monto_aprob_euro);
-      const porcentajeFlat = parseFloat(configuracion.porcentaje_flat) || 0;
-      const porcentajeInteres =
-        parseFloat(configuracion.porcentaje_interes) || 0;
-
-      if (!isNaN(montoEuro)) {
-        const flatAmount = ((montoEuro * porcentajeFlat) / 100).toFixed(2);
-        const interesAmount = ((montoEuro * porcentajeInteres) / 100).toFixed(
-          2
-        );
-        const montoDevolver = (montoEuro + parseFloat(interesAmount)).toFixed(
-          2
-        );
-        const montoSemanal = (parseFloat(montoDevolver) / 18).toFixed(2);
-
-        setFormData((prev) => ({
-          ...prev,
-          cincoflat: flatAmount,
-          diezinteres: interesAmount,
-          monto_devolver: montoDevolver,
-          monto_semanal: montoSemanal,
-        }));
-      }
-    }
-  }, [formData.monto_aprob_euro, configuracion]);
 
   // Función para manejar el cambio en el select de empleadores
   const handleEmpleadorChange = (e) => {
@@ -328,7 +402,6 @@ const Gestion = ({ user, setUser }) => {
     return year.toString().slice(-2);
   };
 
-  // Agrega esta función en tu componente (fuera del componente principal)
   const obtenerEmprendedoresAprobados = async () => {
     try {
       const response = await fetch(
@@ -351,10 +424,29 @@ const Gestion = ({ user, setUser }) => {
         numero_contrato: emprendedor.numero_contrato,
         monto_aprob_euro: emprendedor.monto_aprob_euro || null,
         monto_bs: emprendedor.monto_bs || null,
-        cincoflat: emprendedor.cincoflat || null,
+        monto_bs_neto: emprendedor.monto_bs_neto || null,
+        monto_restado: emprendedor.monto_restado || null, // Cambiar cincoflat por monto_restado
         diezinteres: emprendedor.diezinteres || null,
         monto_devolver: emprendedor.monto_devolver || null,
         monto_semanal: emprendedor.monto_semanal || null,
+        monto_cuota: emprendedor.monto_cuota || null,
+        frecuencia_pago_contrato:
+          emprendedor.frecuencia_pago_contrato ||
+          configuracion?.frecuencia_pago ||
+          "Semanal",
+        cuotas:
+          emprendedor.cuotas || configuracion?.numero_cuotas || "No definida",
+        gracia:
+          emprendedor.gracia || configuracion?.cuotasgracias || "No definida",
+        interes:
+          emprendedor.interes ||
+          configuracion?.porcentaje_interes ||
+          "No definida",
+        morosidad:
+          emprendedor.morosidad ||
+          configuracion?.porcentaje_mora ||
+          "No definida",
+        dias_personalizados: emprendedor.dias_personalizados || null,
         fecha_desde: emprendedor.fecha_desde || null,
         fecha_hasta: emprendedor.fecha_hasta || null,
         estatus: emprendedor.estatus || null,
@@ -387,7 +479,6 @@ const Gestion = ({ user, setUser }) => {
   const cargarDepositos = async () => {
     try {
       const response = await axios.get("http://localhost:5000/api/deposito");
-      // La respuesta debe ser un array de depósitos
       const depositosData = response.data;
 
       const depositosConDatos = depositosData.map((deposito) => {
@@ -423,7 +514,6 @@ const Gestion = ({ user, setUser }) => {
     }));
   };
 
-  // Manejar cambios en los campos
   const handleDepositoChange = (e) => {
     const { name, value } = e.target;
     setDepositoData((prev) => ({
@@ -458,7 +548,6 @@ const Gestion = ({ user, setUser }) => {
         return;
       }
 
-      // Llamada a la API para asignar contrato
       const response = await fetch("http://localhost:5000/api/contratos", {
         method: "POST",
         headers: {
@@ -476,7 +565,6 @@ const Gestion = ({ user, setUser }) => {
 
       const data = await response.json();
 
-      // Actualizar estado local
       const updatedEmpleadores = empleadores.map((e) =>
         e.cedula === formData.cedula_emprendedor
           ? {
@@ -507,10 +595,8 @@ const Gestion = ({ user, setUser }) => {
     }
   };
 
-  // Cuando inicies la gestión de contrato:
   const iniciarGestionContrato = (empleador) => {
     setGestionandoContrato(empleador);
-    // Cargar datos existentes o vacíos en formData
     const contratoExistente = contratosGestionados[empleador.cedula];
     setFormData({
       montoAprobEuro: contratoExistente?.monto_aprob_euro || "",
@@ -527,9 +613,49 @@ const Gestion = ({ user, setUser }) => {
 
   const handleGuardarContrato = async () => {
     try {
-      const respuesta = await registrarContrato(formData);
-      // Aquí puedes mostrar una notificación o actualizar el estado
+      // Preparar datos según la configuración
+      const contratoData = {
+        ...formData,
+        monto_bs_neto: formData.monto_bs_neto,
+        monto_restado: formData.monto_restado, // Cambiar cincoflat por monto_restado
+        frecuencia_pago_contrato:
+          configuracion?.frecuencia_pago === "Personalizado"
+            ? "Personalizado"
+            : configuracion?.frecuencia_pago || "Semanal",
+        dias_personalizados:
+          configuracion?.frecuencia_pago === "Personalizado"
+            ? formData.dias_personalizados
+            : null,
+        cuotas: configuracion?.numero_cuotas || "No definida",
+        gracia: configuracion?.cuotasgracias || "No definida",
+        interes: configuracion?.porcentaje_interes || "No definida",
+        morosidad: configuracion?.porcentaje_mora || "No definida",
+        monto_cuota: formData.monto_cuota || formData.monto_semanal,
+      };
+
+      console.log("Enviando contrato:", contratoData);
+
+      const respuesta = await registrarContrato(contratoData);
       alert("Contrato registrado con éxito");
+
+      // Limpiar formulario
+      setFormData((prev) => ({
+        ...prev,
+        monto_aprob_euro: "",
+        monto_bs: "",
+        monto_bs_neto: "",
+        monto_restado: "", // Cambiar cincoflat por monto_restado
+        diezinteres: "",
+        monto_devolver: "",
+        monto_semanal: "",
+        monto_cuota: "",
+        dias_personalizados: "",
+        // Mantener los valores de configuración
+        cuotas: configuracion?.numero_cuotas || "No definida",
+        gracia: configuracion?.cuotasgracias || "No definida",
+        interes: configuracion?.porcentaje_interes || "No definida",
+        morosidad: configuracion?.porcentaje_mora || "No definida",
+      }));
     } catch (error) {
       console.error("Error al guardar:", error);
       alert("Hubo un error al guardar el contrato");
@@ -551,7 +677,6 @@ const Gestion = ({ user, setUser }) => {
         return;
       }
 
-      // Aquí iría la llamada a la API para guardar en contrato
       const contratoData = {
         numero_contrato: formData.numero_contrato,
         cedula_emprendedor: formData.cedula_emprendedor,
@@ -564,11 +689,19 @@ const Gestion = ({ user, setUser }) => {
         fecha_desde: formData.fecha_desde,
         fecha_hasta: formData.fecha_hasta,
         estatus: formData.estatus,
+
+        frecuencia_pago_contrato:
+          configuracion?.frecuencia_pago === "Personalizado"
+            ? "Personalizado"
+            : configuracion?.frecuencia_pago || "Semanal",
+        dias_personalizados:
+          configuracion?.frecuencia_pago === "Personalizado"
+            ? formData.dias_personalizados
+            : null,
       };
 
       console.log("Gestionando contrato:", contratoData);
 
-      // Guardar en estado local
       setContratosGestionados((prev) => ({
         ...prev,
         [gestionandoContrato.id]: contratoData,
@@ -584,7 +717,6 @@ const Gestion = ({ user, setUser }) => {
 
   const iniciarEdicionBancarios = (empleador) => {
     setEditandoBancarios(empleador);
-    // Prellenar el formulario con datos existentes si los hay
     setFormData((prev) => ({
       ...prev,
       banco: empleador.datosBancarios?.banco || "",
@@ -612,7 +744,6 @@ const Gestion = ({ user, setUser }) => {
         return;
       }
 
-      // Aquí iría la llamada a la API para guardar en cuenta
       const datosBancarios = {
         banco: formData.banco,
         cedula_titular: formData.cedulaTitular,
@@ -625,7 +756,6 @@ const Gestion = ({ user, setUser }) => {
         ...datosBancarios,
       });
 
-      // Actualizar estado local
       const updatedEmpleadores = empleadores.map((e) =>
         e.id === editandoBancarios.id
           ? {
@@ -654,14 +784,12 @@ const Gestion = ({ user, setUser }) => {
         return;
       }
 
-      // Crear FormData para enviar archivo
       const formData = new FormData();
       formData.append("emprendedorId", depositoData.emprendedorId);
       formData.append("cedula_emprendedor", depositoData.cedula_emprendedor);
       formData.append("estado", depositoData.estado);
       formData.append("comprobante", depositoData.comprobante);
 
-      // Enviar a la API
       const response = await fetch("http://localhost:5000/api/deposito", {
         method: "POST",
         body: formData,
@@ -673,7 +801,6 @@ const Gestion = ({ user, setUser }) => {
 
       const data = await response.json();
 
-      // Actualizar estado local
       const emprendedor = empleadores.find(
         (e) => e.id === parseInt(depositoData.emprendedorId)
       );
@@ -688,7 +815,6 @@ const Gestion = ({ user, setUser }) => {
 
       setDepositos((prev) => [...prev, nuevoDeposito]);
 
-      // Limpiar formulario
       setDepositoData({
         emprendedorId: "",
         estado: "Completado",
@@ -696,7 +822,6 @@ const Gestion = ({ user, setUser }) => {
         comprobantePreview: null,
       });
 
-      // Limpiar input de archivo
       const fileInput = document.querySelector('input[type="file"]');
       if (fileInput) fileInput.value = "";
 
@@ -717,7 +842,6 @@ const Gestion = ({ user, setUser }) => {
 
   // Modal para ver detalles de contratos gestionados
   const ModalDetalles = ({ empleador, onClose }) => {
-    // Obtener todos los contratos para este emprendedor
     const contratosDelEmpleador = empleadores.filter(
       (e) => e.cedula === empleador.cedula
     );
@@ -810,13 +934,19 @@ const Gestion = ({ user, setUser }) => {
                         N° Contrato
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Frecuencia Pago
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Monto en euros
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Monto en Bolívares
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        5% FLAT
+                        Monto Neto (Bs)
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {configuracion?.porcentaje_flat || 0}% FLAT (Bs)
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         10% Interés
@@ -826,6 +956,21 @@ const Gestion = ({ user, setUser }) => {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Monto semanal
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Monto cuota
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cuotas
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Gracia
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Interés
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Morosidad
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Desde
@@ -846,6 +991,16 @@ const Gestion = ({ user, setUser }) => {
                             contrato.numeroContrato ||
                             "N/A"}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.frecuencia_pago_contrato}
+                          {contrato.frecuencia_pago_contrato ===
+                            "Personalizado" &&
+                            contrato.dias_personalizados && (
+                              <div className="text-xs text-gray-400">
+                                ({contrato.dias_personalizados})
+                              </div>
+                            )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {contrato.monto_aprob_euro} €
                         </td>
@@ -853,7 +1008,10 @@ const Gestion = ({ user, setUser }) => {
                           {contrato.monto_bs} Bs
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {contrato.cincoflat} €
+                          {contrato.monto_bs_neto || "N/A"} Bs
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.cincoflat} Bs
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {contrato.diezinteres} €
@@ -863,6 +1021,21 @@ const Gestion = ({ user, setUser }) => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {contrato.monto_semanal} €
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.monto_cuota} €
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.cuotas}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.gracia} días
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.interes}%
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {contrato.morosidad}%
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {contrato.fecha_desde}
@@ -910,12 +1083,9 @@ const Gestion = ({ user, setUser }) => {
           menuOpen ? "ml-64" : "ml-0"
         }`}
       >
-        {/* Header */}
         <Header toggleMenu={toggleMenu} />
 
-        {/* Contenido */}
         <main className="flex-1 p-6">
-          {/* Encabezado */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-md">
@@ -931,7 +1101,6 @@ const Gestion = ({ user, setUser }) => {
               </div>
             </div>
 
-            {/* Tarjeta de tipo de cambio */}
             {rates.euro && rates.dolar ? (
               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center space-x-3">
@@ -960,7 +1129,6 @@ const Gestion = ({ user, setUser }) => {
             )}
           </div>
 
-          {/* Tabs de navegación */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <nav className="flex overflow-x-auto">
               {["asignacion", "gestion", "bancarios", "depositos"].map(
@@ -1014,7 +1182,6 @@ const Gestion = ({ user, setUser }) => {
             </div>
           )}
 
-          {/* Modal de asignación de contrato */}
           {asignandoContrato && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
               <div className="bg-white p-6 rounded-lg max-w-md w-full">
@@ -1086,7 +1253,6 @@ const Gestion = ({ user, setUser }) => {
             </div>
           ) : (
             <>
-              {/* Contenido según pestaña activa */}
               {activeTab === "asignacion" && (
                 <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {Object.keys(contratosAgrupados).length === 0 ? (
@@ -1165,7 +1331,6 @@ const Gestion = ({ user, setUser }) => {
 
               {activeTab === "gestion" && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Formulario */}
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 className="text-xl font-semibold text-gray-800 mb-6">
                       Gestión de Contrato
@@ -1220,7 +1385,7 @@ const Gestion = ({ user, setUser }) => {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Monto (Bs)
+                            Monto (Bs) - Total
                           </label>
                           <input
                             type="text"
@@ -1234,30 +1399,39 @@ const Gestion = ({ user, setUser }) => {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            5% Flat (€)
+                            Monto Neto (Bs) - Menos{" "}
+                            {configuracion?.porcentaje_flat || 0}% Flat
                           </label>
                           <input
                             type="text"
-                            name="cincoflat"
-                            value={formData.cincoflat}
+                            name="monto_bs_neto"
+                            value={formData.monto_bs_neto}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
                             readOnly
                           />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Monto total menos el{" "}
+                            {configuracion?.porcentaje_flat || 0}% de flat
+                          </p>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            10% Interés (€)
+                            {configuracion?.porcentaje_flat || 0}% Monto Restado
+                            (Bs)
                           </label>
                           <input
                             type="text"
-                            name="diezinteres"
-                            value={formData.diezinteres}
+                            name="monto_restado" // Cambiar name de cincoflat a monto_restado
+                            value={formData.monto_restado} // Cambiar value de cincoflat a monto_restado
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
                             readOnly
                           />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Monto descontado por concepto de flat
+                          </p>
                         </div>
 
                         <div className="md:col-span-2">
@@ -1287,7 +1461,145 @@ const Gestion = ({ user, setUser }) => {
                             readOnly
                           />
                           <p className="text-xs text-gray-500 mt-1">
-                            Monto a devolver dividido en 18 semanas
+                            Monto a devolver dividido en{" "}
+                            {configuracion?.numero_cuotas || 18} cuotas
+                          </p>
+                        </div>
+
+                        {/* Nuevos campos que toman valores de la configuración */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Monto de Cuota (€)
+                          </label>
+                          <input
+                            type="text"
+                            name="monto_cuota"
+                            value={formData.monto_cuota}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Número de Cuotas
+                          </label>
+                          <input
+                            type="text"
+                            name="cuotas"
+                            value={formData.cuotas}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                            readOnly
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Configuración del sistema:{" "}
+                            {configuracion?.numero_cuotas || "No definida"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Período de Gracia (días)
+                          </label>
+                          <input
+                            type="text"
+                            name="gracia"
+                            value={formData.gracia}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                            readOnly
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Configuración del sistema:{" "}
+                            {configuracion?.cuotasgracias || "No definida"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tasa de Interés (%)
+                          </label>
+                          <input
+                            type="text"
+                            name="interes"
+                            value={formData.interes}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                            readOnly
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Configuración del sistema:{" "}
+                            {configuracion?.porcentaje_interes || "No definida"}
+                            %
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tasa de Morosidad (%)
+                          </label>
+                          <input
+                            type="text"
+                            name="morosidad"
+                            value={formData.morosidad}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                            readOnly
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Configuración del sistema:{" "}
+                            {configuracion?.porcentaje_mora || "No definida"}%
+                          </p>
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Frecuencia de Pago
+                          </label>
+
+                          {configuracion?.frecuencia_pago ===
+                          "Personalizado" ? (
+                            <div>
+                              <input
+                                type="text"
+                                name="dias_personalizados"
+                                value={formData.dias_personalizados}
+                                onChange={handleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Ej: Lunes, Miércoles, Viernes"
+                                required
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Especifica los días de pago según la
+                                configuración personalizada
+                              </p>
+                            </div>
+                          ) : (
+                            <div>
+                              <input
+                                type="text"
+                                value={
+                                  configuracion?.frecuencia_pago ||
+                                  "No definida"
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
+                                readOnly
+                              />
+                              <input
+                                type="hidden"
+                                name="frecuencia_pago_contrato"
+                                value={
+                                  configuracion?.frecuencia_pago || "Semanal"
+                                }
+                              />
+                            </div>
+                          )}
+
+                          <p className="text-xs text-blue-600 mt-1">
+                            Configuración actual:{" "}
+                            {configuracion?.frecuencia_pago || "No definida"}
                           </p>
                         </div>
 
@@ -1354,7 +1666,6 @@ const Gestion = ({ user, setUser }) => {
                     </form>
                   </div>
 
-                  {/* Lista de contratos */}
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-xl font-semibold text-gray-800">
@@ -1415,7 +1726,6 @@ const Gestion = ({ user, setUser }) => {
                                 Cédula: {grupo.empleador.cedula}
                               </p>
 
-                              {/* Listar todos los contratos para este emprendedor */}
                               <div className="mb-3">
                                 {grupo.contratos.map((contrato, index) => (
                                   <div
@@ -1424,6 +1734,18 @@ const Gestion = ({ user, setUser }) => {
                                   >
                                     <p className="text-sm font-medium text-indigo-600">
                                       {contrato.numeroContrato}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Frecuencia:{" "}
+                                      {contrato.frecuencia_pago_contrato}
+                                      {contrato.frecuencia_pago_contrato ===
+                                        "Personalizado" &&
+                                        contrato.dias_personalizados && (
+                                          <span>
+                                            {" "}
+                                            ({contrato.dias_personalizados})
+                                          </span>
+                                        )}
                                     </p>
                                     <p className="text-xs text-gray-500">
                                       Estatus: {contrato.estatus}
@@ -1466,7 +1788,6 @@ const Gestion = ({ user, setUser }) => {
                           {empleador.nombre}
                         </h2>
 
-                        {/* Estado datos bancarios */}
                         <div className="mb-4">
                           {empleador ? (
                             <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-md">
@@ -1505,7 +1826,6 @@ const Gestion = ({ user, setUser }) => {
 
               {activeTab === "depositos" && (
                 <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Formulario de registro de depósitos */}
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-6">
                       Registrar nuevo depósito
@@ -1587,7 +1907,6 @@ const Gestion = ({ user, setUser }) => {
                     </div>
                   </div>
 
-                  {/* Historial de depósitos */}
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-6">
                       Historial de Depósitos
@@ -1675,14 +1994,12 @@ const Gestion = ({ user, setUser }) => {
           )}
         </main>
 
-        {/* Pie de página */}
         <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-600">
           © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos
           reservados.
         </footer>
       </div>
 
-      {/* Mostrar modal si hay un empleador seleccionado */}
       {empleadorModal && (
         <ModalDetalles empleador={empleadorModal} onClose={cerrarModal} />
       )}

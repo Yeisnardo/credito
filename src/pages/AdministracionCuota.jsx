@@ -3,21 +3,19 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import apiCuotas from "../services/api_cuotas";
-import apiConfiguracion from "../services/api_configuracion_contratos";
 
 // Componente para visualizar el comprobante
 const VisualizarComprobante = ({ comprobantePath, onClose }) => {
   if (!comprobantePath) return null;
 
-  console.log('Visualizando comprobante:', comprobantePath); // ← Debug
+  console.log('Visualizando comprobante:', comprobantePath);
 
-  // Construir la URL completa
-  const baseUrl = 'http://localhost:5000'; // Ajusta según tu backend
+  const baseUrl = 'http://localhost:5000';
   const comprobanteUrl = comprobantePath.startsWith('http') 
     ? comprobantePath 
     : `${baseUrl}${comprobantePath}`;
 
-  console.log('URL completa:', comprobanteUrl); // ← Debug
+  console.log('URL completa:', comprobanteUrl);
 
   const esPDF = comprobanteUrl.toLowerCase().endsWith('.pdf');
   const esImagen = /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(comprobanteUrl);
@@ -335,41 +333,68 @@ const EstadoCronometro = ({ cuota }) => {
   );
 };
 
-// Componente de Tabla de Cuotas CON CUOTAS ORDENADAS
-const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago, configuracion }) => {
-  // Estado para el comprobante visible
+const calcularDiasPorFrecuencia = (frecuencia) => {
+  switch (frecuencia?.toLowerCase()) {
+    case 'diario':
+      return 1;
+    case 'semanal':
+      return 7;
+    case 'quincenal':
+      return 15;
+    case 'mensual':
+      return 30;
+    default:
+      return 7; // Por defecto semanal
+  }
+};
+
+const generarNombreCuota = (numeroCuota, frecuencia) => {
+  switch (frecuencia?.toLowerCase()) {
+    case 'diario':
+      return `Día ${numeroCuota}`;
+    case 'semanal':
+      return `Semana ${numeroCuota}`;
+    case 'quincenal':
+      return `Quincena ${numeroCuota}`;
+    case 'mensual':
+      return `Mes ${numeroCuota}`;
+    default:
+      return `Cuota ${numeroCuota}`;
+  }
+};
+
+
+
+
+
+// Componente de Tabla de Cuotas
+const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago, contratoSeleccionado }) => {
   const [comprobanteVisible, setComprobanteVisible] = useState(null);
 
-  // Función para mostrar el comprobante
   const verComprobante = (comprobantePath) => {
     setComprobanteVisible(comprobantePath);
   };
 
-  // Función para cerrar el visor
   const cerrarComprobante = () => {
     setComprobanteVisible(null);
   };
 
-  // Función para extraer el número de semana
   const extraerNumeroCuota = (textoSemana) => {
     if (!textoSemana) return 0;
     const match = textoSemana.match(/Semana\s*(\d+)/i);
     return match ? parseInt(match[1]) : 0;
   };
 
-  // ORDENAR LAS CUOTAS POR NÚMERO DE SEMANA
   const cuotasOrdenadas = [...cuotasContrato].sort((a, b) => {
     const numA = extraerNumeroCuota(a.semana);
     const numB = extraerNumeroCuota(b.semana);
     return numA - numB;
   });
 
-  // Filtrar cuotas por confirmar (usando las cuotas ordenadas)
   const cuotasPorConfirmar = cuotasOrdenadas.filter(cuota => 
     cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido'
   );
 
-  // Función para calcular días de mora
   const calcularDiasMora = (fechaHasta) => {
     if (!fechaHasta) return 0;
     const hoy = new Date();
@@ -379,14 +404,13 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
     return diffDays > 0 ? diffDays : 0;
   };
 
-  // Función para calcular interés de mora
+  // ✅ FUNCIÓN MODIFICADA: Usa SOLO el valor de mora del contrato
   const calcularInteresMora = (monto, diasMora) => {
-    if (!configuracion || !configuracion.porcentaje_mora || diasMora <= 0) return 0;
-    const porcentajeDiario = configuracion.porcentaje_mora / 100;
+    if (!contratoSeleccionado || !contratoSeleccionado.morosidad || diasMora <= 0) return 0;
+    const porcentajeDiario = parseFloat(contratoSeleccionado.morosidad) / 100;
     return parseFloat(monto) * porcentajeDiario * diasMora;
   };
 
-  // Función para formatear fecha
   const formatearFecha = (fecha) => {
     if (!fecha) return '-';
     return new Date(fecha).toLocaleDateString('es-ES', {
@@ -398,7 +422,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
 
   return (
     <div>
-      {/* Visor de Comprobante */}
       {comprobanteVisible && (
         <VisualizarComprobante 
           comprobantePath={comprobanteVisible}
@@ -406,7 +429,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
         />
       )}
 
-      {/* Banner de Cuotas por Confirmar */}
       {cuotasPorConfirmar.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -477,15 +499,15 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
         </div>
       )}
 
-      {/* Tabla Principal de Todas las Cuotas ORDENADAS */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold text-gray-800">
             Todas las Cuotas {loading && <span className="text-sm text-gray-500">(Cargando...)</span>}
           </h3>
-          {configuracion && (
+          {/* ✅ MOSTRAR TASA DE MORA DEL CONTRATO */}
+          {contratoSeleccionado?.morosidad && (
             <div className="text-sm text-orange-600 font-medium">
-              Tasa de mora: {configuracion.porcentaje_mora}% diario
+              Tasa de mora: {contratoSeleccionado.morosidad}% diario
             </div>
           )}
         </div>
@@ -529,13 +551,11 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         ${diasMora > 0 && cuota.estado_cuota === 'Pendiente' ? 'bg-red-50' : ''}
                       `}
                     >
-                      {/* Semana */}
                       <td className="py-3 px-4">
                         <div className="text-sm text-gray-800 font-semibold">{cuota.semana}</div>
                         <div className="text-xs text-gray-500">ID: {cuota.id_cuota}</div>
                       </td>
                       
-                      {/* Período - CON FECHAS DESDE/HASTA */}
                       <td className="py-3 px-4">
                         <div className="text-xs">
                           <div className="flex items-center text-green-600 mb-1">
@@ -554,12 +574,10 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         </div>
                       </td>
                       
-                      {/* Monto */}
                       <td className="py-3 px-4 text-sm text-gray-800 font-semibold">
                         ${cuota.monto}
                       </td>
                       
-                      {/* Estado Pago */}
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           cuota.estado_cuota === 'Pagado' 
@@ -573,7 +591,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         </span>
                       </td>
                       
-                      {/* Confirmación IFEMI */}
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           cuota.confirmacionifemi === 'Confirmado' 
@@ -588,7 +605,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         </span>
                       </td>
                       
-                      {/* Fecha Pago */}
                       <td className="py-3 px-4 text-sm text-gray-800">
                         {cuota.fecha_pagada ? (
                           <div className="text-green-600 font-medium">
@@ -599,7 +615,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         )}
                       </td>
 
-                      {/* NUEVA COLUMNA: COMPROBANTE */}
                       <td className="py-3 px-4">
                         <BotonVerComprobante 
                           comprobantePath={cuota.comprobante}
@@ -607,7 +622,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         />
                       </td>
                       
-                      {/* Días Mora */}
                       <td className="py-3 px-4">
                         {diasMora > 0 ? (
                           <div className="text-center">
@@ -622,13 +636,12 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         )}
                       </td>
                       
-                      {/* Interés Mora */}
                       <td className="py-3 px-4">
                         {interesMora > 0 ? (
                           <div className="text-center">
                             <span className="text-red-600 font-semibold text-sm">${interesMora.toFixed(2)}</span>
                             <div className="text-xs text-red-500">
-                              {diasMora}d × {configuracion?.porcentaje_mora}%
+                              {diasMora}d × {contratoSeleccionado?.morosidad}%
                             </div>
                           </div>
                         ) : (
@@ -639,9 +652,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         )}
                       </td>
                       
-                      {/* Acciones - BOTONES DE CONFIRMACIÓN RESTAURADOS */}
                       <td className="py-3 px-4">
-                        {/* BOTONES DE CONFIRMACIÓN PARA CUOTAS PAGADAS EN "A Recibido" */}
                         {cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido' && (
                           <div className="flex flex-col space-y-2">
                             <button
@@ -661,7 +672,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                           </div>
                         )}
 
-                        {/* BOTÓN DE CONFIRMACIÓN ADICIONAL PARA CUOTAS PAGADAS SIN CONFIRMACIÓN */}
                         {cuota.estado_cuota === 'Pagado' && (!cuota.confirmacionifemi || cuota.confirmacionifemi === 'En Espera') && (
                           <div className="flex flex-col space-y-2">
                             <button
@@ -677,7 +687,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                           </div>
                         )}
                         
-                        {/* ESTADO CONFIRMADO */}
                         {cuota.confirmacionifemi === 'Confirmado' && (
                           <div className="text-center">
                             <span className="text-green-600 text-sm flex items-center justify-center mb-1">
@@ -693,7 +702,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                           </div>
                         )}
                         
-                        {/* ESTADO RECHAZADO */}
                         {cuota.confirmacionifemi === 'Rechazado' && (
                           <div className="text-center">
                             <span className="text-red-600 text-sm flex items-center justify-center mb-1">
@@ -709,7 +717,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                           </div>
                         )}
                         
-                        {/* CUOTAS PENDIENTES DE PAGO */}
                         {cuota.estado_cuota === 'Pendiente' && (
                           <div className="text-center">
                             <span className={`text-sm flex items-center justify-center mb-1 ${
@@ -726,7 +733,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                           </div>
                         )}
 
-                        {/* BOTÓN DE CONFIRMACIÓN GENERAL PARA CUALQUIER CUOTA PAGADA */}
                         {cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi !== 'Confirmado' && (
                           <button
                             className="bg-green-500 text-white px-3 py-2 rounded-lg flex items-center justify-center hover:bg-green-600 transition-colors text-sm w-full mt-1"
@@ -766,13 +772,22 @@ const AdminDashboard = ({ setUser }) => {
     totalRecaudado: 0
   });
   const [loading, setLoading] = useState(false);
-  const [configuracion, setConfiguracion] = useState(null);
+  
+  // ESTADO QUE PERSISTE EN LOCALSTORAGE
+  const [contratosRecalculados, setContratosRecalculados] = useState(() => {
+    const saved = localStorage.getItem('contratosRecalculados');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  // Efecto para guardar en localStorage cuando cambie contratosRecalculados
+  useEffect(() => {
+    localStorage.setItem('contratosRecalculados', JSON.stringify([...contratosRecalculados]));
+  }, [contratosRecalculados]);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
 
-  // Efectos
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -787,7 +802,7 @@ const AdminDashboard = ({ setUser }) => {
           if (setUser) setUser(usuario);
           
           await cargarDatosReales();
-          await cargarConfiguracion();
+          // ✅ ELIMINADA la llamada a cargarConfiguracion
         }
       } catch (error) {
         console.error('Error al obtener datos:', error);
@@ -797,49 +812,57 @@ const AdminDashboard = ({ setUser }) => {
     if (!user) fetchUserData();
   }, [setUser, user]);
 
-  // FUNCIÓN AUXILIAR PARA EXTRAER NÚMERO DE CUOTA (IGUAL AL EMPRENDEDOR)
-  const extraerNumeroCuota = (textoSemana) => {
-    if (!textoSemana) return 1;
-    const match = textoSemana.match(/Semana\s*(\d+)/i);
-    return match ? parseInt(match[1]) : 1;
-  };
+ const extraerNumeroCuota = (textoCuota) => {
+  if (!textoCuota) return 1;
+  
+  // Extraer número de diferentes formatos: "Semana 1", "Día 5", "Quincena 3", "Mes 2"
+  const match = textoCuota.match(/(\d+)/);
+  return match ? parseInt(match[1]) : 1;
+};
+  
 
-  // NUEVA FUNCIÓN PARA CALCULAR FECHAS DE CUOTAS (IGUAL AL EMPRENDEDOR)
+  
+
   const calcularFechasCuotas = (contratoData, cuotasData) => {
-    if (!contratoData) return cuotasData;
+  if (!contratoData) return cuotasData;
 
-    const fechaInicioContrato = new Date(contratoData.fecha_desde);
-    const cuotasConFechas = [];
+  const fechaInicioContrato = new Date(contratoData.fecha_desde);
+  const frecuencia = contratoData.frecuencia_pago_contrato;
+  const diasPorPeriodo = calcularDiasPorFrecuencia(frecuencia);
+  
+  const cuotasConFechas = [];
+  
+  cuotasData.forEach((cuota) => {
+    // Si ya tiene fechas, las respetamos
+    if (cuota.fecha_desde && cuota.fecha_hasta) {
+      cuotasConFechas.push(cuota);
+      return;
+    }
+
+    // Extraer número de cuota del nombre
+    const numeroCuota = extraerNumeroCuota(cuota.semana);
     
-    // Procesar cada cuota
-    cuotasData.forEach((cuota) => {
-      const numeroCuotaActual = extraerNumeroCuota(cuota.semana);
-      
-      // Si la cuota ya tiene fechas desde la API, úsalas
-      if (cuota.fecha_desde && cuota.fecha_hasta) {
-        cuotasConFechas.push(cuota);
-        return;
-      }
+    // Calcular fechas según frecuencia
+    const fechaDesde = new Date(fechaInicioContrato);
+    fechaDesde.setDate(fechaInicioContrato.getDate() + ((numeroCuota - 1) * diasPorPeriodo));
+    
+    const fechaHasta = new Date(fechaDesde);
+    fechaHasta.setDate(fechaDesde.getDate() + diasPorPeriodo);
 
-      // Calcular fecha desde basada en el número de cuota
-      const fechaDesde = new Date(fechaInicioContrato);
-      fechaDesde.setDate(fechaInicioContrato.getDate() + ((numeroCuotaActual - 1) * 7));
-      
-      // Calcular fecha hasta (7 días después)
-      const fechaHasta = new Date(fechaDesde);
-      fechaHasta.setDate(fechaDesde.getDate() + 7);
+    // Generar nombre correcto de la cuota
+    const nombreCuota = generarNombreCuota(numeroCuota, frecuencia);
 
-      cuotasConFechas.push({
-        ...cuota,
-        fecha_desde: fechaDesde.toISOString().split('T')[0],
-        fecha_hasta: fechaHasta.toISOString().split('T')[0]
-      });
+    cuotasConFechas.push({
+      ...cuota,
+      semana: nombreCuota, // Actualizar nombre según frecuencia
+      fecha_desde: fechaDesde.toISOString().split('T')[0],
+      fecha_hasta: fechaHasta.toISOString().split('T')[0]
     });
+  });
 
-    return cuotasConFechas;
-  };
+  return cuotasConFechas;
+};
 
-  // FUNCIÓN MEJORADA PARA CARGAR CUOTAS CON CÁLCULO DE FECHAS
   const cargarCuotasContrato = async (id_contrato) => {
     try {
       setLoading(true);
@@ -852,7 +875,6 @@ const AdminDashboard = ({ setUser }) => {
 
       const cuotasData = await apiCuotas.getCuotasPorContrato(id_contrato);
       
-      // ✅ APLICAR CÁLCULO DE FECHAS A LAS CUOTAS
       const cuotasConFechas = calcularFechasCuotas(contrato, cuotasData);
       
       setCuotasContrato(cuotasConFechas);
@@ -867,7 +889,6 @@ const AdminDashboard = ({ setUser }) => {
     }
   };
 
-  // Funciones principales (se mantienen igual)
   const cargarDatosReales = async () => {
     try {
       setLoading(true);
@@ -891,16 +912,6 @@ const AdminDashboard = ({ setUser }) => {
     }
   };
 
-  const cargarConfiguracion = async () => {
-    try {
-      const config = await apiConfiguracion.getConfiguracionActiva();
-      setConfiguracion(config);
-    } catch (error) {
-      console.error('Error cargando configuración:', error);
-    }
-  };
-
-  // Función para CONFIRMAR pago
   const confirmarPago = async (id_cuota) => {
     try {
       setLoading(true);
@@ -913,7 +924,6 @@ const AdminDashboard = ({ setUser }) => {
       
       const resultado = await apiCuotas.confirmarPagoIFEMI(id_cuota);
       
-      // Actualizar el estado local
       const cuotasActualizadas = cuotasContrato.map(cuota => 
         cuota.id_cuota === id_cuota 
           ? { ...cuota, confirmacionifemi: 'Confirmado' }
@@ -931,7 +941,6 @@ const AdminDashboard = ({ setUser }) => {
     }
   };
 
-  // Función para RECHAZAR pago
   const rechazarPago = async (id_cuota) => {
     try {
       setLoading(true);
@@ -950,7 +959,6 @@ const AdminDashboard = ({ setUser }) => {
       
       const resultado = await apiCuotas.rechazarPagoIFEMI(id_cuota, motivo);
       
-      // Actualizar el estado local
       const cuotasActualizadas = cuotasContrato.map(cuota => 
         cuota.id_cuota === id_cuota 
           ? { 
@@ -979,20 +987,22 @@ const AdminDashboard = ({ setUser }) => {
     try {
       setLoading(true);
       
-      if (!configuracion) {
-        alert('No hay configuración disponible');
+      // Verificar que el contrato tenga los datos necesarios
+      if (!contratoSeleccionado.frecuencia_pago_contrato || !contratoSeleccionado.cuotas) {
+        alert('El contrato no tiene la configuración necesaria para recalcular cuotas');
         setLoading(false);
         return;
       }
       
       const confirmar = window.confirm(
         `¿Está seguro de recalcular las cuotas pendientes?\n\n` +
-        `Configuración que se aplicará:\n` +
-        `• Frecuencia: ${configuracion.frecuencia_pago}\n` +
-        `• Total de cuotas: ${configuracion.numero_cuotas}\n` +
-        `• Cuotas de gracia: ${configuracion.cuotasgracias || 0}\n` +
-        `• Tasa de mora: ${configuracion.porcentaje_mora}%\n\n` +
-        `Esta acción eliminará todas las cuotas pendientes y las recreará según la configuración actual.`
+        `Configuración del contrato:\n` +
+        `• Frecuencia: ${contratoSeleccionado.frecuencia_pago_contrato}\n` +
+        `• Total de cuotas: ${contratoSeleccionado.cuotas}\n` +
+        `• Cuotas de gracia: ${contratoSeleccionado.gracia || 0}\n` +
+        `• Tasa de mora: ${contratoSeleccionado.morosidad || 0}%\n` + // ✅ Usa morosidad del contrato
+        `• Monto por cuota: $${contratoSeleccionado.monto_cuota}\n\n` +
+        `Esta acción eliminará todas las cuotas pendientes y las recreará según la configuración del contrato.`
       );
 
       if (!confirmar) {
@@ -1004,6 +1014,13 @@ const AdminDashboard = ({ setUser }) => {
         contratoSeleccionado.id_contrato
       );
 
+      // ✅ MARCAR ESTE CONTRATO COMO RECALCULADO Y PERSISTIR EN LOCALSTORAGE
+      setContratosRecalculados(prev => {
+        const nuevoSet = new Set(prev);
+        nuevoSet.add(contratoSeleccionado.id_contrato);
+        return nuevoSet;
+      });
+      
       alert('✅ ' + resultado.message);
       await cargarCuotasContrato(contratoSeleccionado.id_contrato);
       
@@ -1013,6 +1030,11 @@ const AdminDashboard = ({ setUser }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // FUNCIÓN PARA VERIFICAR SI UN CONTRATO YA FUE RECALCULADO
+  const fueRecalculado = (idContrato) => {
+    return contratosRecalculados.has(idContrato);
   };
 
   const generarReporte = async (contratoId) => {
@@ -1035,7 +1057,6 @@ const AdminDashboard = ({ setUser }) => {
     }
   };
 
-  // Header común para ambas vistas
   const HeaderSection = ({ title, subtitle, showBackButton = false, children }) => (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 mt-12">
       <div className="flex items-center space-x-4 mb-4 md:mb-0">
@@ -1060,14 +1081,12 @@ const AdminDashboard = ({ setUser }) => {
     </div>
   );
 
-  // Footer común
   const Footer = ({ text = "Panel de Administración" }) => (
     <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-600">
       © {new Date().getFullYear()} IFEMI & UPTYAB. {text}
     </footer>
   );
 
-  // Renderizado condicional de vistas
   const renderVistaContratos = () => (
     <div className="flex min-h-screen bg-gray-50 font-sans">
       {menuOpen && <Menu />}
@@ -1088,12 +1107,6 @@ const AdminDashboard = ({ setUser }) => {
               >
                 <i className="bx bx-refresh mr-2"></i> 
                 {loading ? 'Actualizando...' : 'Actualizar'}
-              </button>
-              <button 
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors"
-                onClick={() => navigate('/configuracion')}
-              >
-                <i className="bx bx-cog mr-2"></i> Configuración
               </button>
             </div>
           </HeaderSection>
@@ -1149,18 +1162,21 @@ const AdminDashboard = ({ setUser }) => {
                 <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors">
                   <i className="bx bx-download mr-2"></i> Exportar
                 </button>
-                <button 
-                  className="bg-amber-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-amber-600 transition-colors"
-                  onClick={recalcularCuotas}
-                  disabled={loading}
-                >
-                  <i className="bx bx-refresh mr-2"></i> 
-                  {loading ? 'Procesando...' : 'Recalcular'}
-                </button>
+                
+                {/* ✅ SOLO MOSTRAR BOTÓN SI ESTE CONTRATO NO HA SIDO RECALCULADO */}
+                {!fueRecalculado(contratoSeleccionado.id_contrato) && (
+                  <button 
+                    className="bg-amber-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-amber-600 transition-colors"
+                    onClick={recalcularCuotas}
+                    disabled={loading}
+                  >
+                    <i className="bx bx-refresh mr-2"></i> 
+                    {loading ? 'Procesando...' : 'Generar cuotas'}
+                  </button>
+                )}
               </div>
             </HeaderSection>
 
-            {/* Resumen del Contrato */}
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {contratoStats.map((stat, index) => (
                 <div key={index} className={`bg-white rounded-xl shadow-sm p-6 border-l-4 border-${stat.color}-500`}>
@@ -1177,13 +1193,13 @@ const AdminDashboard = ({ setUser }) => {
               ))}
             </section>
 
-            {/* Lista de Cuotas */}
+            {/* ✅ PASA SOLO contratoSeleccionado, NO configuracion */}
             <CuotasTable 
               cuotasContrato={cuotasContrato}
               loading={loading}
               onConfirmarPago={confirmarPago}
               onRechazarPago={rechazarPago}
-              configuracion={configuracion}
+              contratoSeleccionado={contratoSeleccionado}
             />
           </main>
 
@@ -1193,7 +1209,6 @@ const AdminDashboard = ({ setUser }) => {
     );
   };
 
-  // Renderizado principal
   if (vista === 'contratos') {
     return renderVistaContratos();
   }
