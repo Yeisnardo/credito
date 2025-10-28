@@ -4,6 +4,77 @@ import Swal from 'sweetalert2';
 import api, { getUsuarioPorCedula } from '../services/api_usuario';
 import logo from '../assets/imagenes/logo_header.jpg';
 
+// Hook personalizado para logout
+const useLogout = () => {
+  const navigate = useNavigate();
+
+  const logout = useCallback(async () => {
+    try {
+      // Intentar cerrar sesión en el backend
+      await api.post('/api/usuarios/logout');
+    } catch (error) {
+      console.warn('Error en logout del backend:', error);
+      // Continuamos aunque falle el backend
+    } finally {
+      // Siempre limpiar el frontend
+      const itemsToKeep = []; // Items que quieres conservar (si los hay)
+      const allKeys = Object.keys(localStorage);
+      
+      allKeys.forEach(key => {
+        if (!itemsToKeep.includes(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      sessionStorage.clear();
+
+      // Limpiar cookies de autenticación
+      document.cookie.split(";").forEach(cookie => {
+        const eqPos = cookie.indexOf("=");
+        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        if (name.includes('token') || name.includes('session') || name.includes('auth')) {
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        }
+      });
+
+      // Redirigir al login
+      navigate('/Login', { replace: true });
+      
+      // Recargar para estado limpio
+      setTimeout(() => window.location.reload(), 100);
+    }
+  }, [navigate]);
+
+  const confirmLogout = useCallback(() => {
+    Swal.fire({
+      title: 'Cerrar Sesión',
+      text: '¿Estás seguro de que quieres salir del sistema?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Cerrando sesión...',
+          text: 'Por favor espera',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        logout();
+      }
+    });
+  }, [logout]);
+
+  return { confirmLogout };
+};
+
 // Componente para las opciones del perfil
 const PerfilOpciones = ({
   onClose,
@@ -63,6 +134,9 @@ const Header = ({ toggleMenu, menuOpen }) => {
   const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
   const [notifications, setNotifications] = useState([]);
   const searchRef = useRef(null);
+  
+  // Usar el hook de logout
+  const { confirmLogout } = useLogout();
 
   // Cargar usuario al inicio
   useEffect(() => {
@@ -163,31 +237,6 @@ const Header = ({ toggleMenu, menuOpen }) => {
     }
   }, []);
 
-  // Cerrar sesión
-  const handleCerrarSesion = () => {
-    Swal.fire({
-      title: "¿Estás seguro?",
-      text: "¿Quieres cerrar tu sesión?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#4f46e5",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Sí, cerrar sesión",
-      cancelButtonText: "Cancelar",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        localStorage.removeItem('cedula_usuario');
-        Swal.fire({
-          title: "¡Sesión cerrada!",
-          text: "Has cerrado sesión correctamente",
-          icon: "success",
-          confirmButtonColor: "#4f46e5",
-        });
-        navigate('/Login');
-      }
-    });
-  };
-
   // Configuración (cambiar contraseña o usuario)
   const handleAbrirConfiguracion = async () => {
     const { value } = await Swal.fire({
@@ -265,7 +314,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
     if (formValues) {
       await handleUpdate(
         `/api/usuarios/${user?.cedula_usuario}`, 
-        { password: formValues.pass }, 
+        { clave: formValues.pass }, 
         "Contraseña actualizada correctamente"
       );
     }
@@ -345,14 +394,39 @@ const Header = ({ toggleMenu, menuOpen }) => {
                 Información Personal
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div><span class="font-medium text-gray-600">Cédula:</span> ${user?.cedula_usuario || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Nombre:</span> ${user?.nombre_completo || "No especificado"}</div>
                 <div><span class="font-medium text-gray-600">Email:</span> ${user?.email || "No especificado"}</div>
                 <div><span class="font-medium text-gray-600">Teléfono:</span> ${user?.telefono || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Edad:</span> ${user?.edad || "No especificado"}</div>
                 <div><span class="font-medium text-gray-600">Dirección:</span> ${user?.direccion_actual || "No especificado"}</div>
                 <div><span class="font-medium text-gray-600">Estado:</span> ${user?.estado || "No especificado"}</div>
                 <div><span class="font-medium text-gray-600">Municipio:</span> ${user?.municipio || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Tipo Persona:</span> ${user?.tipo_persona || "No especificado"}</div>
               </div>
             </div>
             
+            <!-- Información de Cuenta -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="bx bx-user-check mr-2 text-indigo-600"></i>
+                Información de Cuenta
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div><span class="font-medium text-gray-600">Usuario:</span> ${user?.usuario || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Rol:</span> ${user?.rol || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Estatus:</span> 
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    user?.estatus?.toLowerCase() === 'activo' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }">
+                    ${user?.estatus || "No especificado"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <!-- Información del Emprendimiento -->
             <div>
               <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
@@ -364,6 +438,8 @@ const Header = ({ toggleMenu, menuOpen }) => {
                 <div><span class="font-medium text-gray-600">Consejo:</span> ${user?.consejo_nombre || "No especificado"}</div>
                 <div><span class="font-medium text-gray-600">Comuna:</span> ${user?.comuna || "No especificado"}</div>
                 <div><span class="font-medium text-gray-600">Dirección:</span> ${user?.direccion_emprendimiento || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Tipo Sector:</span> ${user?.tipo_sector || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Tipo Negocio:</span> ${user?.tipo_negocio || "No especificado"}</div>
               </div>
             </div>
           </div>
@@ -387,7 +463,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo</label>
-              <input id="nombre" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.nombre || ""}">
+              <input id="nombre" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.nombre_completo || ""}">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Edad</label>
@@ -439,7 +515,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
           Swal.showValidationMessage("Nombre, Edad y Email son obligatorios");
           return false;
         }
-        return { nombre, edad, telefono, email, direccion, estado, municipio, tipo_persona };
+        return { nombre_completo: nombre, edad, telefono, email, direccion_actual: direccion, estado, municipio, tipo_persona };
       },
     });
     
@@ -490,7 +566,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
           Swal.showValidationMessage("Todos los campos son obligatorios");
           return false;
         }
-        return { emprendimiento, tipo_sector, tipo_negocio, direccion_emprendimiento };
+        return { nombre_emprendimiento: emprendimiento, tipo_sector, tipo_negocio, direccion_emprendimiento };
       },
     });
     
@@ -702,7 +778,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
                   onVerPerfil={handleVerPerfil}
                   onEditarDatos={handleEditarDatosPersonales}
                   onEditarEmprendimiento={handleEditarEmprendimiento}
-                  onCerrarSesion={handleCerrarSesion}
+                  onCerrarSesion={confirmLogout}
                 />
               </div>
             )}

@@ -35,6 +35,31 @@ export const updateUsuarioEstatus = async (cedula_usuario, estatus) => {
   return response.data;
 };
 
+// Interceptor para manejar respuestas de error (como 401 Unauthorized)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expirado o inválido - limpiar y redirigir
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/Login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Función específica para logout
+export const logoutUsuario = async () => {
+  try {
+    const response = await api.post('/api/usuarios/logout');
+    return response.data;
+  } catch (error) {
+    console.error('Error en logout:', error);
+    throw error;
+  }
+};
+
 export default {
   getUsuarios,
   getUsuarioPorCedula,
@@ -42,4 +67,5 @@ export default {
   updateUsuario,
   deleteUsuario,
   updateUsuarioEstatus,
+  logoutUsuario
 };

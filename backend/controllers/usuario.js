@@ -170,6 +170,20 @@ router.put('/:cedula_usuario/estatus', async (req, res) => {
   }
 });
 
+router.post('/logout', (req, res) => {
+  try {
+    // En una implementación real con tokens, aquí invalidarías el token
+    // Por ahora, simplemente respondemos con éxito
+    res.json({ 
+      success: true, 
+      message: 'Sesión cerrada correctamente' 
+    });
+  } catch (err) {
+    console.error('Error en logout:', err);
+    res.status(500).json({ error: 'Error al cerrar sesión' });
+  }
+});
+
 // Ruta protegida
 router.get('/perfil', verificarEstatusUsuario, (req, res) => {
   res.json({ message: 'Acceso permitido', usuario: req.usuario });
