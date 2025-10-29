@@ -4,7 +4,6 @@ import axios from "axios";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import apiCuotas from "../services/api_cuotas";
-import apiConfiguracion from "../services/api_configuracion_contratos";
 import { generarReciboPagoProfesional, generarResumenUsuario } from '../pdf/reciboPago';
 
 const EmprendedorDashboard = ({ setUser }) => {
@@ -20,7 +19,6 @@ const EmprendedorDashboard = ({ setUser }) => {
   const [monedaPref, setMonedaPref] = useState('USD');
   const [diasRestantes, setDiasRestantes] = useState({});
   const [diasMorosidad, setDiasMorosidad] = useState({});
-  const [configuracion, setConfiguracion] = useState({ porcentaje_mora: 2 });
 
   const [stats, setStats] = useState({
     totalPagado: 0,
@@ -50,10 +48,46 @@ const EmprendedorDashboard = ({ setUser }) => {
     });
   };
 
+  // =============================================
+  // FUNCIONES PARA CÁLCULO DE FECHAS SEGÚN FRECUENCIA
+  // =============================================
+
+  const calcularDiasPorFrecuencia = (frecuencia) => {
+    switch (frecuencia?.toLowerCase()) {
+      case 'diario':
+        return 1;
+      case 'semanal':
+        return 7;
+      case 'quincenal':
+        return 15;
+      case 'mensual':
+        return 30;
+      default:
+        return 7; // Por defecto semanal
+    }
+  };
+
+  const generarNombreCuota = (numeroCuota, frecuencia) => {
+    switch (frecuencia?.toLowerCase()) {
+      case 'diario':
+        return `Día ${numeroCuota}`;
+      case 'semanal':
+        return `Semana ${numeroCuota}`;
+      case 'quincenal':
+        return `Quincena ${numeroCuota}`;
+      case 'mensual':
+        return `Mes ${numeroCuota}`;
+      default:
+        return `Cuota ${numeroCuota}`;
+    }
+  };
+
   const formatearNombreCuota = (textoSemana) => {
     const numero = extraerNumeroCuota(textoSemana);
     if (numero > 0) {
-      return `Cuota ${numero}`;
+      // USAR LA FRECUENCIA DEL CONTRATO SI ESTÁ DISPONIBLE
+      const frecuencia = contrato?.frecuencia_pago_contrato || 'semanal';
+      return generarNombreCuota(numero, frecuencia);
     }
     return textoSemana;
   };
@@ -121,13 +155,14 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // CÁLCULO DE INTERESES DE MOROSIDAD
+  // CÁLCULO DE INTERESES DE MOROSIDAD - USANDO CONTRATO
   // =============================================
 
   const calcularInteresMorosidad = (diasMora, montoOriginal) => {
-    if (!configuracion || !configuracion.porcentaje_mora) return 0;
+    // ✅ USAR MOROSIDAD DEL CONTRATO EN LUGAR DE CONFIGURACIÓN GLOBAL
+    if (!contrato || !contrato.morosidad) return 0;
     
-    const porcentajeDiario = configuracion.porcentaje_mora / 100;
+    const porcentajeDiario = contrato.morosidad / 100;
     const interes = parseFloat(montoOriginal) * porcentajeDiario * diasMora;
     
     return parseFloat(interes.toFixed(2));
@@ -146,10 +181,11 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   const getInfoPorcentajeMora = () => {
-    if (!configuracion || !configuracion.porcentaje_mora) {
+    // ✅ USAR MOROSIDAD DEL CONTRATO EN LUGAR DE CONFIGURACIÓN GLOBAL
+    if (!contrato || !contrato.morosidad) {
       return "No configurado";
     }
-    return `${configuracion.porcentaje_mora}% diario`;
+    return `${contrato.morosidad}% diario`;
   };
 
   // =============================================
@@ -253,9 +289,6 @@ const EmprendedorDashboard = ({ setUser }) => {
   const cargarDatosEmprendedor = async (cedula) => {
     try {
       setLoading(true);
-      
-      const configData = await apiConfiguracion.getConfiguracionActiva();
-      setConfiguracion(configData);
 
       const contratoData = await apiCuotas.getContratoPorCedula(cedula);
       setContrato(contratoData);
@@ -268,7 +301,12 @@ const EmprendedorDashboard = ({ setUser }) => {
       // OBTENER Y ORDENAR CUOTAS PENDIENTES
       const pendientesData = await apiCuotas.getCuotasPendientesEmprendedor(cedula);
       
+      // OBTENER FRECUENCIA DEL CONTRATO
+      const frecuencia = contratoData?.frecuencia_pago_contrato || 'semanal';
+      const diasPorPeriodo = calcularDiasPorFrecuencia(frecuencia);
+      
       const cuotasConFechas = pendientesData.map((cuota) => {
+        // Si ya tiene fechas, las respetamos
         if (cuota.fecha_desde && cuota.fecha_hasta) {
           return {
             ...cuota,
@@ -281,14 +319,19 @@ const EmprendedorDashboard = ({ setUser }) => {
           new Date(contratoData.fecha_desde) : 
           new Date();
         
+        // CALCULAR FECHAS SEGÚN FRECUENCIA
         const fechaDesde = new Date(fechaBase);
-        fechaDesde.setDate(fechaBase.getDate() + ((numeroCuota - 1) * 7));
+        fechaDesde.setDate(fechaBase.getDate() + ((numeroCuota - 1) * diasPorPeriodo));
         
         const fechaHasta = new Date(fechaDesde);
-        fechaHasta.setDate(fechaDesde.getDate() + 7);
+        fechaHasta.setDate(fechaDesde.getDate() + diasPorPeriodo);
         
+        // GENERAR NOMBRE CORRECTO DE LA CUOTA
+        const nombreCuota = generarNombreCuota(numeroCuota, frecuencia);
+
         return {
           ...cuota,
+          semana: nombreCuota, // Actualizar nombre según frecuencia
           fecha_desde: fechaDesde.toISOString().split('T')[0],
           fecha_hasta: fechaHasta.toISOString().split('T')[0],
           interes_acumulado: 0
@@ -545,6 +588,9 @@ const EmprendedorDashboard = ({ setUser }) => {
                       <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                         Contrato: {contrato.numero_contrato}
                       </span>
+                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                        Frecuencia: {contrato.frecuencia_pago_contrato || 'Semanal'}
+                      </span>
                       <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
                         Mora: {getInfoPorcentajeMora()}
                       </span>
@@ -717,6 +763,7 @@ const EmprendedorDashboard = ({ setUser }) => {
           <div className="text-red-800 font-semibold">Total a pagar:</div>
           <div className="text-red-800 font-bold text-right">${totalConMora.toFixed(2)}</div>
         </div>
+        {/* ✅ MOSTRAR PORCENTAJE DEL CONTRATO */}
         <div className="text-xs text-red-600 mt-2">
           {diasMora} días × {getInfoPorcentajeMora()}
         </div>
@@ -724,30 +771,38 @@ const EmprendedorDashboard = ({ setUser }) => {
     );
   };
 
-  const RangoFechasCuota = ({ cuota }) => (
-    <div className="mt-4 p-4 bg-gray-50 rounded-xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-        <div className="flex items-center gap-2 text-gray-700">
-          <div className="bg-green-100 p-2 rounded-lg">
-            <i className="bx bx-calendar-plus text-green-600"></i>
+  const RangoFechasCuota = ({ cuota }) => {
+    const frecuencia = contrato?.frecuencia_pago_contrato || 'semanal';
+    const diasPeriodo = calcularDiasPorFrecuencia(frecuencia);
+    
+    return (
+      <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="flex items-center gap-2 text-gray-700">
+            <div className="bg-green-100 p-2 rounded-lg">
+              <i className="bx bx-calendar-plus text-green-600"></i>
+            </div>
+            <div>
+              <div className="font-medium text-gray-500">Disponible desde</div>
+              <div className="font-semibold">{cuota.fecha_desde}</div>
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-gray-500">Disponible desde</div>
-            <div className="font-semibold">{cuota.fecha_desde}</div>
+          <div className="flex items-center gap-2 text-gray-700">
+            <div className="bg-red-100 p-2 rounded-lg">
+              <i className="bx bx-calendar-minus text-red-600"></i>
+            </div>
+            <div>
+              <div className="font-medium text-gray-500">Vence el</div>
+              <div className="font-semibold">{cuota.fecha_hasta}</div>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-gray-700">
-          <div className="bg-red-100 p-2 rounded-lg">
-            <i className="bx bx-calendar-minus text-red-600"></i>
-          </div>
-          <div>
-            <div className="font-medium text-gray-500">Vence el</div>
-            <div className="font-semibold">{cuota.fecha_hasta}</div>
-          </div>
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          Período de {diasPeriodo} días ({frecuencia})
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const ConversionMonetaria = ({ monto }) => (
     <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
@@ -780,7 +835,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              {/* USAR NOMBRE FORMATEADO EN LUGAR DEL ORIGINAL */}
+              {/* USAR NOMBRE FORMATEADO SEGÚN FRECUENCIA */}
               <h3 className="text-lg font-semibold text-gray-900">{formatearNombreCuota(cuota.semana)}</h3>
               <EstadoCronometro cuota={cuota} />
             </div>
@@ -932,7 +987,7 @@ const EmprendedorDashboard = ({ setUser }) => {
             <i className={`bx ${estado.icon} text-${estado.color}-600 text-xl`}></i>
           </div>
           <div>
-            {/* USAR NOMBRE FORMATEADO EN LUGAR DEL ORIGINAL */}
+            {/* USAR NOMBRE FORMATEADO SEGÚN FRECUENCIA */}
             <p className="font-medium text-gray-900">{formatearNombreCuota(pago.semana)} pagada</p>
             <p className="text-sm text-gray-600">
               {pago.fecha_pagada} • Contrato: {pago.numero_contrato}
@@ -964,7 +1019,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         <td className="py-4 px-6 text-sm text-gray-900">
           {pago.fecha_pagada || 'Fecha no disponible'}
         </td>
-        {/* USAR NOMBRE FORMATEADO EN LUGAR DEL ORIGINAL */}
+        {/* USAR NOMBRE FORMATEADO SEGÚN FRECUENCIA */}
         <td className="py-4 px-6 text-sm text-gray-900">{formatearNombreCuota(pago.semana)}</td>
         <td className="py-4 px-6 text-sm text-gray-900 font-semibold">${pago.monto}</td>
         <td className="py-4 px-6 text-sm text-gray-900">{pago.numero_contrato}</td>
