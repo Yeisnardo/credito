@@ -10,6 +10,243 @@ import { getRequerimientos } from "../services/api_requerimientos";
 import { getTodosRequerimientosEmprendedor } from "../services/api_requerimiento_emprendedor";
 import { updateRequerimientoEmprendedor } from "../services/api_requerimiento_emprendedor";
 import { updateSolicitud } from "../services/api_solicitud";
+import apiArchivo from "../services/api_archivo";
+
+// Componente Modal para visualizar imagen
+const ModalImagen = ({ imagenUrl, isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in">
+      <div className="relative max-w-7xl max-h-[95vh] w-full h-full flex items-center justify-center">
+        {/* Botón cerrar */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl transition-all hover:scale-110 bg-black/50 p-2 rounded-lg z-10"
+        >
+          <i className="bx bx-x"></i>
+        </button>
+
+        {/* Controles de imagen */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-lg flex items-center gap-4 z-10">
+          <button
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = imagenUrl;
+              link.download = `documento-${Date.now()}.jpg`;
+              link.click();
+            }}
+            className="hover:text-blue-300 transition-colors flex items-center gap-2"
+          >
+            <i className="bx bx-download"></i>
+            Descargar
+          </button>
+          <button
+            onClick={() => window.open(imagenUrl, '_blank')}
+            className="hover:text-green-300 transition-colors flex items-center gap-2"
+          >
+            <i className="bx bx-link-external"></i>
+            Abrir en nueva pestaña
+          </button>
+        </div>
+
+        {/* Imagen */}
+        <div className="w-full h-full flex items-center justify-center p-8">
+          <img 
+            src={imagenUrl} 
+            alt="Documento en pantalla completa" 
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente para mostrar imagen del documento - MEJORADO
+const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
+  const [imagenArchivo, setImagenArchivo] = useState(null);
+  const [cargandoImagen, setCargandoImagen] = useState(false);
+  const [errorImagen, setErrorImagen] = useState(null);
+  const [modalImagen, setModalImagen] = useState(false);
+
+  const cargarImagen = async () => {
+    if (!cedulaEmprendedor) {
+      setErrorImagen("No hay cédula de emprendedor disponible");
+      return;
+    }
+    
+    setCargandoImagen(true);
+    setErrorImagen(null);
+    setImagenArchivo(null);
+    
+    try {
+      console.log('🔍 Buscando imagen para cédula:', cedulaEmprendedor);
+      
+      const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(cedulaEmprendedor);
+      console.log('📁 Archivos obtenidos:', archivos);
+      
+      if (archivos && archivos.length > 0) {
+        // Buscar archivo que coincida con el id_req si se proporciona
+        let archivo = idReq 
+          ? archivos.find(a => a.id_req === idReq) 
+          : archivos[0];
+        
+        // Si no encuentra por id_req, tomar el más reciente
+        if (!archivo) {
+          archivo = archivos[0];
+          console.log('⚠️ Usando archivo más reciente');
+        }
+        
+        console.log('🎯 Archivo seleccionado:', archivo);
+        
+        let urlImagen = null;
+        
+        // Priorizar la URL proporcionada por el backend
+        if (archivo.url) {
+          urlImagen = archivo.url;
+        } 
+        // Si tenemos el nombre del archivo, construir URL
+        else if (archivo.archivo) {
+          urlImagen = apiArchivo.obtenerUrlImagen 
+            ? apiArchivo.obtenerUrlImagen(archivo.archivo)
+            : `http://localhost:5000/uploads/${archivo.archivo}`;
+        }
+        
+        if (urlImagen) {
+          console.log('🖼️ URL de imagen construida:', urlImagen);
+          
+          // Verificar que la imagen sea accesible
+          const response = await fetch(urlImagen, { method: 'HEAD' });
+          if (response.ok) {
+            setImagenArchivo(urlImagen);
+          } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+        } else {
+          throw new Error("No se pudo generar la URL de la imagen");
+        }
+      } else {
+        throw new Error("No se encontraron archivos para este emprendedor");
+      }
+      
+    } catch (error) {
+      console.error("❌ Error al cargar la imagen:", error);
+      setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
+    } finally {
+      setCargandoImagen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (cedulaEmprendedor) {
+      cargarImagen();
+    }
+  }, [cedulaEmprendedor, idReq]);
+
+  return (
+    <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+      <div className="flex items-center gap-2 mb-4">
+        <i className="bx bx-image text-gray-600"></i>
+        <h3 className="font-semibold text-gray-800">Imagen del Documento</h3>
+        {imagenArchivo && (
+          <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">
+            <i className="bx bx-check"></i> Disponible
+          </span>
+        )}
+        {errorImagen && (
+          <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded-full ml-2">
+            <i className="bx bx-error"></i> Error
+          </span>
+        )}
+      </div>
+      
+      {cargandoImagen ? (
+        <div className="flex justify-center items-center py-8 flex-col">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+          <span className="text-gray-600 text-sm">Cargando imagen...</span>
+        </div>
+      ) : errorImagen ? (
+        <div className="text-center text-gray-500 py-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
+          <i className="bx bx-error text-2xl mb-2 text-amber-500"></i>
+          <p className="text-sm font-medium mb-1">No se pudo cargar la imagen</p>
+          <p className="text-xs text-gray-400 mb-3">{errorImagen}</p>
+          <button 
+            onClick={cargarImagen}
+            className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium py-1 px-3 rounded-lg transition-all flex items-center gap-1 mx-auto"
+          >
+            <i className="bx bx-refresh"></i>
+            Reintentar
+          </button>
+        </div>
+      ) : imagenArchivo ? (
+        <div className="space-y-3">
+          <div className="bg-white rounded-lg border border-gray-300 p-3 flex justify-center cursor-pointer group relative overflow-hidden"
+            onClick={() => setModalImagen(true)}>
+            <div className="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+            <img 
+              src={imagenArchivo} 
+              alt="Documento adjunto" 
+              className="max-w-full h-auto max-h-48 object-contain rounded-lg transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                console.error("Error cargando imagen en img tag");
+                setErrorImagen("La imagen está corrupta o no es accesible");
+                setImagenArchivo(null);
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="bg-black/50 text-white px-3 py-1 rounded-lg flex items-center gap-1 text-sm">
+                <i className="bx bx-zoom-in"></i>
+                <span>Haz clic para ampliar</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-center gap-2 flex-wrap">
+            <button
+              onClick={() => setModalImagen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
+            >
+              <i className="bx bx-zoom-in"></i>
+              Ver imagen
+            </button>
+            <button
+              onClick={() => window.open(imagenArchivo, '_blank')}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
+            >
+              <i className="bx bx-link-external"></i>
+              Abrir en pestaña
+            </button>
+            <button
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = imagenArchivo;
+                link.download = `documento-${cedulaEmprendedor}-${Date.now()}.jpg`;
+                link.click();
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
+            >
+              <i className="bx bx-download"></i>
+              Descargar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center text-gray-500 py-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
+          <i className="bx bx-image-alt text-2xl mb-2 opacity-50"></i>
+          <p className="text-sm font-medium mb-1">No hay imagen disponible</p>
+          <p className="text-xs">No se encontraron documentos adjuntos</p>
+        </div>
+      )}
+
+      {/* Modal para imagen en pantalla completa */}
+      <ModalImagen
+        imagenUrl={imagenArchivo}
+        isOpen={modalImagen}
+        onClose={() => setModalImagen(false)}
+      />
+    </div>
+  );
+};
 
 // Funciones para cargar datos
 const fetchPersonasRegistradas = async () => {
@@ -22,10 +259,11 @@ const fetchPersonasRegistradas = async () => {
   }
 };
 
-const fetchDetallesPersona = async (id_req) => {
+const fetchDetallesPersona = async (cedula) => {
   try {
-    const data = await getTodosRequerimientosEmprendedor(id_req);
-    return data;
+    const data = await getTodosRequerimientosEmprendedor();
+    // Filtrar por cédula
+    return data.filter(item => item.cedula_emprendedor === cedula);
   } catch (error) {
     console.error("Error cargando detalles:", error);
     return null;
@@ -90,16 +328,9 @@ const Aprobacion = () => {
     setLoading(true);
     try {
       const detalles = await fetchDetallesPersona(persona.cedula_emprendedor);
-      const detallesFiltrados = detalles
-        ? Array.isArray(detalles)
-          ? detalles.filter(
-              (d) => d.cedula_emprendedor === persona.cedula_emprendedor
-            )
-          : [detalles]
-        : [];
-
+      
       // Usar el campo 'vereficacion' de la base de datos
-      const detallesConVerificados = detallesFiltrados.map((detalle) => ({
+      const detallesConVerificados = detalles.map((detalle) => ({
         ...detalle,
         requerimientosVerificados: detalle.vereficacion || [],
       }));
@@ -110,6 +341,37 @@ const Aprobacion = () => {
       console.error("Error loading details:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función para abrir imagen en nueva pestaña - NUEVA FUNCIÓN
+  const abrirImagenEnPestaña = async (persona) => {
+    try {
+      const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(persona.cedula_emprendedor);
+      
+      if (archivos && archivos.length > 0) {
+        const archivo = archivos[0];
+        let urlImagen = null;
+        
+        if (archivo.url) {
+          urlImagen = archivo.url;
+        } else if (archivo.archivo) {
+          urlImagen = apiArchivo.obtenerUrlImagen 
+            ? apiArchivo.obtenerUrlImagen(archivo.archivo)
+            : `http://localhost:5000/uploads/${archivo.archivo}`;
+        }
+        
+        if (urlImagen) {
+          window.open(urlImagen, '_blank');
+        } else {
+          Swal.fire('Error', 'No se pudo obtener la URL de la imagen', 'error');
+        }
+      } else {
+        Swal.fire('Sin archivos', 'No se encontraron archivos para este emprendedor', 'info');
+      }
+    } catch (error) {
+      console.error('Error al abrir imagen:', error);
+      Swal.fire('Error', 'No se pudo cargar la imagen', 'error');
     }
   };
 
@@ -223,7 +485,7 @@ const Aprobacion = () => {
       // Actualizar cada requerimiento del resultado
       for (const req of resultado) {
         await updateRequerimientoEmprendedor(req.id_req, {
-          requerimientosVerificados: req.requerimientosVerificados || [],
+          vereficacion: req.requerimientosVerificados || [],
         });
       }
 
@@ -536,6 +798,13 @@ const Aprobacion = () => {
                             >
                               Detalles
                             </button>
+                            <button
+                              className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition"
+                              onClick={() => abrirImagenEnPestaña(persona)}
+                              title="Abrir imagen en nueva pestaña"
+                            >
+                              <i className="bx bx-image"></i>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -571,7 +840,7 @@ const Aprobacion = () => {
         {/* Modal detalles - CORREGIDO */}
         {modalOpen && personaSeleccionada && (
           <div className="bg-black/75 fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm transition-opacity duration-300">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-transform duration-300 scale-100">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-transform duration-300 scale-100">
               {/* Header del modal */}
               <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center">
                 <div>
@@ -659,6 +928,14 @@ const Aprobacion = () => {
                                 </p>
                               </div>
                             </div>
+                          </div>
+
+                          {/* Imagen del documento */}
+                          <div className="mb-6">
+                            <ImagenDocumento 
+                              cedulaEmprendedor={req.cedula_emprendedor}
+                              idReq={req.id_req}
+                            />
                           </div>
 
                           {/* Separador */}
@@ -800,6 +1077,15 @@ const Aprobacion = () => {
                           </p>
                         </div>
                       </div>
+                      
+                      {/* Imagen del documento para resultado único */}
+                      <div className="mb-6">
+                        <ImagenDocumento 
+                          cedulaEmprendedor={resultado.cedula_emprendedor}
+                          idReq={resultado.id_req}
+                        />
+                      </div>
+                      
                       <div>
                         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4 block">
                           Motivo

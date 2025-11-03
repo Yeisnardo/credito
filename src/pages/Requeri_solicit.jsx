@@ -25,7 +25,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
   const [modalImagen, setModalImagen] = useState({ open: false, imagenUrl: null });
 
   useEffect(() => {
-    if (isOpen && solicitud?.id_req) {
+    if (isOpen && solicitud?.cedula_emprendedor) {
       cargarImagenSolicitud();
     } else {
       setImagenArchivo(null);
@@ -34,73 +34,76 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
   }, [isOpen, solicitud]);
 
   const cargarImagenSolicitud = async () => {
-  if (!solicitud?.id_req) {
-    setErrorImagen("No hay ID de solicitud disponible");
-    return;
-  }
-  
-  setCargandoImagen(true);
-  setErrorImagen(null);
-  setImagenArchivo(null);
-  
-  try {
-    console.log('🔍 Buscando imagen para solicitud ID:', solicitud.id_req);
-    
-    const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.id_req);
-    console.log('📁 Archivos obtenidos:', archivos);
-    
-    if (archivos && archivos.length > 0) {
-      const archivo = archivos[0];
-      let urlImagen = null;
-      
-      // Verificar si ya tenemos una URL completa
-      if (archivo.url) {
-        urlImagen = archivo.url;
-      } 
-      // Verificar si tenemos una ruta relativa
-      else if (archivo.archivo) {
-        if (typeof archivo.archivo === 'string') {
-          if (archivo.archivo.startsWith('data:image')) {
-            // Es un data URL (base64)
-            urlImagen = archivo.archivo;
-          } else if (archivo.archivo.startsWith('http')) {
-            // Ya es una URL completa
-            urlImagen = archivo.archivo;
-          } else {
-            // Es una ruta del servidor, construir URL completa
-            urlImagen = apiArchivo.obtenerUrlImagen 
-              ? apiArchivo.obtenerUrlImagen(archivo.archivo)
-              : (`http://localhost:5000/uploads/1761146329337-73989087.png`);
-          }
-        }
-      }
-      
-      if (urlImagen) {
-        console.log('🖼️ URL de imagen construida:', urlImagen);
-        
-        // Verificar que la imagen sea accesible
-        const response = await fetch(urlImagen, { method: 'HEAD' });
-        if (response.ok) {
-          setImagenArchivo(urlImagen);
-          setCargandoImagen(false);
-        } else {
-          throw new Error('La imagen no es accesible');
-        }
-      } else {
-        setErrorImagen("No se pudo generar la URL de la imagen");
-        setCargandoImagen(false);
-      }
-    } else {
-      setErrorImagen("No se encontraron archivos para esta solicitud");
-      setCargandoImagen(false);
+    if (!solicitud?.cedula_emprendedor) {
+      setErrorImagen("No hay información completa de la solicitud");
+      return;
     }
     
-  } catch (error) {
-    console.error("❌ Error al cargar la imagen:", error);
-    setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
-    setCargandoImagen(false);
-  }
-};
+    setCargandoImagen(true);
+    setErrorImagen(null);
+    setImagenArchivo(null);
+    
+    try {
+      console.log('🔍 Buscando imagen para cédula:', solicitud.cedula_emprendedor);
+      console.log('📋 Información de solicitud:', solicitud);
+      
+      const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
+      console.log('📁 Archivos obtenidos:', archivos);
+      
+      if (archivos && archivos.length > 0) {
+        // Buscar archivo que coincida con la solicitud actual
+        let archivo = archivos.find(a => a.id_req === solicitud.id_req);
+        
+        // Si no encuentra por id_req, tomar el más reciente
+        if (!archivo) {
+          archivo = archivos[0];
+          console.log('⚠️ Usando archivo más reciente en lugar del específico');
+        }
+        
+        console.log('🎯 Archivo seleccionado:', archivo);
+        
+        let urlImagen = null;
+        
+        // Priorizar la URL proporcionada por el backend
+        if (archivo.url) {
+          urlImagen = archivo.url;
+        } 
+        // Si tenemos el nombre del archivo, construir URL
+        else if (archivo.archivo) {
+          urlImagen = apiArchivo.obtenerUrlImagen 
+            ? apiArchivo.obtenerUrlImagen(archivo.archivo)
+            : `http://localhost:5000/uploads/${archivo.archivo}`;
+        }
+        
+        if (urlImagen) {
+          console.log('🖼️ URL de imagen construida:', urlImagen);
+          
+          // Verificar que la imagen sea accesible usando fetch
+          try {
+            const response = await fetch(urlImagen, { method: 'HEAD' });
+            if (response.ok) {
+              setImagenArchivo(urlImagen);
+              setCargandoImagen(false);
+            } else {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+          } catch (fetchError) {
+            console.error('❌ Error al verificar imagen:', fetchError);
+            throw new Error('La imagen no es accesible desde el servidor');
+          }
+        } else {
+          throw new Error("No se pudo generar la URL de la imagen");
+        }
+      } else {
+        throw new Error("No se encontraron archivos para esta solicitud");
+      }
+      
+    } catch (error) {
+      console.error("❌ Error al cargar la imagen:", error);
+      setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
+      setCargandoImagen(false);
+    }
+  };
 
   const abrirModalImagen = (imagenUrl) => {
     setModalImagen({ open: true, imagenUrl });
@@ -160,6 +163,9 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                 </h2>
                 <p className="text-blue-100 opacity-90">
                   Detalles completos de tu solicitud
+                </p>
+                <p className="text-blue-200 text-sm mt-1">
+                  Cédula: {solicitud.cedula_emprendedor}
                 </p>
               </div>
               <button
@@ -240,19 +246,24 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                     <i className="bx bx-check"></i> Disponible
                   </span>
                 )}
+                {errorImagen && (
+                  <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded-full ml-2">
+                    <i className="bx bx-error"></i> Error
+                  </span>
+                )}
               </div>
               
               {cargandoImagen ? (
                 <div className="flex justify-center items-center py-12 flex-col">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-3"></div>
                   <span className="text-gray-600">Cargando imagen...</span>
-                  <span className="text-gray-400 text-sm mt-1">Solicitud: {solicitud.id_req}</span>
+                  <span className="text-gray-400 text-sm mt-1">Cédula: {solicitud.cedula_emprendedor}</span>
                 </div>
               ) : errorImagen ? (
                 <div className="text-center text-gray-500 py-8 bg-white rounded-lg border-2 border-dashed border-gray-300">
                   <i className="bx bx-error text-3xl mb-2 text-amber-500"></i>
                   <p className="text-lg font-medium mb-2">No se pudo cargar la imagen</p>
-                  <p className="text-sm text-gray-400">{errorImagen}</p>
+                  <p className="text-sm text-gray-400 mb-4">{errorImagen}</p>
                   <button 
                     onClick={cargarImagenSolicitud}
                     className="mt-3 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 mx-auto"
@@ -283,13 +294,13 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex justify-center gap-3">
+                  <div className="flex justify-center gap-3 flex-wrap">
                     <button
                       onClick={() => abrirModalImagen(imagenArchivo)}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
                     >
                       <i className="bx bx-zoom-in"></i>
-                      Ver imagen en pantalla completa
+                      Ver imagen completa
                     </button>
                     <a 
                       href={imagenArchivo} 
@@ -877,12 +888,12 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
   }, [solicitud]);
 
   const verificarImagen = async () => {
-    if (!solicitud?.id_req) return;
+    if (!solicitud?.cedula_emprendedor) return;
     
     setVerificandoImagen(true);
     try {
-      const archivos = await apiArchivo.getArchivosPorRequerimiento(solicitud.id_req);
-      setTieneImagen(archivos && archivos.length > 0 && archivos[0].archivo);
+      const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
+      setTieneImagen(archivos && archivos.length > 0);
     } catch (error) {
       console.error("Error al verificar imagen:", error);
       setTieneImagen(false);
