@@ -12,6 +12,107 @@ import clasificacionService from "../services/api_clasificacion";
 
 import "../assets/css/style.css";
 
+// Funciones de formato
+const formatCedula = (value) => {
+  const soloNumeros = value.replace(/\D/g, "");
+  if (soloNumeros.length <= 8) {
+    return soloNumeros;
+  }
+  return soloNumeros.slice(0, 8);
+};
+
+const formatTelefono = (value) => {
+  const numbers = value.replace(/\D/g, "").slice(0, 11);
+  
+  if (numbers.length <= 4) {
+    return numbers;
+  } else if (numbers.length <= 7) {
+    return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
+  } else {
+    return `${numbers.slice(0, 4)}-${numbers.slice(4, 7)}-${numbers.slice(7)}`;
+  }
+};
+
+// FORMATO MEJORADO PARA NOMBRE PERSONAL - Primera letra mayúscula, resto minúscula
+// FORMATO MEJORADO PARA NOMBRE PERSONAL - Permite espacios mientras escribe
+const formatNombreAvanzado = (value) => {
+  // Permitir solo caracteres válidos para nombres, pero mantener espacios normales
+  const cleanedValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
+  
+  // Mantener los espacios exactamente como los escribe el usuario mientras teclea
+  // Solo eliminar espacios múltiples al final si es necesario
+  const spaceOptimized = cleanedValue;
+  
+  return spaceOptimized;
+};
+
+// Función adicional para formatear el nombre cuando se pierde el foco o se guarda
+const formatNombreAutomatico = (value) => {
+  // Permitir solo caracteres válidos para nombres
+  const cleanedValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '');
+  
+  // Aplicar formato: primera letra de cada palabra en mayúscula automáticamente
+  const formatted = cleanedValue
+    .toLowerCase()
+    .replace(/(^\w|\s\w)/g, letra => letra.toUpperCase());
+  
+  return formatted;
+};
+
+// FORMATO PARA EMPRENDIMIENTO - Permite espacios mientras escribe
+const formatNombreEmprendimientoFlexible = (value) => {
+  // Permitir caracteres amplios para nombres de emprendimientos
+  const caracteresPermitidos = /[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-_&.,()@#$/¿?¡!%]/g;
+  const cleanedValue = (value.match(caracteresPermitidos) || []).join('');
+  
+  // Mantener los espacios exactamente como los escribe el usuario
+  return cleanedValue;
+};
+
+const formatDireccion = (value) => {
+  return value
+    .replace(/(av\.|avenida|calle|cll\.|carretera|ctra\.)/gi, (match) => {
+      const abreviaciones = {
+        'av.': 'Av.', 'avenida': 'Av.',
+        'calle': 'Cll.', 'cll.': 'Cll.',
+        'carretera': 'Ctra.', 'ctra.': 'Ctra.'
+      };
+      return abreviaciones[match.toLowerCase()] || match;
+    })
+    .toUpperCase();
+};
+
+const formatUsuario = (value) => {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9._-]/g, "")
+    .replace(/\s+/g, ".")
+    .substring(0, 20);
+};
+
+const calcularEdad = (fechaNacimiento) => {
+  const hoy = new Date();
+  const nacimiento = new Date(fechaNacimiento);
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  
+  const mes = hoy.getMonth() - nacimiento.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+    edad--;
+  }
+  
+  return edad;
+};
+
+const formatFecha = (fecha) => {
+  return new Date(fecha).toLocaleDateString('es-VE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
 const RegistroEmprendedor = () => {
   const [paso, setPaso] = useState(1);
   const navigate = useNavigate();
@@ -46,6 +147,7 @@ const RegistroEmprendedor = () => {
   const [negocioSeleccionado, setNegocioSeleccionado] = useState("");
   const [municipios, setMunicipios] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [edadCalculada, setEdadCalculada] = useState("");
 
   // Estados disponibles
   const estados = getEstados();
@@ -76,7 +178,6 @@ const RegistroEmprendedor = () => {
       const municipiosEstado = getMunicipiosByEstado(datos.estado);
       setMunicipios(municipiosEstado);
       
-      // Si el municipio actual no está en los municipios del nuevo estado, resetearlo
       if (!municipiosEstado.includes(datos.municipio)) {
         setDatos((prev) => ({ 
           ...prev, 
@@ -89,25 +190,62 @@ const RegistroEmprendedor = () => {
     }
   }, [datos.estado]);
 
+  // Calcular edad cuando cambia la fecha de nacimiento
+  useEffect(() => {
+    if (datos.edad) {
+      const edad = calcularEdad(datos.edad);
+      setEdadCalculada(edad);
+    } else {
+      setEdadCalculada("");
+    }
+  }, [datos.edad]);
+
   const handleChange = (campo, valor) => {
-    if (campo === "cedula") {
-      const soloNumeros = valor.replace(/\D/g, "");
-      if (soloNumeros.length <= 9) {
+    let valorFormateado = valor;
+
+    switch (campo) {
+      case "cedula":
+        valorFormateado = formatCedula(valor);
         setDatos((prev) => ({
           ...prev,
-          [campo]: soloNumeros,
-          cedula_emprendedor: soloNumeros,
-          cedula_usuario: soloNumeros,
+          [campo]: valorFormateado,
+          cedula_emprendedor: valorFormateado,
+          cedula_usuario: valorFormateado,
         }));
-      }
-    } else if (campo === "telefono") {
-      const soloNumeros = valor.replace(/\D/g, "");
-      if (soloNumeros.length <= 11) {
-        setDatos((prev) => ({ ...prev, [campo]: soloNumeros }));
-      }
-    } else {
-      setDatos((prev) => ({ ...prev, [campo]: valor }));
+        return;
+      
+      case "nombre_completo":
+        // ✅ Formato inteligente: Primera letra mayúscula, resto minúscula
+        valorFormateado = formatNombreAutomatico(valor);
+        break;
+      
+      case "nombre_emprendimiento":
+        // ✅ Permite espacios normales mientras escribe
+        valorFormateado = formatNombreEmprendimientoFlexible(valor);
+        break;
+      
+      case "telefono":
+        valorFormateado = formatTelefono(valor);
+        break;
+      
+      case "direccion":
+      case "direccion_emprendimiento":
+        valorFormateado = formatDireccion(valor);
+        break;
+      
+      case "usuario":
+        valorFormateado = formatUsuario(valor);
+        break;
+      
+      case "correo":
+        valorFormateado = valor.toLowerCase().trim();
+        break;
+      
+      default:
+        valorFormateado = valor;
     }
+
+    setDatos((prev) => ({ ...prev, [campo]: valorFormateado }));
   };
 
   const validateEmail = (email) => {
@@ -116,11 +254,11 @@ const RegistroEmprendedor = () => {
   };
 
   const validateStep1 = () => {
-    if (!datos.cedula.trim() || datos.cedula.length < 6 || datos.cedula.length > 9) {
+    if (!datos.cedula.trim() || datos.cedula.length < 6) {
       Swal.fire({
         icon: "error",
         title: "Cédula inválida",
-        text: "La cédula debe tener entre 6 y 9 dígitos",
+        text: "La cédula debe tener al menos 6 dígitos",
       });
       return false;
     }
@@ -143,7 +281,18 @@ const RegistroEmprendedor = () => {
       return false;
     }
 
-    if (!datos.telefono.trim() || datos.telefono.length < 10) {
+    // Validar que sea mayor de 18 años
+    if (edadCalculada < 18) {
+      Swal.fire({
+        icon: "error",
+        title: "Edad insuficiente",
+        text: "Debes ser mayor de 18 años para registrarte",
+      });
+      return false;
+    }
+
+    const telefonoLimpio = datos.telefono.replace(/\D/g, "");
+    if (!telefonoLimpio || telefonoLimpio.length < 10) {
       Swal.fire({
         icon: "error",
         title: "Teléfono inválido",
@@ -259,6 +408,17 @@ const RegistroEmprendedor = () => {
       return false;
     }
 
+    // Validar fortaleza de contraseña
+    const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+    if (!strongPassword.test(datos.clave)) {
+      Swal.fire({
+        icon: "error",
+        title: "Contraseña débil",
+        text: "La contraseña debe incluir mayúsculas, minúsculas y números",
+      });
+      return false;
+    }
+
     return true;
   };
 
@@ -288,6 +448,38 @@ const RegistroEmprendedor = () => {
 
   const handleBack = () => {
     if (paso > 1) setPaso(paso - 1);
+  };
+
+  const formatDataForAPI = () => {
+    return {
+      persona: {
+        cedula: datos.cedula,
+        nombre_completo: datos.nombre_completo,
+        fecha_nacimiento: datos.edad,
+        telefono: datos.telefono.replace(/\D/g, ""),
+        email: datos.correo,
+        estado: datos.estado,
+        municipio: datos.municipio,
+        direccion_actual: datos.direccion,
+        tipo_persona: datos.tipo_persona
+      },
+      usuario: {
+        cedula_usuario: datos.cedula,
+        usuario: datos.usuario,
+        clave: datos.clave,
+        estatus: datos.estatus,
+        rol: datos.rol
+      },
+      emprendimiento: {
+        cedula_emprendedor: datos.cedula,
+        tipo_sector: sectorSeleccionado,
+        tipo_negocio: negocioSeleccionado,
+        nombre_emprendimiento: datos.nombre_emprendimiento.toUpperCase().trim(), // ✅ Se convierte a MAYÚSCULAS al guardar
+        consejo_nombre: datos.consejo_nombre,
+        comuna: datos.comuna,
+        direccion_emprendimiento: datos.direccion_emprendimiento || datos.direccion
+      }
+    };
   };
 
   const handleFinalizar = async () => {
@@ -323,43 +515,11 @@ const RegistroEmprendedor = () => {
         console.log("Usuario disponible");
       }
 
-      // Calcular edad desde fecha de nacimiento
-      const edadCalculada = Math.floor(
-        (new Date() - new Date(datos.edad)) / (365.25 * 24 * 60 * 60 * 1000)
-      );
+      const formattedData = formatDataForAPI();
 
-      const personaData = {
-        cedula: datos.cedula,
-        nombre_completo: datos.nombre_completo,
-        edad: datos.edad,
-        telefono: datos.telefono,
-        email: datos.correo,
-        estado: datos.estado,
-        municipio: datos.municipio,
-        direccion_actual: datos.direccion,
-        tipo_persona: datos.tipo_persona,
-      };
-      await personaService.createPersona(personaData);
-
-      const usuarioData = {
-        cedula_usuario: datos.cedula,
-        usuario: datos.usuario,
-        clave: datos.clave,
-        estatus: datos.estatus,
-        rol: datos.rol,
-      };
-      await usuarioService.createUsuario(usuarioData);
-
-      const emprendimientoData = {
-        cedula_emprendedor: datos.cedula,
-        tipo_sector: sectorSeleccionado,
-        tipo_negocio: negocioSeleccionado,
-        nombre_emprendimiento: datos.nombre_emprendimiento,
-        consejo_nombre: datos.consejo_nombre,
-        comuna: datos.comuna,
-        direccion_emprendimiento: datos.direccion_emprendimiento || datos.direccion,
-      };
-      await emprendimientoService.createEmprendimiento(emprendimientoData);
+      await personaService.createPersona(formattedData.persona);
+      await usuarioService.createUsuario(formattedData.usuario);
+      await emprendimientoService.createEmprendimiento(formattedData.emprendimiento);
 
       await Swal.fire({
         icon: "success",
@@ -388,6 +548,33 @@ const RegistroEmprendedor = () => {
     }
   };
 
+  // Componente para mostrar campos formateados
+  const DisplayField = ({ label, value, format = 'text' }) => {
+    const formatValue = (val, fmt) => {
+      switch (fmt) {
+        case 'cedula':
+          return `V-${val}`;
+        case 'telefono':
+          return val;
+        case 'fecha':
+          return formatFecha(val);
+        case 'edad':
+          return `${val} años`;
+        default:
+          return val;
+      }
+    };
+
+    if (!value) return null;
+
+    return (
+      <div className="mb-2 p-2 bg-blue-50 rounded border border-blue-200">
+        <span className="text-sm font-medium text-blue-800">{label}: </span>
+        <span className="text-sm text-blue-900">{formatValue(value, format)}</span>
+      </div>
+    );
+  };
+
   // Renderizar campos del formulario
   const renderPaso1 = () => (
     <motion.div
@@ -401,6 +588,22 @@ const RegistroEmprendedor = () => {
         Datos Personales
       </h3>
       
+      {/* Resumen de datos formateados */}
+      {datos.cedula && (
+        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+          <h4 className="font-medium text-gray-700 mb-2">Resumen:</h4>
+          <DisplayField label="Cédula" value={datos.cedula} format="cedula" />
+          <DisplayField label="Nombre" value={datos.nombre_completo} />
+          {datos.edad && (
+            <>
+              <DisplayField label="Fecha Nac." value={datos.edad} format="fecha" />
+              <DisplayField label="Edad" value={edadCalculada} format="edad" />
+            </>
+          )}
+          <DisplayField label="Teléfono" value={datos.telefono} format="telefono" />
+        </div>
+      )}
+      
       <div className="flex flex-wrap gap-4">
         {/* Cédula */}
         <div className="w-full md:w-[45%]">
@@ -413,17 +616,18 @@ const RegistroEmprendedor = () => {
             value={datos.cedula}
             onChange={(e) => handleChange("cedula", e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-            placeholder="Ingresa tu cédula"
+            placeholder="Ej: 12345678"
             required
             whileFocus={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
           />
+          <span className="text-xs text-gray-500">Solo números (6-8 dígitos)</span>
         </div>
 
         {/* Nombre Completo */}
         <div className="w-full md:w-[45%]">
           <label htmlFor="nombre_completo" className="block mb-1 text-sm font-medium text-gray-600">
-            Nombre Completo
+            Nombre Completo *
           </label>
           <motion.input
             type="text"
@@ -431,11 +635,14 @@ const RegistroEmprendedor = () => {
             value={datos.nombre_completo}
             onChange={(e) => handleChange("nombre_completo", e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-            placeholder="Ingresa tu nombre completo"
+            placeholder="Ej: Maria Jose Gonzalez Rodriguez"
             required
             whileFocus={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
           />
+          <p className="text-gray-500 text-xs mt-1">
+            Se formateará automáticamente a "Primera Letra Mayúscula"
+          </p>
         </div>
 
         {/* Fecha de Nacimiento */}
@@ -452,7 +659,13 @@ const RegistroEmprendedor = () => {
             required
             whileFocus={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
+            max={new Date().toISOString().split('T')[0]}
           />
+          {edadCalculada && (
+            <span className={`text-xs ${edadCalculada < 18 ? 'text-red-500' : 'text-green-600'}`}>
+              Edad: {edadCalculada} años {edadCalculada < 18 ? '(Debe ser mayor de 18)' : ''}
+            </span>
+          )}
         </div>
 
         {/* Teléfono */}
@@ -466,11 +679,12 @@ const RegistroEmprendedor = () => {
             value={datos.telefono}
             onChange={(e) => handleChange("telefono", e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-            placeholder="Ingresa tu teléfono"
+            placeholder="Ej: 0412-123-4567"
             required
             whileFocus={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
           />
+          <span className="text-xs text-gray-500">Formato: 0412-123-4567</span>
         </div>
 
         {/* Correo */}
@@ -484,7 +698,7 @@ const RegistroEmprendedor = () => {
             value={datos.correo}
             onChange={(e) => handleChange("correo", e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-            placeholder="Ingresa tu correo electrónico"
+            placeholder="ejemplo@correo.com"
             required
             whileFocus={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
@@ -543,7 +757,7 @@ const RegistroEmprendedor = () => {
             value={datos.direccion}
             onChange={(e) => handleChange("direccion", e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-            placeholder="Ingresa tu dirección actual"
+            placeholder="Ej: Av. Principal, Edificio Los Pinos"
             required
           />
         </div>
@@ -581,6 +795,30 @@ const RegistroEmprendedor = () => {
       <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
         Datos del Consejo y Emprendimiento
       </h3>
+      
+      {/* Resumen del emprendimiento */}
+      {(sectorSeleccionado || negocioSeleccionado || datos.nombre_emprendimiento) && (
+        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+          <h4 className="font-medium text-gray-700 mb-2">Resumen Emprendimiento:</h4>
+          {sectorSeleccionado && (
+            <DisplayField label="Sector" value={sectorSeleccionado} />
+          )}
+          {negocioSeleccionado && (
+            <DisplayField label="Tipo de Negocio" value={negocioSeleccionado} />
+          )}
+          {datos.nombre_emprendimiento && (
+            <>
+              <DisplayField label="Nombre (como se ve)" value={datos.nombre_emprendimiento} />
+              <div className="mb-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+                <span className="text-sm font-medium text-yellow-800">Se guardará como: </span>
+                <span className="text-sm text-yellow-900 font-medium uppercase">
+                  {datos.nombre_emprendimiento.toUpperCase()}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
       
       <div className="flex flex-wrap gap-4">
         {/* Sector */}
@@ -636,7 +874,7 @@ const RegistroEmprendedor = () => {
         {/* Nombre del Emprendimiento */}
         <div className="w-full">
           <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="nombre_emprendimiento">
-            Nombre del Emprendimiento
+            Nombre del Emprendimiento *
           </label>
           <input
             type="text"
@@ -644,8 +882,12 @@ const RegistroEmprendedor = () => {
             value={datos.nombre_emprendimiento}
             onChange={(e) => handleChange("nombre_emprendimiento", e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-            placeholder="Ingresa el nombre del emprendimiento"
+            placeholder="Ej: Mi Tienda Online, Panadería La Esperanza, etc."
+            required
           />
+          <p className="text-gray-500 text-xs mt-1">
+            ✅ Puedes usar espacios, letras, números y caracteres especiales normalmente
+          </p>
         </div>
 
         {/* Dirección del Emprendimiento */}
@@ -659,8 +901,9 @@ const RegistroEmprendedor = () => {
             value={datos.direccion_emprendimiento}
             onChange={(e) => handleChange("direccion_emprendimiento", e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-            placeholder="Ingresa la dirección del emprendimiento"
+            placeholder="Ej: Av. Bolívar, Local #5"
           />
+          <span className="text-xs text-gray-500">Si es igual a tu dirección personal, déjalo vacío</span>
         </div>
 
         {/* Consejo Nombre */}
@@ -678,7 +921,6 @@ const RegistroEmprendedor = () => {
             <option value="DON JUANCHO">DON JUANCHO</option>
             <option value="ALTO PRADO">ALTO PRADO</option>
             <option value="SECTOR JUVENTUD">SECTOR JUVENTUD</option>
-            {/* ... otros consejos ... */}
           </select>
         </div>
 
@@ -732,6 +974,22 @@ const RegistroEmprendedor = () => {
         Datos de Usuario
       </h3>
       
+      {/* Resumen de credenciales */}
+      {(datos.usuario || datos.clave) && (
+        <div className="bg-gray-50 p-3 rounded-lg mb-4">
+          <h4 className="font-medium text-gray-700 mb-2">Resumen Credenciales:</h4>
+          {datos.usuario && (
+            <DisplayField label="Usuario" value={datos.usuario} />
+          )}
+          {datos.clave && (
+            <div className="mb-2 p-2 bg-blue-50 rounded border border-blue-200">
+              <span className="text-sm font-medium text-blue-800">Contraseña: </span>
+              <span className="text-sm text-blue-900">••••••••</span>
+            </div>
+          )}
+        </div>
+      )}
+      
       {/* Usuario */}
       <div>
         <label className="block mb-1 text-sm font-medium text-gray-600" htmlFor="usuario">
@@ -743,8 +1001,9 @@ const RegistroEmprendedor = () => {
           value={datos.usuario}
           onChange={(e) => handleChange("usuario", e.target.value)}
           className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-          placeholder="Nombre de usuario"
+          placeholder="Ej: maria.gonzalez"
         />
+        <span className="text-xs text-gray-500">Solo letras, números, . y _</span>
       </div>
 
       {/* Contraseña */}
@@ -758,9 +1017,43 @@ const RegistroEmprendedor = () => {
           value={datos.clave}
           onChange={(e) => handleChange("clave", e.target.value)}
           className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1A2C5B]"
-          placeholder="Contraseña"
+          placeholder="Mínimo 6 caracteres"
         />
+        <span className="text-xs text-gray-500">Debe incluir mayúsculas, minúsculas y números</span>
       </div>
+
+      {/* Indicador de fortaleza de contraseña */}
+      {datos.clave && (
+        <div className="max-w-xs">
+          <div className="flex justify-between text-xs mb-1">
+            <span>Fortaleza:</span>
+            <span className={`
+              ${datos.clave.length >= 6 && /[a-z]/.test(datos.clave) && /[A-Z]/.test(datos.clave) && /\d/.test(datos.clave) 
+                ? 'text-green-600' 
+                : 'text-red-600'
+              }
+            `}>
+              {datos.clave.length >= 6 && /[a-z]/.test(datos.clave) && /[A-Z]/.test(datos.clave) && /\d/.test(datos.clave) 
+                ? 'Fuerte' 
+                : 'Débil'
+              }
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className={`
+                h-2 rounded-full 
+                ${datos.clave.length >= 6 && /[a-z]/.test(datos.clave) && /[A-Z]/.test(datos.clave) && /\d/.test(datos.clave) 
+                  ? 'bg-green-600 w-full' 
+                  : datos.clave.length >= 4 
+                  ? 'bg-yellow-500 w-2/3' 
+                  : 'bg-red-500 w-1/3'
+                }
+              `}
+            ></div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-between mt-4 gap-4">
         <motion.button

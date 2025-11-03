@@ -83,46 +83,56 @@ const PerfilOpciones = ({
   onEditarDatos,
   onEditarEmprendimiento,
   onCerrarSesion,
-}) => (
-  <div className="py-2">
-    <button
-      className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
-      onClick={() => { onConfig(); onClose(); }}
-    >
-      <i className="bx bx-cog text-xl mr-3"></i>
-      <span>Configuración</span>
-    </button>
-    <button
-      className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
-      onClick={() => { onVerPerfil(); onClose(); }}
-    >
-      <i className="bx bx-user-circle text-xl mr-3"></i>
-      <span>Ver Perfil</span>
-    </button>
-    <button
-      className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
-      onClick={() => { onEditarDatos(); onClose(); }}
-    >
-      <i className="bx bx-user-pin text-xl mr-3"></i>
-      <span>Datos Personales</span>
-    </button>
-    <button
-      className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
-      onClick={() => { onEditarEmprendimiento(); onClose(); }}
-    >
-      <i className="bx bx-store-alt text-xl mr-3"></i>
-      <span>Mi Emprendimiento</span>
-    </button>
-    <div className="border-t border-gray-200 my-2"></div>
-    <button
-      className="w-full px-4 py-3 flex items-center text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors rounded-md"
-      onClick={() => { onCerrarSesion(); onClose(); }}
-    >
-      <i className="bx bx-log-out-circle text-xl mr-3"></i>
-      <span>Cerrar Sesión</span>
-    </button>
-  </div>
-);
+  usuarioLogueado // Recibir usuarioLogueado como prop
+}) => {
+  // Función para verificar permisos por rol
+  const puedeVer = (rolesPermitidos) => {
+    return usuarioLogueado && rolesPermitidos.includes(usuarioLogueado.rol);
+  };
+
+  return (
+    <div className="py-2">
+      <button
+        className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
+        onClick={() => { onConfig(); onClose(); }}
+      >
+        <i className="bx bx-cog text-xl mr-3"></i>
+        <span>Configuración</span>
+      </button>
+      <button
+        className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
+        onClick={() => { onVerPerfil(); onClose(); }}
+      >
+        <i className="bx bx-user-circle text-xl mr-3"></i>
+        <span>Ver Perfil</span>
+      </button>
+      <button
+        className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
+        onClick={() => { onEditarDatos(); onClose(); }}
+      >
+        <i className="bx bx-user-pin text-xl mr-3"></i>
+        <span>Datos Personales</span>
+      </button>
+      {puedeVer(["Emprendedor"]) && (
+        <button
+          className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
+          onClick={() => { onEditarEmprendimiento(); onClose(); }}
+        >
+          <i className="bx bx-store-alt text-xl mr-3"></i>
+          <span>Mi Emprendimiento</span>
+        </button>
+      )}
+      <div className="border-t border-gray-200 my-2"></div>
+      <button
+        className="w-full px-4 py-3 flex items-center text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors rounded-md"
+        onClick={() => { onCerrarSesion(); onClose(); }}
+      >
+        <i className="bx bx-log-out-circle text-xl mr-3"></i>
+        <span>Cerrar Sesión</span>
+      </button>
+    </div>
+  );
+};
 
 const Header = ({ toggleMenu, menuOpen }) => {
   const navigate = useNavigate();
@@ -135,6 +145,19 @@ const Header = ({ toggleMenu, menuOpen }) => {
   const [notifications, setNotifications] = useState([]);
   const searchRef = useRef(null);
   
+  // Cargar usuario logueado desde localStorage
+  const [usuarioLogueado, setUsuarioLogueado] = useState(null);
+
+  useEffect(() => {
+    const usuario = JSON.parse(localStorage.getItem("usuario")) || null;
+    setUsuarioLogueado(usuario);
+  }, []);
+
+  // Función para verificar permisos por rol
+  const puedeVer = (rolesPermitidos) => {
+    return usuarioLogueado && rolesPermitidos.includes(usuarioLogueado.rol);
+  };
+
   // Usar el hook de logout
   const { confirmLogout } = useLogout();
 
@@ -656,20 +679,6 @@ const Header = ({ toggleMenu, menuOpen }) => {
             >
               <i className="bx bx-home text-xl"></i>
             </button>
-            <button
-              onClick={() => navigate('/solicitudes')}
-              className="p-2 text-white hover:text-indigo-600 transition-colors rounded-lg hover:bg-gray-100"
-              title="Solicitudes"
-            >
-              <i className="bx bx-file text-xl"></i>
-            </button>
-            <button
-              onClick={() => navigate('/mensajes')}
-              className="p-2 text-white hover:text-indigo-600 transition-colors rounded-lg hover:bg-gray-100"
-              title="Mensajes"
-            >
-              <i className="bx bx-chat text-xl"></i>
-            </button>
           </div>
 
           {/* Notificaciones */}
@@ -779,6 +788,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
                   onEditarDatos={handleEditarDatosPersonales}
                   onEditarEmprendimiento={handleEditarEmprendimiento}
                   onCerrarSesion={confirmLogout}
+                  usuarioLogueado={usuarioLogueado}
                 />
               </div>
             )}

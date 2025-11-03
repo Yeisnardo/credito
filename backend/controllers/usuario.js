@@ -52,9 +52,16 @@ router.get('/:cedula_usuario', async (req, res) => {
         u.usuario, 
         u.clave, 
         u.rol, 
-        u.estatus
+        u.estatus,
+        e.tipo_sector,
+        e.tipo_negocio,
+        e.nombre_emprendimiento,
+        e.consejo_nombre,
+        e.comuna,
+        e.direccion_emprendimiento
       FROM usuario u
       LEFT JOIN persona p ON u.cedula_usuario = p.cedula
+      LEFT JOIN emprendimientos e ON u.cedula_usuario = e.cedula_emprendedor
       WHERE u.cedula_usuario = $1`, [cedula_usuario]);
     
     if (resultado.rows.length === 0) {
