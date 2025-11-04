@@ -1,6 +1,29 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 
+// Importar Tabler Icons
+import {
+  TbHome,
+  TbFileText,
+  TbFolderOpen,
+  TbWallet,
+  TbCheckbox,
+  TbCreditCard,
+  TbMoneybag,
+  TbBook,
+  TbCalendar,
+  TbSettings,
+  TbUsers,
+  TbBuildingStore,
+  TbListDetails,
+  TbFileDescription,
+  TbChevronDown,
+  TbChevronUp,
+  TbChevronRight,
+  TbUser,
+  TbCreditCardOff
+} from 'react-icons/tb';
+
 const Menu = ({ onClose }) => {
   // Colores mejorados con mejor contraste y armonía
   const activeClassName = "bg-indigo-100 text-indigo-800 shadow-lg";
@@ -27,7 +50,7 @@ const Menu = ({ onClose }) => {
     comunes: [
       {
         path: "/dashboard",
-        icon: "bx-home",
+        icon: TbHome,
         label: "Pagina principal",
         roles: ["Emprendedor", "Credito1", "Credito2", "Administrador"]
       }
@@ -38,7 +61,7 @@ const Menu = ({ onClose }) => {
       {
         type: "submenu",
         key: "requerimientos",
-        icon: "bx-file",
+        icon: TbFileText,
         label: "Solicitud de crédito",
         roles: ["Emprendedor"],
         subitems: [
@@ -49,7 +72,7 @@ const Menu = ({ onClose }) => {
       {
         type: "submenu",
         key: "historial",
-        icon: "bx-folder-open",
+        icon: TbFolderOpen,
         label: "Seguimiento de crédito",
         roles: ["Emprendedor"],
         subitems: [
@@ -59,7 +82,7 @@ const Menu = ({ onClose }) => {
       },
       {
         path: "/Banco",
-        icon: "bx-wallet",
+        icon: TbWallet,
         label: "Mi banco",
         roles: ["Emprendedor"]
       }
@@ -69,31 +92,31 @@ const Menu = ({ onClose }) => {
     administracion: [
       {
         path: "/Aprobacion",
-        icon: "bx-check-circle",
+        icon: TbCheckbox,
         label: "Revisión y aprobación de solicitud",
         roles: ["Credito2", "Administrador"]
       },
       {
         path: "/Gestion",
-        icon: "bx-credit-card",
+        icon: TbCreditCard,
         label: "Gestión de contrato",
         roles: ["Credito1", "Administrador"]
       },
       {
         path: "/Fondo",
-        icon: "bx-money-withdraw",
+        icon: TbMoneybag,
         label: "Fondo Financiero",
         roles: ["Administrador"]
       },
       {
         path: "/Bitacora",
-        icon: "bx-book-alt",
+        icon: TbBook,
         label: "Bitácora",
         roles: ["Administrador"]
       },
       {
         path: "/AdministracionCuota",
-        icon: "bx bx-calendar-alt",
+        icon: TbCalendar,
         label: "Administración de cuotas",
         roles: ["Administrador", "Credito1"]
       }
@@ -104,7 +127,7 @@ const Menu = ({ onClose }) => {
       {
         type: "submenu",
         key: "gestionEmprend",
-        icon: "bx-cog",
+        icon: TbSettings,
         label: "Configuración",
         roles: ["Administrador"],
         subitems: [
@@ -176,6 +199,7 @@ const Menu = ({ onClose }) => {
     if (!puedeVer(item.roles)) return null;
 
     if (item.type === "submenu") {
+      const IconComponent = item.icon;
       return (
         <div key={item.key}>
           <button
@@ -186,17 +210,11 @@ const Menu = ({ onClose }) => {
                 : `text-gray-700 ${hoverClassName}`
             }`}
           >
-            <i className={`bx ${item.icon} text-xl mr-3`}></i>
+            <IconComponent size={20} className="mr-3" />
             <span className="flex-1 text-sm font-medium text-left">
               {item.label}
             </span>
-            <i
-              className={`bx transition-transform duration-300 text-lg ${
-                openSubmenus[item.key]
-                  ? "bx-chevron-up transform rotate-180"
-                  : "bx-chevron-down"
-              }`}
-            ></i>
+            {openSubmenus[item.key] ? <TbChevronUp size={16} /> : <TbChevronDown size={16} />}
           </button>
           
           {openSubmenus[item.key] && (
@@ -214,7 +232,7 @@ const Menu = ({ onClose }) => {
                     }
                     onClick={onClose}
                   >
-                    <i className="bx bx-chevron-right text-xs mr-2"></i>
+                    <TbChevronRight size={12} className="inline mr-2" />
                     {subitem.label}
                   </NavLink>
                 </div>
@@ -225,6 +243,7 @@ const Menu = ({ onClose }) => {
       );
     }
 
+    const IconComponent = item.icon;
     return (
       <div key={item.path} ref={setLinkRef(item.path)}>
         <NavLink
@@ -238,7 +257,7 @@ const Menu = ({ onClose }) => {
           }
           onClick={onClose}
         >
-          <i className={`bx ${item.icon} text-xl mr-3`}></i>
+          <IconComponent size={20} className="mr-3" />
           <span className="text-sm font-medium">{item.label}</span>
         </NavLink>
       </div>
@@ -253,7 +272,7 @@ const Menu = ({ onClose }) => {
       {/* Logo y nombre de la app */}
       <div className="p-5 border-b border-indigo-200 flex items-center justify-center mt-14">
         <div className="bg-indigo-100 p-2 rounded-lg shadow-sm mr-2">
-          <i className="bx bx-credit-card-front text-gray-900 text-2xl"></i>
+          <TbCreditCardOff size={24} className="text-gray-900" />
         </div>
         <h2 className="text-xl font-bold text-gray-900">Sistema de Microcréditos</h2>
       </div>
@@ -262,7 +281,7 @@ const Menu = ({ onClose }) => {
       {usuarioLogueado && (
         <div className="p-4 border-b border-indigo-200 flex items-center">
           <div className="bg-gray-900 rounded-full h-10 w-10 flex items-center justify-center mr-3">
-            <i className="bx bx-user text-white"></i>
+            <TbUser size={20} className="text-white" />
           </div>
           <div className="overflow-hidden">
             <p className="font-medium truncate text-gray-800">

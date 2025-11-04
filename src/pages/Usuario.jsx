@@ -6,6 +6,19 @@ import Menu from "../components/Menu";
 import personaApi from '../services/api_persona';
 import usuarioApi from '../services/api_usuario';
 
+// Importación de Tabler Icons
+import { 
+  TbX,
+  TbUser,
+  TbPlus,
+  TbSearch,
+  TbEdit,
+  TbTrash,
+  TbCircleCheck,
+  TbAlertCircle,
+  TbLoader
+} from 'react-icons/tb';
+
 // Componente Modal reutilizable
 const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
   if (!isOpen) return null;
@@ -27,9 +40,7 @@ const Modal = ({ isOpen, onClose, title, children, size = "md" }) => {
             onClick={onClose}
             aria-label="Cerrar"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <TbX size={24} />
           </button>
         </div>
         <div className="p-6">{children}</div>
@@ -294,7 +305,7 @@ const Usuario = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 mt-13">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-md">
-                <i className="bx bx-user text-2xl text-indigo-600"></i>
+                <TbUser size={24} className="text-indigo-600" />
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Gestión de Usuarios</h1>
@@ -306,7 +317,7 @@ const Usuario = () => {
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg shadow-md flex items-center space-x-2 transition-colors"
               onClick={handleNuevoPersonal}
             >
-              <i className="bx bx-plus"></i>
+              <TbPlus size={20} />
               <span>Nuevo Usuario</span>
             </button>
           </div>
@@ -322,7 +333,7 @@ const Usuario = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i className="bx bx-search text-gray-400"></i>
+                <TbSearch className="text-gray-400" size={20} />
               </div>
             </div>
           </div>
@@ -356,7 +367,7 @@ const Usuario = () => {
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center">
                         <div className="flex justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                          <TbLoader className="animate-spin text-indigo-600" size={24} />
                         </div>
                         <p className="text-gray-500 mt-2">Cargando usuarios...</p>
                       </td>
@@ -394,7 +405,7 @@ const Usuario = () => {
                               onClick={() => handleEditarUsuario(item)}
                               title="Editar"
                             >
-                              <i className="bx bx-edit text-lg"></i>
+                              <TbEdit size={18} />
                             </button>
                             
                             <button
@@ -402,7 +413,7 @@ const Usuario = () => {
                               onClick={() => handleEliminarUsuario(item)}
                               title="Eliminar"
                             >
-                              <i className="bx bx-trash text-lg"></i>
+                              <TbTrash size={18} />
                             </button>
                             
                             <button
@@ -422,7 +433,7 @@ const Usuario = () => {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-6 py-8 text-center">
-                        <i className="bx bx-user-x text-4xl text-gray-300 mb-2"></i>
+                        <TbUser className="text-gray-300 mx-auto mb-2" size={48} />
                         <p className="text-gray-500">No se encontraron usuarios</p>
                         {searchTerm && (
                           <p className="text-sm text-gray-400 mt-1">
@@ -699,7 +710,7 @@ const Usuario = () => {
         {userToDelete && (
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-              <i className="bx bx-trash text-red-600 text-xl"></i>
+              <TbTrash className="text-red-600" size={24} />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">¿Estás seguro?</h3>
             <p className="text-sm text-gray-500 mb-4">
@@ -736,9 +747,11 @@ const Usuario = () => {
             <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${
               userToToggle.estatus === "Activo" ? "bg-yellow-100" : "bg-green-100"
             }`}>
-              <i className={`bx bx-${userToToggle.estatus === "Activo" ? "x-circle" : "check-circle"} text-xl ${
-                userToToggle.estatus === "Activo" ? "text-yellow-600" : "text-green-600"
-              }`}></i>
+              {userToToggle.estatus === "Activo" ? (
+                <TbAlertCircle className="text-yellow-600" size={24} />
+              ) : (
+                <TbCircleCheck className="text-green-600" size={24} />
+              )}
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               {userToToggle.estatus === "Activo" ? "Desactivar Usuario" : "Activar Usuario"}

@@ -6,6 +6,21 @@ import Menu from "../components/Menu";
 import api, { getUsuarioPorCedula } from "../services/api_usuario";
 import { crearBanco, getCuentaPorCedulaEmprendedor } from "../services/api_banco";
 
+// Importar Tabler Icons
+import {
+  TbWallet,
+  TbPlus,
+  TbId,
+  TbUser,
+  TbBuildingBank,
+  TbCreditCard,
+  TbX,
+  TbChevronDown,
+  TbSearch,
+  TbEdit,
+  TbCheck
+} from 'react-icons/tb';
+
 const Dashboard = ({ setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
@@ -29,7 +44,7 @@ const Dashboard = ({ setUser }) => {
     "Banco Mercantil (0105)",
     "Bancaribe (0114)",
     "Banco Nacional de Crédito - BNC (0191)",
-    "Banco del Teso ro (0163)",
+    "Banco del Tesoro (0163)",
     "Banco Bicentenario (0175)",
     "Banco Exterior (0115)",
     "Banco Sofitasa (0137)",
@@ -256,7 +271,7 @@ const Dashboard = ({ setUser }) => {
           <div className="flex items-center justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4">
               <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
-                <i className="bx bx-wallet text-3xl text-gray-700"></i>
+                <TbWallet size={28} className="text-gray-700" />
               </div>
               <h1 className="text-3xl font-semibold text-gray-800">Mi banco</h1>
             </div>
@@ -270,7 +285,7 @@ const Dashboard = ({ setUser }) => {
                 onClick={handleAgregarBanco}
               >
                 <div className="flex flex-col items-center p-6 text-gray-600">
-                  <i className="bx bx-plus-circle text-4xl mb-2"></i>
+                  <TbPlus size={32} className="mb-2" />
                   <span className="font-semibold">Agregar Banco</span>
                 </div>
               </div>
@@ -295,7 +310,7 @@ const Dashboard = ({ setUser }) => {
                     className="text-gray-500 hover:text-gray-700"
                     aria-label="Cerrar"
                   >
-                    ✖
+                    <TbX size={20} />
                   </button>
                 </div>
                 {/* Formulario */}
@@ -308,31 +323,25 @@ const Dashboard = ({ setUser }) => {
                       onClick={() => setShowDropdown(!showDropdown)}
                     >
                       <span>{bancoSeleccionado || "Selecciona un banco"}</span>
-                      <svg
-                        className={`w-4 h-4 transform transition-transform duration-200 ${
+                      <TbChevronDown 
+                        size={16} 
+                        className={`transform transition-transform duration-200 ${
                           showDropdown ? "rotate-180" : ""
                         }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
+                      />
                     </div>
                     {showDropdown && (
                       <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded max-h-60 overflow-y-auto shadow-lg">
-                        <input
-                          type="text"
-                          placeholder="Buscar..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full px-3 py-2 border-b border-gray-300 focus:outline-none"
-                        />
+                        <div className="flex items-center px-3 py-2 border-b border-gray-300">
+                          <TbSearch size={16} className="text-gray-400 mr-2" />
+                          <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full focus:outline-none"
+                          />
+                        </div>
                         {bancosFiltrados.length > 0 ? (
                           bancosFiltrados.map((banco, index) => (
                             <div
@@ -409,8 +418,9 @@ const Dashboard = ({ setUser }) => {
                 <div className="flex justify-end space-x-2 mt-4">
                   <button
                     onClick={handleCancelar}
-                    className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                    className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 flex items-center"
                   >
+                    <TbX size={16} className="mr-1" />
                     Cancelar
                   </button>
                   <button
@@ -421,9 +431,10 @@ const Dashboard = ({ setUser }) => {
                       });
                       handleGuardarBanco();
                     }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 flex items-center"
                     disabled={!bancoSeleccionado}
                   >
+                    <TbCheck size={16} className="mr-1" />
                     Guardar
                   </button>
                 </div>
@@ -441,8 +452,9 @@ const Dashboard = ({ setUser }) => {
                 </h3>
                 <button
                   onClick={handleEditar}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-xl shadow-md hover:bg-blue-700 transition duration-200"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-xl shadow-md hover:bg-blue-700 transition duration-200 flex items-center"
                 >
+                  <TbEdit size={16} className="mr-1" />
                   Editar
                 </button>
               </div>
@@ -451,7 +463,7 @@ const Dashboard = ({ setUser }) => {
                 {/* Cédula */}
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center shadow-md mr-4 transition hover:bg-purple-200">
-                    <i className="bx bx-id-card text-2xl"></i>
+                    <TbId size={20} />
                   </div>
                   <div>
                     <p className="text-gray-700 font-semibold text-lg">
@@ -463,7 +475,7 @@ const Dashboard = ({ setUser }) => {
                 {/* Nombre */}
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center shadow-md mr-4 transition hover:bg-pink-200">
-                    <i className="bx bx-user text-2xl"></i>
+                    <TbUser size={20} />
                   </div>
                   <div>
                     <p className="text-gray-700 font-semibold text-lg">
@@ -475,7 +487,7 @@ const Dashboard = ({ setUser }) => {
                 {/* Banco */}
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center shadow-md mr-4 transition hover:bg-green-200">
-                    <i className="bx bx-building-house text-2xl"></i>
+                    <TbBuildingBank size={20} />
                   </div>
                   <div>
                     <p className="text-gray-700 font-semibold text-lg">
@@ -487,7 +499,7 @@ const Dashboard = ({ setUser }) => {
                 {/* Número de Cuenta */}
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center shadow-md mr-4 transition hover:bg-yellow-200">
-                    <i className="bx bx-credit-card-front text-2xl"></i>
+                    <TbCreditCard size={20} />
                   </div>
                   <div>
                     <p className="text-gray-700 font-semibold text-lg">
@@ -519,7 +531,7 @@ const Dashboard = ({ setUser }) => {
                 className="text-gray-500 hover:text-gray-700"
                 aria-label="Cerrar"
               >
-                ✖
+                <TbX size={20} />
               </button>
             </div>
             {editBanco && (
@@ -571,31 +583,25 @@ const Dashboard = ({ setUser }) => {
                     onClick={() => setShowDropdown(!showDropdown)}
                   >
                     <span>{editBanco.banco || "Selecciona un banco"}</span>
-                    <svg
-                      className={`w-4 h-4 transform transition-transform duration-200 ${
+                    <TbChevronDown 
+                      size={16} 
+                      className={`transform transition-transform duration-200 ${
                         showDropdown ? "rotate-180" : ""
                       }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                    />
                   </div>
                   {showDropdown && (
                     <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded max-h-60 overflow-y-auto shadow-lg">
-                      <input
-                        type="text"
-                        placeholder="Buscar..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 border-b border-gray-300 focus:outline-none"
-                      />
+                      <div className="flex items-center px-3 py-2 border-b border-gray-300">
+                        <TbSearch size={16} className="text-gray-400 mr-2" />
+                        <input
+                          type="text"
+                          placeholder="Buscar..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full focus:outline-none"
+                        />
+                      </div>
                       {bancosFiltrados.length > 0 ? (
                         bancosFiltrados.map((banco, index) => (
                           <div
@@ -637,14 +643,16 @@ const Dashboard = ({ setUser }) => {
             <div className="flex justify-end space-x-2 mt-4">
               <button
                 onClick={handleCancelarEdicion}
-                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 flex items-center"
               >
+                <TbX size={16} className="mr-1" />
                 Cancelar
               </button>
               <button
                 onClick={handleGuardarEdicion}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
               >
+                <TbCheck size={16} className="mr-1" />
                 Guardar
               </button>
             </div>

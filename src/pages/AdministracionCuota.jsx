@@ -4,6 +4,28 @@ import Header from "../components/Header";
 import Menu from "../components/Menu";
 import apiCuotas from "../services/api_cuotas";
 
+// Importación CORREGIDA de Tabler Icons - solo los que existen
+import { 
+  TbX,
+  TbDownload,
+  TbFile,
+  TbUser,
+  TbClock,
+  TbCurrencyDollar,
+  TbRefresh,
+  TbEye,
+  TbChartBar,
+  TbCalendar,
+  TbCheck,
+  TbCircleCheck,
+  TbAlertCircle,
+  TbClockHour4,
+  TbFileText,
+  TbCreditCard,
+  TbArrowBack,
+  TbLoader
+} from 'react-icons/tb';
+
 // Componente para visualizar el comprobante
 const VisualizarComprobante = ({ comprobantePath, onClose }) => {
   if (!comprobantePath) return null;
@@ -33,7 +55,7 @@ const VisualizarComprobante = ({ comprobantePath, onClose }) => {
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
-              <i className="bx bx-x text-2xl"></i>
+              <TbX size={24} />
             </button>
           </div>
         </div>
@@ -67,15 +89,16 @@ const VisualizarComprobante = ({ comprobantePath, onClose }) => {
             </div>
           ) : (
             <div className="text-center py-8">
-              <i className="bx bx-file text-4xl text-gray-400 mb-4"></i>
+              <TbFile size={48} className="text-gray-400 mb-4 mx-auto" />
               <p className="text-gray-600">Formato de archivo no soportado para vista previa</p>
               <p className="text-sm text-gray-500 mt-2">Ruta: {comprobantePath}</p>
               <a
                 href={comprobanteUrl}
                 download
-                className="inline-block mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                className="inline-block mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center"
               >
-                <i className="bx bx-download mr-2"></i> Descargar Comprobante
+                <TbDownload className="mr-2" size={16} />
+                Descargar Comprobante
               </a>
             </div>
           )}
@@ -87,7 +110,8 @@ const VisualizarComprobante = ({ comprobantePath, onClose }) => {
             download
             className="bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-gray-700 transition-colors"
           >
-            <i className="bx bx-download mr-2"></i> Descargar
+            <TbDownload className="mr-2" size={16} />
+            Descargar
           </a>
           <button
             onClick={onClose}
@@ -114,7 +138,8 @@ const BotonVerComprobante = ({ comprobantePath, onVerComprobante }) => {
       onClick={() => onVerComprobante(comprobantePath)}
       className="bg-blue-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-blue-700 transition-colors text-sm"
     >
-      <i className="bx bx-show mr-1"></i> Ver
+      <TbEye className="mr-1" size={14} />
+      Ver
     </button>
   );
 };
@@ -130,7 +155,7 @@ const StatsCards = ({ stats }) => (
           <p className="text-gray-500 text-sm">Contratos activos</p>
         </div>
         <div className="bg-indigo-100 p-2 rounded-full">
-          <i className="bx bx-file text-2xl text-indigo-600"></i>
+          <TbFile size={24} className="text-indigo-600" />
         </div>
       </div>
     </div>
@@ -143,7 +168,7 @@ const StatsCards = ({ stats }) => (
           <p className="text-gray-500 text-sm">Con contratos activos</p>
         </div>
         <div className="bg-green-100 p-2 rounded-full">
-          <i className="bx bx-user-check text-2xl text-green-600"></i>
+          <TbUser size={24} className="text-green-600" />
         </div>
       </div>
     </div>
@@ -156,7 +181,7 @@ const StatsCards = ({ stats }) => (
           <p className="text-gray-500 text-sm">Por cobrar</p>
         </div>
         <div className="bg-amber-100 p-2 rounded-full">
-          <i className="bx bx-time text-2xl text-amber-600"></i>
+          <TbClock size={24} className="text-amber-600" />
         </div>
       </div>
     </div>
@@ -169,7 +194,7 @@ const StatsCards = ({ stats }) => (
           <p className="text-gray-500 text-sm">Monto total</p>
         </div>
         <div className="bg-purple-100 p-2 rounded-full">
-          <i className="bx bx-dollar-circle text-2xl text-purple-600"></i>
+          <TbCurrencyDollar size={24} className="text-purple-600" />
         </div>
       </div>
     </div>
@@ -189,7 +214,7 @@ const ContratosList = ({ contratos, loading, onVerCuotas, onGenerarReporte, onRe
           onClick={onRefresh}
           disabled={loading}
         >
-          <i className="bx bx-refresh mr-2"></i>
+          <TbRefresh className="mr-2" size={16} />
           {loading ? 'Actualizando...' : 'Actualizar'}
         </button>
       </div>
@@ -198,7 +223,7 @@ const ContratosList = ({ contratos, loading, onVerCuotas, onGenerarReporte, onRe
     <div className="space-y-4">
       {contratos.length === 0 ? (
         <div className="text-center py-8">
-          <i className="bx bx-file text-4xl text-gray-400 mb-4"></i>
+          <TbFile size={48} className="text-gray-400 mb-4 mx-auto" />
           <p className="text-gray-600">No hay contratos activos</p>
         </div>
       ) : (
@@ -220,15 +245,15 @@ const ContratosList = ({ contratos, loading, onVerCuotas, onGenerarReporte, onRe
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
-                    <i className="bx bx-calendar mr-2"></i>
+                    <TbCalendar className="mr-2" size={16} />
                     Desde: {new Date(contrato.fecha_desde).toLocaleDateString()}
                   </div>
                   <div className="flex items-center">
-                    <i className="bx bx-dollar mr-2"></i>
+                    <TbCurrencyDollar className="mr-2" size={16} />
                     Monto: ${contrato.monto_devolver}
                   </div>
                   <div className="flex items-center">
-                    <i className="bx bx-calendar mr-2"></i>
+                    <TbCalendar className="mr-2" size={16} />
                     Hasta: {new Date(contrato.fecha_hasta).toLocaleDateString()}
                   </div>
                 </div>
@@ -240,13 +265,15 @@ const ContratosList = ({ contratos, loading, onVerCuotas, onGenerarReporte, onRe
                   onClick={() => onVerCuotas(contrato.id_contrato)}
                   disabled={loading}
                 >
-                  <i className="bx bx-show mr-1"></i> Ver Cuotas
+                  <TbEye className="mr-1" size={14} />
+                  Ver Cuotas
                 </button>
                 <button 
                   className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700 transition-colors text-sm"
                   onClick={() => onGenerarReporte(contrato.id_contrato)}
                 >
-                  <i className="bx bx-bar-chart-alt mr-1"></i> Reporte
+                  <TbChartBar className="mr-1" size={14} />
+                  Reporte
                 </button>
               </div>
             </div>
@@ -301,7 +328,7 @@ const EstadoCronometro = ({ cuota }) => {
   if (cuota.estado_cuota === "Pagado") {
     return (
       <span className="text-green-600 font-semibold flex items-center text-xs">
-        <i className="bx bx-check-circle text-sm mr-1"></i>
+        <TbCircleCheck size={14} className="mr-1" />
         Pagado
       </span>
     );
@@ -310,7 +337,7 @@ const EstadoCronometro = ({ cuota }) => {
   if (diasRest > 0) {
     return (
       <span className={`font-semibold ${getDiasRestantesStyle(diasRest)} flex items-center text-xs`}>
-        <i className="bx bx-timer text-sm mr-1"></i>
+        <TbClock size={14} className="mr-1" />
         {diasRest} días
       </span>
     );
@@ -319,7 +346,7 @@ const EstadoCronometro = ({ cuota }) => {
   if (diasMora > 0) {
     return (
       <span className={`font-semibold ${getDiasMorosidadStyle(diasMora)} flex items-center text-xs`}>
-        <i className="bx bx-error-alt text-sm mr-1"></i>
+        <TbAlertCircle size={14} className="mr-1" />
         {diasMora} días mora
       </span>
     );
@@ -327,7 +354,7 @@ const EstadoCronometro = ({ cuota }) => {
   
   return (
     <span className="text-orange-600 font-semibold flex items-center text-xs">
-      <i className="bx bx-time-five text-sm mr-1"></i>
+      <TbClockHour4 size={14} className="mr-1" />
       Vencido hoy
     </span>
   );
@@ -362,10 +389,6 @@ const generarNombreCuota = (numeroCuota, frecuencia) => {
       return `Cuota ${numeroCuota}`;
   }
 };
-
-
-
-
 
 // Componente de Tabla de Cuotas
 const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago, contratoSeleccionado }) => {
@@ -404,7 +427,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
     return diffDays > 0 ? diffDays : 0;
   };
 
-  // ✅ FUNCIÓN MODIFICADA: Usa SOLO el valor de mora del contrato
   const calcularInteresMora = (monto, diasMora) => {
     if (!contratoSeleccionado || !contratoSeleccionado.morosidad || diasMora <= 0) return 0;
     const porcentajeDiario = parseFloat(contratoSeleccionado.morosidad) / 100;
@@ -434,7 +456,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-100 p-2 rounded-full">
-                <i className="bx bx-time-five text-xl text-blue-600"></i>
+                <TbClockHour4 size={20} className="text-blue-600" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-blue-800">Pagos por Confirmar</h3>
@@ -480,14 +502,16 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                           onClick={() => onConfirmarPago(cuota.id_cuota)}
                           disabled={loading}
                         >
-                          <i className="bx bx-check mr-1"></i> Confirmar
+                          <TbCheck className="mr-1" size={14} />
+                          Confirmar
                         </button>
                         <button
                           className="bg-red-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-red-700 transition-colors text-sm"
                           onClick={() => onRechazarPago(cuota.id_cuota)}
                           disabled={loading}
                         >
-                          <i className="bx bx-x mr-1"></i> Rechazar
+                          <TbX className="mr-1" size={14} />
+                          Rechazar
                         </button>
                       </div>
                     </td>
@@ -504,7 +528,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
           <h3 className="text-lg font-semibold text-gray-800">
             Todas las Cuotas {loading && <span className="text-sm text-gray-500">(Cargando...)</span>}
           </h3>
-          {/* ✅ MOSTRAR TASA DE MORA DEL CONTRATO */}
           {contratoSeleccionado?.morosidad && (
             <div className="text-sm text-orange-600 font-medium">
               Tasa de mora: {contratoSeleccionado.morosidad}% diario
@@ -559,12 +582,12 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                       <td className="py-3 px-4">
                         <div className="text-xs">
                           <div className="flex items-center text-green-600 mb-1">
-                            <i className="bx bx-calendar-plus mr-1 text-xs"></i>
+                            <TbCalendar size={12} className="mr-1" />
                             <span className="font-medium">Desde:</span>
                             <span className="ml-1">{formatearFecha(cuota.fecha_desde)}</span>
                           </div>
                           <div className="flex items-center text-red-600">
-                            <i className="bx bx-calendar-minus mr-1 text-xs"></i>
+                            <TbCalendar size={12} className="mr-1" />
                             <span className="font-medium">Hasta:</span>
                             <span className="ml-1">{formatearFecha(cuota.fecha_hasta)}</span>
                           </div>
@@ -660,14 +683,16 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                               onClick={() => onConfirmarPago(cuota.id_cuota)}
                               disabled={loading}
                             >
-                              <i className="bx bx-check mr-1"></i> Confirmar Pago
+                              <TbCheck className="mr-1" size={14} />
+                              Confirmar Pago
                             </button>
                             <button
                               className="bg-red-600 text-white px-3 py-2 rounded-lg flex items-center justify-center hover:bg-red-700 transition-colors text-sm w-full"
                               onClick={() => onRechazarPago(cuota.id_cuota)}
                               disabled={loading}
                             >
-                              <i className="bx bx-x mr-1"></i> Rechazar Pago
+                              <TbX className="mr-1" size={14} />
+                              Rechazar Pago
                             </button>
                           </div>
                         )}
@@ -679,7 +704,8 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                               onClick={() => onConfirmarPago(cuota.id_cuota)}
                               disabled={loading}
                             >
-                              <i className="bx bx-check-double mr-1"></i> Confirmar Pago
+                              <TbCheck className="mr-1" size={14} />
+                              Confirmar Pago
                             </button>
                             <span className="text-blue-600 text-xs text-center">
                               Esperando confirmación
@@ -690,7 +716,8 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         {cuota.confirmacionifemi === 'Confirmado' && (
                           <div className="text-center">
                             <span className="text-green-600 text-sm flex items-center justify-center mb-1">
-                              <i className="bx bx-check-circle mr-1"></i> Confirmado
+                              <TbCircleCheck className="mr-1" size={14} />
+                              Confirmado
                             </span>
                             <button
                               className="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700 transition-colors"
@@ -705,7 +732,8 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         {cuota.confirmacionifemi === 'Rechazado' && (
                           <div className="text-center">
                             <span className="text-red-600 text-sm flex items-center justify-center mb-1">
-                              <i className="bx bx-x-circle mr-1"></i> Rechazado
+                              <TbX className="mr-1" size={14} />
+                              Rechazado
                             </span>
                             <button
                               className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors"
@@ -722,7 +750,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                             <span className={`text-sm flex items-center justify-center mb-1 ${
                               diasMora > 0 ? 'text-red-600' : 'text-amber-600'
                             }`}>
-                              <i className={`bx ${diasMora > 0 ? 'bx-error-alt' : 'bx-time'} mr-1`}></i>
+                              <TbAlertCircle className="mr-1" size={14} />
                               {diasMora > 0 ? 'En mora' : 'Pendiente de pago'}
                             </span>
                             {diasMora > 0 && (
@@ -739,7 +767,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                             onClick={() => onConfirmarPago(cuota.id_cuota)}
                             disabled={loading}
                           >
-                            <i className="bx bx-check mr-1"></i> 
+                            <TbCheck className="mr-1" size={14} />
                             {cuota.confirmacionifemi === 'A Recibido' ? 'Confirmar' : 'Marcar como Confirmado'}
                           </button>
                         )}
@@ -773,13 +801,11 @@ const AdminDashboard = ({ setUser }) => {
   });
   const [loading, setLoading] = useState(false);
   
-  // ESTADO QUE PERSISTE EN LOCALSTORAGE
   const [contratosRecalculados, setContratosRecalculados] = useState(() => {
     const saved = localStorage.getItem('contratosRecalculados');
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
-  // Efecto para guardar en localStorage cuando cambie contratosRecalculados
   useEffect(() => {
     localStorage.setItem('contratosRecalculados', JSON.stringify([...contratosRecalculados]));
   }, [contratosRecalculados]);
@@ -802,7 +828,6 @@ const AdminDashboard = ({ setUser }) => {
           if (setUser) setUser(usuario);
           
           await cargarDatosReales();
-          // ✅ ELIMINADA la llamada a cargarConfiguracion
         }
       } catch (error) {
         console.error('Error al obtener datos:', error);
@@ -812,56 +837,47 @@ const AdminDashboard = ({ setUser }) => {
     if (!user) fetchUserData();
   }, [setUser, user]);
 
- const extraerNumeroCuota = (textoCuota) => {
-  if (!textoCuota) return 1;
-  
-  // Extraer número de diferentes formatos: "Semana 1", "Día 5", "Quincena 3", "Mes 2"
-  const match = textoCuota.match(/(\d+)/);
-  return match ? parseInt(match[1]) : 1;
-};
-  
-
-  
+  const extraerNumeroCuota = (textoCuota) => {
+    if (!textoCuota) return 1;
+    const match = textoCuota.match(/(\d+)/);
+    return match ? parseInt(match[1]) : 1;
+  };
 
   const calcularFechasCuotas = (contratoData, cuotasData) => {
-  if (!contratoData) return cuotasData;
+    if (!contratoData) return cuotasData;
 
-  const fechaInicioContrato = new Date(contratoData.fecha_desde);
-  const frecuencia = contratoData.frecuencia_pago_contrato;
-  const diasPorPeriodo = calcularDiasPorFrecuencia(frecuencia);
-  
-  const cuotasConFechas = [];
-  
-  cuotasData.forEach((cuota) => {
-    // Si ya tiene fechas, las respetamos
-    if (cuota.fecha_desde && cuota.fecha_hasta) {
-      cuotasConFechas.push(cuota);
-      return;
-    }
-
-    // Extraer número de cuota del nombre
-    const numeroCuota = extraerNumeroCuota(cuota.semana);
+    const fechaInicioContrato = new Date(contratoData.fecha_desde);
+    const frecuencia = contratoData.frecuencia_pago_contrato;
+    const diasPorPeriodo = calcularDiasPorFrecuencia(frecuencia);
     
-    // Calcular fechas según frecuencia
-    const fechaDesde = new Date(fechaInicioContrato);
-    fechaDesde.setDate(fechaInicioContrato.getDate() + ((numeroCuota - 1) * diasPorPeriodo));
+    const cuotasConFechas = [];
     
-    const fechaHasta = new Date(fechaDesde);
-    fechaHasta.setDate(fechaDesde.getDate() + diasPorPeriodo);
+    cuotasData.forEach((cuota) => {
+      if (cuota.fecha_desde && cuota.fecha_hasta) {
+        cuotasConFechas.push(cuota);
+        return;
+      }
 
-    // Generar nombre correcto de la cuota
-    const nombreCuota = generarNombreCuota(numeroCuota, frecuencia);
+      const numeroCuota = extraerNumeroCuota(cuota.semana);
+      
+      const fechaDesde = new Date(fechaInicioContrato);
+      fechaDesde.setDate(fechaInicioContrato.getDate() + ((numeroCuota - 1) * diasPorPeriodo));
+      
+      const fechaHasta = new Date(fechaDesde);
+      fechaHasta.setDate(fechaDesde.getDate() + diasPorPeriodo);
 
-    cuotasConFechas.push({
-      ...cuota,
-      semana: nombreCuota, // Actualizar nombre según frecuencia
-      fecha_desde: fechaDesde.toISOString().split('T')[0],
-      fecha_hasta: fechaHasta.toISOString().split('T')[0]
+      const nombreCuota = generarNombreCuota(numeroCuota, frecuencia);
+
+      cuotasConFechas.push({
+        ...cuota,
+        semana: nombreCuota,
+        fecha_desde: fechaDesde.toISOString().split('T')[0],
+        fecha_hasta: fechaHasta.toISOString().split('T')[0]
+      });
     });
-  });
 
-  return cuotasConFechas;
-};
+    return cuotasConFechas;
+  };
 
   const cargarCuotasContrato = async (id_contrato) => {
     try {
@@ -987,7 +1003,6 @@ const AdminDashboard = ({ setUser }) => {
     try {
       setLoading(true);
       
-      // Verificar que el contrato tenga los datos necesarios
       if (!contratoSeleccionado.frecuencia_pago_contrato || !contratoSeleccionado.cuotas) {
         alert('El contrato no tiene la configuración necesaria para recalcular cuotas');
         setLoading(false);
@@ -1000,7 +1015,7 @@ const AdminDashboard = ({ setUser }) => {
         `• Frecuencia: ${contratoSeleccionado.frecuencia_pago_contrato}\n` +
         `• Total de cuotas: ${contratoSeleccionado.cuotas}\n` +
         `• Cuotas de gracia: ${contratoSeleccionado.gracia || 0}\n` +
-        `• Tasa de mora: ${contratoSeleccionado.morosidad || 0}%\n` + // ✅ Usa morosidad del contrato
+        `• Tasa de mora: ${contratoSeleccionado.morosidad || 0}%\n` +
         `• Monto por cuota: $${contratoSeleccionado.monto_cuota}\n\n` +
         `Esta acción eliminará todas las cuotas pendientes y las recreará según la configuración del contrato.`
       );
@@ -1014,7 +1029,6 @@ const AdminDashboard = ({ setUser }) => {
         contratoSeleccionado.id_contrato
       );
 
-      // ✅ MARCAR ESTE CONTRATO COMO RECALCULADO Y PERSISTIR EN LOCALSTORAGE
       setContratosRecalculados(prev => {
         const nuevoSet = new Set(prev);
         nuevoSet.add(contratoSeleccionado.id_contrato);
@@ -1032,7 +1046,6 @@ const AdminDashboard = ({ setUser }) => {
     }
   };
 
-  // FUNCIÓN PARA VERIFICAR SI UN CONTRATO YA FUE RECALCULADO
   const fueRecalculado = (idContrato) => {
     return contratosRecalculados.has(idContrato);
   };
@@ -1066,11 +1079,11 @@ const AdminDashboard = ({ setUser }) => {
             onClick={() => setVista('contratos')}
             disabled={loading}
           >
-            <i className="bx bx-arrow-back text-xl text-indigo-600"></i>
+            <TbArrowBack size={20} className="text-indigo-600" />
           </button>
         )}
         <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
-          <i className={`bx ${showBackButton ? 'bx-credit-card' : 'bx-file-alt'} text-2xl text-indigo-600`}></i>
+          <TbFileText size={24} className="text-indigo-600" />
         </div>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{title}</h1>
@@ -1105,7 +1118,7 @@ const AdminDashboard = ({ setUser }) => {
                 onClick={cargarDatosReales}
                 disabled={loading}
               >
-                <i className="bx bx-refresh mr-2"></i> 
+                <TbRefresh className="mr-2" size={16} />
                 {loading ? 'Actualizando...' : 'Actualizar'}
               </button>
             </div>
@@ -1139,10 +1152,10 @@ const AdminDashboard = ({ setUser }) => {
     const montoTotal = parseFloat(contratoSeleccionado.monto_devolver || 0);
 
     const contratoStats = [
-      { label: "Total Contrato", value: `$${montoTotal}`, color: "indigo", icon: "bx-file" },
-      { label: "Pagado", value: `$${totalPagado.toFixed(2)}`, color: "green", icon: "bx-check-circle" },
-      { label: "Pendiente", value: `$${(montoTotal - totalPagado).toFixed(2)}`, color: "amber", icon: "bx-time" },
-      { label: "Por Confirmar", value: `${cuotasPorConfirmar.length}`, color: "blue", icon: "bx-time-five" }
+      { label: "Total Contrato", value: `$${montoTotal}`, color: "indigo", icon: TbFile },
+      { label: "Pagado", value: `$${totalPagado.toFixed(2)}`, color: "green", icon: TbCircleCheck },
+      { label: "Pendiente", value: `$${(montoTotal - totalPagado).toFixed(2)}`, color: "amber", icon: TbClock },
+      { label: "Por Confirmar", value: `${cuotasPorConfirmar.length}`, color: "blue", icon: TbClockHour4 }
     ];
 
     return (
@@ -1160,17 +1173,17 @@ const AdminDashboard = ({ setUser }) => {
             >
               <div className="flex space-x-3">
                 <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors">
-                  <i className="bx bx-download mr-2"></i> Exportar
+                  <TbDownload className="mr-2" size={16} />
+                  Exportar
                 </button>
                 
-                {/* ✅ SOLO MOSTRAR BOTÓN SI ESTE CONTRATO NO HA SIDO RECALCULADO */}
                 {!fueRecalculado(contratoSeleccionado.id_contrato) && (
                   <button 
                     className="bg-amber-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-amber-600 transition-colors"
                     onClick={recalcularCuotas}
                     disabled={loading}
                   >
-                    <i className="bx bx-refresh mr-2"></i> 
+                    <TbRefresh className="mr-2" size={16} />
                     {loading ? 'Procesando...' : 'Generar cuotas'}
                   </button>
                 )}
@@ -1178,22 +1191,24 @@ const AdminDashboard = ({ setUser }) => {
             </HeaderSection>
 
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {contratoStats.map((stat, index) => (
-                <div key={index} className={`bg-white rounded-xl shadow-sm p-6 border-l-4 border-${stat.color}-500`}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-700 mb-2">{stat.label}</h2>
-                      <p className={`text-2xl font-bold text-${stat.color}-600`}>{stat.value}</p>
-                    </div>
-                    <div className={`bg-${stat.color}-100 p-2 rounded-full`}>
-                      <i className={`bx ${stat.icon} text-xl text-${stat.color}-600`}></i>
+              {contratoStats.map((stat, index) => {
+                const IconComponent = stat.icon;
+                return (
+                  <div key={index} className={`bg-white rounded-xl shadow-sm p-6 border-l-4 border-${stat.color}-500`}>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-700 mb-2">{stat.label}</h2>
+                        <p className={`text-2xl font-bold text-${stat.color}-600`}>{stat.value}</p>
+                      </div>
+                      <div className={`bg-${stat.color}-100 p-2 rounded-full`}>
+                        <IconComponent size={20} className={`text-${stat.color}-600`} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </section>
 
-            {/* ✅ PASA SOLO contratoSeleccionado, NO configuracion */}
             <CuotasTable 
               cuotasContrato={cuotasContrato}
               loading={loading}
@@ -1221,7 +1236,7 @@ const AdminDashboard = ({ setUser }) => {
     <div className="flex min-h-screen bg-gray-50 font-sans">
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <i className="bx bx-loader-circle bx-spin text-4xl text-indigo-600 mb-4"></i>
+          <TbLoader className="animate-spin text-4xl text-indigo-600 mb-4 mx-auto" />
           <p className="text-gray-600">Cargando panel de administración...</p>
         </div>
       </div>

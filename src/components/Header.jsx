@@ -4,6 +4,24 @@ import Swal from 'sweetalert2';
 import api, { getUsuarioPorCedula } from '../services/api_usuario';
 import logo from '../assets/imagenes/logo_header.jpg';
 
+// Importar Tabler Icons
+import { 
+  TbMenu2, 
+  TbX, 
+  TbSearch, 
+  TbBell, 
+  TbUser, 
+  TbChevronDown,
+  TbHome,
+  TbLogout,
+  TbSettings,
+  TbUserCircle,
+  TbUserEdit,
+  TbBuildingStore,
+  TbCheck,
+  TbCircle
+} from 'react-icons/tb';
+
 // Hook personalizado para logout
 const useLogout = () => {
   const navigate = useNavigate();
@@ -96,21 +114,21 @@ const PerfilOpciones = ({
         className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
         onClick={() => { onConfig(); onClose(); }}
       >
-        <i className="bx bx-cog text-xl mr-3"></i>
+        <TbSettings size={20} className="mr-3" />
         <span>Configuración</span>
       </button>
       <button
         className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
         onClick={() => { onVerPerfil(); onClose(); }}
       >
-        <i className="bx bx-user-circle text-xl mr-3"></i>
+        <TbUserCircle size={20} className="mr-3" />
         <span>Ver Perfil</span>
       </button>
       <button
         className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
         onClick={() => { onEditarDatos(); onClose(); }}
       >
-        <i className="bx bx-user-pin text-xl mr-3"></i>
+        <TbUserEdit size={20} className="mr-3" />
         <span>Datos Personales</span>
       </button>
       {puedeVer(["Emprendedor"]) && (
@@ -118,7 +136,7 @@ const PerfilOpciones = ({
           className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
           onClick={() => { onEditarEmprendimiento(); onClose(); }}
         >
-          <i className="bx bx-store-alt text-xl mr-3"></i>
+          <TbBuildingStore size={20} className="mr-3" />
           <span>Mi Emprendimiento</span>
         </button>
       )}
@@ -127,7 +145,7 @@ const PerfilOpciones = ({
         className="w-full px-4 py-3 flex items-center text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors rounded-md"
         onClick={() => { onCerrarSesion(); onClose(); }}
       >
-        <i className="bx bx-log-out-circle text-xl mr-3"></i>
+        <TbLogout size={20} className="mr-3" />
         <span>Cerrar Sesión</span>
       </button>
     </div>
@@ -413,7 +431,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
             <!-- Información Personal -->
             <div>
               <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                <i class="bx bx-user-circle mr-2 text-indigo-600"></i>
+                <div class="mr-2 text-indigo-600">👤</div>
                 Información Personal
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -432,7 +450,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
             <!-- Información de Cuenta -->
             <div>
               <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                <i class="bx bx-user-check mr-2 text-indigo-600"></i>
+                <div class="mr-2 text-indigo-600">✓</div>
                 Información de Cuenta
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -453,7 +471,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
             <!-- Información del Emprendimiento -->
             <div>
               <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                <i class="bx bx-store-alt mr-2 text-indigo-600"></i>
+                <div class="mr-2 text-indigo-600">🏪</div>
                 Información del Emprendimiento
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -631,7 +649,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
             className="text-gray-600 hover:text-indigo-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
             aria-label="Toggle menu"
           >
-            <i className={`bx text-2xl ${menuOpen ? "bx-x" : "bx-menu"}`}></i>
+            {menuOpen ? <TbX size={24} /> : <TbMenu2 size={24} />}
           </button>
           
           <div className="flex items-center space-x-3">
@@ -657,7 +675,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
               onClick={() => setSearchOpen(!searchOpen)}
               className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 ${searchOpen ? '' : 'left-1/2 -translate-x-1/2'}`}
             >
-              <i className="bx bx-search text-xl"></i>
+              <TbSearch size={20} />
             </button>
           </div>
         </div>
@@ -666,7 +684,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
         <div className="flex items-center space-x-3">
           {/* Indicador de conexión */}
           <div className="hidden md:flex items-center mr-2">
-            <div className={`w-3 h-3 rounded-full mr-2 ${onlineStatus ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <TbCircle size={12} className={`mr-2 ${onlineStatus ? 'text-green-500' : 'text-red-500'}`} />
             <span className="text-xs text-white">{onlineStatus ? 'En línea' : 'Sin conexión'}</span>
           </div>
 
@@ -677,7 +695,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
               className="p-2 text-white hover:text-indigo-600 transition-colors rounded-lg hover:bg-gray-100"
               title="Dashboard"
             >
-              <i className="bx bx-home text-xl"></i>
+              <TbHome size={20} />
             </button>
           </div>
 
@@ -688,7 +706,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
               className="relative p-2 text-white hover:text-indigo-600 transition-colors rounded-lg hover:bg-gray-100"
               aria-label="Notificaciones"
             >
-              <i className="bx bx-bell text-2xl"></i>
+              <TbBell size={22} />
               {unreadNotificationsCount > 0 && (
                 <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                   {unreadNotificationsCount}
@@ -717,7 +735,9 @@ const Header = ({ toggleMenu, menuOpen }) => {
                         onClick={() => markNotificationAsRead(notification.id)}
                       >
                         <div className="flex items-start">
-                          <div className={`mr-3 mt-1 w-2 h-2 rounded-full ${notification.read ? 'bg-gray-300' : 'bg-blue-500'}`}></div>
+                          <div className={`mr-3 mt-1 ${notification.read ? 'text-gray-300' : 'text-blue-500'}`}>
+                            <TbCircle size={8} fill={notification.read ? 'currentColor' : 'currentColor'} />
+                          </div>
                           <div className="flex-1">
                             <p className={`text-sm font-medium ${notification.read ? 'text-gray-700' : 'text-gray-900'}`}>
                               {notification.title}
@@ -754,7 +774,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
               aria-label="Perfil"
             >
               <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                <i className="bx bx-user text-xl text-indigo-600"></i>
+                <TbUser size={20} className="text-indigo-600" />
               </div>
               <div className="hidden lg:block text-left">
                 <p className="text-sm font-medium truncate max-w-xs">
@@ -764,7 +784,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
                   {user?.rol || "Rol no asignado"}
                 </p>
               </div>
-              <i className={`bx bx-chevron-down text-xl transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`}></i>
+              <TbChevronDown size={18} className={`transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {profileMenuOpen && (
@@ -772,7 +792,7 @@ const Header = ({ toggleMenu, menuOpen }) => {
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <i className="bx bx-user text-2xl text-indigo-600"></i>
+                      <TbUser size={24} className="text-indigo-600" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">{user?.nombre_completo || "Usuario"}</p>

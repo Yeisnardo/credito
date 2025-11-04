@@ -2,6 +2,36 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
+// Importar Tabler Icons
+import {
+  TbX,
+  TbCheck,
+  TbPhoto,
+  TbDownload,
+  TbExternalLink,
+  TbRefresh,
+  TbZoomIn,
+  TbUser,
+  TbId,
+  TbFileText,
+  TbSearch,
+  TbFilter,
+  TbCircleCheck,
+  TbClock,
+  TbAlertCircle,
+  TbChevronDown,
+  TbStar,
+  TbBuildingStore,
+  TbBuilding,
+  TbCreditCard,
+  TbEdit,
+  TbTrash,
+  TbPlus,
+  TbHome,
+  TbMenu,
+  TbLogout,
+} from "react-icons/tb";
+
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
@@ -24,7 +54,7 @@ const ModalImagen = ({ imagenUrl, isOpen, onClose }) => {
           onClick={onClose}
           className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl transition-all hover:scale-110 bg-black/50 p-2 rounded-lg z-10"
         >
-          <i className="bx bx-x"></i>
+          <TbX size={24} />
         </button>
 
         {/* Controles de imagen */}
@@ -38,14 +68,14 @@ const ModalImagen = ({ imagenUrl, isOpen, onClose }) => {
             }}
             className="hover:text-blue-300 transition-colors flex items-center gap-2"
           >
-            <i className="bx bx-download"></i>
+            <TbDownload size={16} />
             Descargar
           </button>
           <button
             onClick={() => window.open(imagenUrl, '_blank')}
             className="hover:text-green-300 transition-colors flex items-center gap-2"
           >
-            <i className="bx bx-link-external"></i>
+            <TbExternalLink size={16} />
             Abrir en nueva pestaña
           </button>
         </div>
@@ -147,16 +177,16 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
   return (
     <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
       <div className="flex items-center gap-2 mb-4">
-        <i className="bx bx-image text-gray-600"></i>
+        <TbPhoto size={20} className="text-gray-600" />
         <h3 className="font-semibold text-gray-800">Imagen del Documento</h3>
         {imagenArchivo && (
-          <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">
-            <i className="bx bx-check"></i> Disponible
+          <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2 flex items-center gap-1">
+            <TbCheck size={12} /> Disponible
           </span>
         )}
         {errorImagen && (
-          <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded-full ml-2">
-            <i className="bx bx-error"></i> Error
+          <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded-full ml-2 flex items-center gap-1">
+            <TbAlertCircle size={12} /> Error
           </span>
         )}
       </div>
@@ -168,14 +198,14 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
         </div>
       ) : errorImagen ? (
         <div className="text-center text-gray-500 py-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
-          <i className="bx bx-error text-2xl mb-2 text-amber-500"></i>
+          <TbAlertCircle size={24} className="mb-2 text-amber-500 mx-auto" />
           <p className="text-sm font-medium mb-1">No se pudo cargar la imagen</p>
           <p className="text-xs text-gray-400 mb-3">{errorImagen}</p>
           <button 
             onClick={cargarImagen}
             className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium py-1 px-3 rounded-lg transition-all flex items-center gap-1 mx-auto"
           >
-            <i className="bx bx-refresh"></i>
+            <TbRefresh size={12} />
             Reintentar
           </button>
         </div>
@@ -196,7 +226,7 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
             />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div className="bg-black/50 text-white px-3 py-1 rounded-lg flex items-center gap-1 text-sm">
-                <i className="bx bx-zoom-in"></i>
+                <TbZoomIn size={14} />
                 <span>Haz clic para ampliar</span>
               </div>
             </div>
@@ -206,14 +236,14 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
               onClick={() => setModalImagen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
             >
-              <i className="bx bx-zoom-in"></i>
+              <TbZoomIn size={12} />
               Ver imagen
             </button>
             <button
               onClick={() => window.open(imagenArchivo, '_blank')}
               className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
             >
-              <i className="bx bx-link-external"></i>
+              <TbExternalLink size={12} />
               Abrir en pestaña
             </button>
             <button
@@ -225,14 +255,14 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
               }}
               className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
             >
-              <i className="bx bx-download"></i>
+              <TbDownload size={12} />
               Descargar
             </button>
           </div>
         </div>
       ) : (
         <div className="text-center text-gray-500 py-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
-          <i className="bx bx-image-alt text-2xl mb-2 opacity-50"></i>
+          <TbPhoto size={24} className="mb-2 opacity-50 mx-auto" />
           <p className="text-sm font-medium mb-1">No hay imagen disponible</p>
           <p className="text-xs">No se encontraron documentos adjuntos</p>
         </div>
@@ -571,7 +601,7 @@ const Aprobacion = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transition-transform duration-300 cursor-pointer">
-                <i className="bx bx-check-circle text-3xl text-indigo-600"></i>
+                <TbCircleCheck size={32} className="text-indigo-600" />
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -637,8 +667,9 @@ const Aprobacion = () => {
                     setSearchTerm("");
                     setCedulaFiltro("");
                   }}
-                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-4 rounded-lg transition"
+                  className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
                 >
+                  <TbX size={16} />
                   Limpiar filtros
                 </button>
               </div>
@@ -651,7 +682,7 @@ const Aprobacion = () => {
             <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
               <div className="flex items-center">
                 <div className="bg-blue-100 p-3 rounded-lg mr-4">
-                  <i className="bx bx-group text-2xl text-blue-600"></i>
+                  <TbUser size={24} className="text-blue-600" />
                 </div>
                 <div>
                   <p className="text-gray-500 text-sm">Total solicitudes</p>
@@ -665,7 +696,7 @@ const Aprobacion = () => {
             <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-green-500">
               <div className="flex items-center">
                 <div className="bg-green-100 p-3 rounded-lg mr-4">
-                  <i className="bx bx-check-circle text-2xl text-green-600"></i>
+                  <TbCircleCheck size={24} className="text-green-600" />
                 </div>
                 <div>
                   <p className="text-gray-500 text-sm">Aprobadas</p>
@@ -683,7 +714,7 @@ const Aprobacion = () => {
             <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-yellow-500">
               <div className="flex items-center">
                 <div className="bg-yellow-100 p-3 rounded-lg mr-4">
-                  <i className="bx bx-time-five text-2xl text-yellow-600"></i>
+                  <TbClock size={24} className="text-yellow-600" />
                 </div>
                 <div>
                   <p className="text-gray-500 text-sm">Pendientes</p>
@@ -708,7 +739,7 @@ const Aprobacion = () => {
               </div>
             ) : filteredPersonas.length === 0 ? (
               <div className="p-8 text-center">
-                <i className="bx bx-search-alt text-4xl text-gray-300 mb-4"></i>
+                <TbSearch size={48} className="text-gray-300 mb-4 mx-auto" />
                 <h3 className="text-lg font-medium text-gray-600 mb-2">
                   No se encontraron resultados
                 </h3>
@@ -756,9 +787,7 @@ const Aprobacion = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                              <span className="text-indigo-800 font-medium">
-                                {persona.nombre_completo?.charAt(0)}
-                              </span>
+                              <TbUser className="text-indigo-800" size={18} />
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
@@ -793,17 +822,18 @@ const Aprobacion = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <button
-                              className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition"
+                              className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-md transition flex items-center gap-1"
                               onClick={() => verDetalles(persona)}
                             >
+                              <TbFileText size={14} />
                               Detalles
                             </button>
                             <button
-                              className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition"
+                              className="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded-md transition flex items-center gap-1"
                               onClick={() => abrirImagenEnPestaña(persona)}
                               title="Abrir imagen en nueva pestaña"
                             >
-                              <i className="bx bx-image"></i>
+                              <TbPhoto size={14} />
                             </button>
                           </div>
                         </td>
@@ -856,19 +886,7 @@ const Aprobacion = () => {
                   onClick={cerrarModal}
                   aria-label="Cerrar"
                 >
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <TbX size={24} />
                 </button>
               </div>
 
@@ -1006,7 +1024,10 @@ const Aprobacion = () => {
                                       }`}>
                                         {r.nombre_requerimiento}
                                         {estaVerificado && (
-                                          <span className="text-green-600 text-xs ml-2">✓ Verificado</span>
+                                          <span className="text-green-600 text-xs ml-2 flex items-center gap-1">
+                                            <TbCheck size={10} />
+                                            Verificado
+                                          </span>
                                         )}
                                       </span>
                                     </div>
@@ -1033,25 +1054,11 @@ const Aprobacion = () => {
                       {/* Botón para guardar requerimientos verificados */}
                       <div className="mt-8 flex justify-end">
                         <button
-                          className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                          className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
                           onClick={handleEnviarRequerimientosVerificados}
                         >
-                          <span className="flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                            Guardar Requerimientos Verificados
-                          </span>
+                          <TbCheck size={20} />
+                          Guardar Requerimientos Verificados
                         </button>
                       </div>
                     </>
@@ -1101,21 +1108,7 @@ const Aprobacion = () => {
                   )
                 ) : (
                   <div className="text-center py-16">
-                    <div className="text-gray-400 mb-4">
-                      <svg
-                        className="w-16 h-16 mx-auto"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1}
-                          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
+                    <TbAlertCircle size={64} className="text-gray-400 mb-4 mx-auto" />
                     <p className="text-gray-500 text-lg">
                       No se encontraron detalles.
                     </p>
@@ -1127,56 +1120,29 @@ const Aprobacion = () => {
               <div className="px-8 py-6 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center">
                 <button
                   onClick={cerrarModal}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all duration-300 shadow-sm hover:shadow-md"
+                  className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all duration-300 shadow-sm hover:shadow-md flex items-center gap-2"
                 >
+                  <TbX size={16} />
                   Cerrar
                 </button>
 
                 {personaSeleccionada.estatus !== "aprobada" && (
                   <div className="flex space-x-4">
                     <button
-                      className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
                       onClick={() =>
                         aprobarPersona(personaSeleccionada.cedula_emprendedor)
                       }
                     >
-                      <span className="flex items-center">
-                        <svg
-                          className="w-5 h-5 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        Aprobar
-                      </span>
+                      <TbCheck size={20} />
+                      Aprobar
                     </button>
                     <button
-                      className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                      className="px-8 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
                       onClick={() => rechazarPersona(personaSeleccionada)}
                     >
-                      <span className="flex items-center">
-                        <svg
-                          className="w-5 h-5 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                        Rechazar
-                      </span>
+                      <TbX size={20} />
+                      Rechazar
                     </button>
                   </div>
                 )}

@@ -7,6 +7,26 @@ import Menu from "../components/Menu";
 import { registrarContrato } from "../services/api_contrato";
 import apiconfiguracionDesdeAPI from "../services/api_configuracion_contratos";
 
+// Importar SOLO iconos que SÍ existen en Tabler Icons
+import {
+  TbFile,
+  TbUser,
+  TbSearch,
+  TbX,
+  TbCheck,
+  TbFolder,
+  TbReceipt,
+  TbPhoto,
+  TbCircleCheck,
+  TbAlertCircle,
+  TbFileText,
+  TbCalendar,
+  TbCurrencyDollar,
+  TbEye,
+  TbBuildingBank,
+  TbCoin,
+} from "react-icons/tb";;
+
 const Gestion = ({ user, setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
@@ -117,7 +137,6 @@ const Gestion = ({ user, setUser }) => {
   };
 
   // Función para calcular montos en Bs según configuración
-  // Función para calcular montos en Bs según configuración
   useEffect(() => {
     if (
       !rates.euro ||
@@ -133,7 +152,7 @@ const Gestion = ({ user, setUser }) => {
         ...prev,
         monto_bs: "",
         monto_bs_neto: "",
-        monto_restado: "", // Cambiar cincoflat por monto_restado
+        monto_restado: "",
       }));
       return;
     }
@@ -162,7 +181,7 @@ const Gestion = ({ user, setUser }) => {
       ...prev,
       monto_bs: montoBsTotal,
       monto_bs_neto: montoBsNeto,
-      monto_restado: montoRestado, // Cambiar cincoflat por monto_restado
+      monto_restado: montoRestado,
     }));
   }, [formData.monto_aprob_euro, rates, configuracion]);
 
@@ -294,33 +313,33 @@ const Gestion = ({ user, setUser }) => {
   };
 
   // Función para calcular fechas
-const calcularFechas = (fechaInicioStr) => {
-  const fechaInicio = new Date(fechaInicioStr);
-  const fechahasta = new Date(fechaInicio);
-  const numeroCuotas = parseFloat(configuracion?.numero_cuotas) || 18;
-  const frecuencia = configuracion?.frecuencia_pago || "Semanal";
+  const calcularFechas = (fechaInicioStr) => {
+    const fechaInicio = new Date(fechaInicioStr);
+    const fechahasta = new Date(fechaInicio);
+    const numeroCuotas = parseFloat(configuracion?.numero_cuotas) || 18;
+    const frecuencia = configuracion?.frecuencia_pago || "Semanal";
 
-  // Calcular fecha final basado en la frecuencia y número de cuotas
-  if (frecuencia === "diario") {
-    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 1);
-  } else if (frecuencia === "semanal") {
-    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
-  } else if (frecuencia === "quincenal") {
-    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 15);
-  } else if (frecuencia === "mensual") {
-    fechahasta.setMonth(fechahasta.getMonth() + numeroCuotas);
-  } else {
-    // Por defecto semanal o para Personalizado (usaremos semanal como base)
-    fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
-  }
+    // Calcular fecha final basado en la frecuencia y número de cuotas
+    if (frecuencia === "diario") {
+      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 1);
+    } else if (frecuencia === "semanal") {
+      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
+    } else if (frecuencia === "quincenal") {
+      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 15);
+    } else if (frecuencia === "mensual") {
+      fechahasta.setMonth(fechahasta.getMonth() + numeroCuotas);
+    } else {
+      // Por defecto semanal o para Personalizado (usaremos semanal como base)
+      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
+    }
 
-  const formatDate = (date) => date.toISOString().split("T")[0];
+    const formatDate = (date) => date.toISOString().split("T")[0];
 
-  return {
-    desde: formatDate(fechaInicio),
-    hasta: formatDate(fechahasta),
+    return {
+      desde: formatDate(fechaInicio),
+      hasta: formatDate(fechahasta),
+    };
   };
-};
 
   // Cuando la fechaDesde cambie, actualizar fecha_hasta
   React.useEffect(() => {
@@ -425,7 +444,7 @@ const calcularFechas = (fechaInicioStr) => {
         monto_aprob_euro: emprendedor.monto_aprob_euro || null,
         monto_bs: emprendedor.monto_bs || null,
         monto_bs_neto: emprendedor.monto_bs_neto || null,
-        monto_restado: emprendedor.monto_restado || null, // Cambiar cincoflat por monto_restado
+        monto_restado: emprendedor.monto_restado || null,
         diezinteres: emprendedor.diezinteres || null,
         monto_devolver: emprendedor.monto_devolver || null,
         monto_semanal: emprendedor.monto_semanal || null,
@@ -617,7 +636,7 @@ const calcularFechas = (fechaInicioStr) => {
       const contratoData = {
         ...formData,
         monto_bs_neto: formData.monto_bs_neto,
-        monto_restado: formData.monto_restado, // Cambiar cincoflat por monto_restado
+        monto_restado: formData.monto_restado,
         frecuencia_pago_contrato:
           configuracion?.frecuencia_pago === "Personalizado"
             ? "Personalizado"
@@ -644,7 +663,7 @@ const calcularFechas = (fechaInicioStr) => {
         monto_aprob_euro: "",
         monto_bs: "",
         monto_bs_neto: "",
-        monto_restado: "", // Cambiar cincoflat por monto_restado
+        monto_restado: "",
         diezinteres: "",
         monto_devolver: "",
         monto_semanal: "",
@@ -857,19 +876,7 @@ const calcularFechas = (fechaInicioStr) => {
               className="text-gray-500 hover:text-gray-700 transition-colors"
               onClick={onClose}
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <TbX size={24} />
             </button>
           </div>
 
@@ -1089,7 +1096,7 @@ const calcularFechas = (fechaInicioStr) => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-md">
-                <i className="bx bx-file text-2xl text-indigo-600"></i>
+                <TbFile size={24} className="text-indigo-600" />
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -1105,7 +1112,11 @@ const calcularFechas = (fechaInicioStr) => {
               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                 <div className="flex items-center space-x-3">
                   <div className="bg-indigo-100 p-2 rounded-lg">
-                    <i className="bx bx-euro text-xl text-indigo-600"></i>
+                    {configuracion?.moneda === "USD" ? (
+                      <TbCurrencyDollar size={20} className="text-indigo-600" />
+                    ) : (
+                      <TbCurrencyDollar size={20} className="text-indigo-600" />
+                    )}
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">
@@ -1159,19 +1170,7 @@ const calcularFechas = (fechaInicioStr) => {
                   className="absolute top-4 right-4 text-gray-600 hover:text-gray-800 bg-white rounded-full p-1 shadow-md"
                   onClick={cerrarModalComprobante}
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <TbX size={20} />
                 </button>
                 <img
                   src={comprobanteModal}
@@ -1193,19 +1192,7 @@ const calcularFechas = (fechaInicioStr) => {
                     className="text-gray-400 hover:text-gray-600"
                     onClick={cancelarAsignacion}
                   >
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
+                    <TbX size={24} />
                   </button>
                 </div>
                 <p className="text-gray-600 mb-4">
@@ -1258,7 +1245,7 @@ const calcularFechas = (fechaInicioStr) => {
                   {Object.keys(contratosAgrupados).length === 0 ? (
                     <div className="col-span-full text-center py-12">
                       <div className="bg-white rounded-lg p-8 shadow-sm border border-gray-200">
-                        <i className="bx bx-user-x text-4xl text-gray-400 mb-4"></i>
+                        <TbUser size={48} className="text-gray-400 mb-4 mx-auto" />
                         <h3 className="text-lg font-medium text-gray-600 mb-2">
                           No hay emprendedores registrados
                         </h3>
@@ -1286,7 +1273,7 @@ const calcularFechas = (fechaInicioStr) => {
                             </p>
                           </div>
                           <div className="bg-indigo-100 p-2 rounded-lg">
-                            <i className="bx bx-user text-indigo-600"></i>
+                            <TbUser size={20} className="text-indigo-600" />
                           </div>
                         </div>
 
@@ -1294,7 +1281,7 @@ const calcularFechas = (fechaInicioStr) => {
                           {grupo.empleador.tieneContrato ? (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                               <div className="flex items-center">
-                                <i className="bx bx-check-circle text-green-600 mr-2"></i>
+                                <TbCircleCheck size={16} className="text-green-600 mr-2" />
                                 <span className="text-green-700 font-medium">
                                   Contrato asignado
                                 </span>
@@ -1310,7 +1297,7 @@ const calcularFechas = (fechaInicioStr) => {
                                 iniciarAsignacionContrato(grupo.empleador)
                               }
                             >
-                              <i className="bx bx-file-blank mr-2"></i>
+                              <TbFileText size={16} className="mr-2" />
                               Asignar contrato
                             </button>
                           )}
@@ -1320,7 +1307,7 @@ const calcularFechas = (fechaInicioStr) => {
                           className="w-full text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center justify-center"
                           onClick={() => verDetalles(grupo.empleador)}
                         >
-                          <i className="bx bx-show mr-1"></i>
+                          <TbEye size={16} className="mr-1" />
                           Ver detalles
                         </button>
                       </div>
@@ -1423,8 +1410,8 @@ const calcularFechas = (fechaInicioStr) => {
                           </label>
                           <input
                             type="text"
-                            name="monto_restado" // Cambiar name de cincoflat a monto_restado
-                            value={formData.monto_restado} // Cambiar value de cincoflat a monto_restado
+                            name="monto_restado"
+                            value={formData.monto_restado}
                             onChange={handleInputChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-not-allowed"
                             readOnly
@@ -1679,7 +1666,7 @@ const calcularFechas = (fechaInicioStr) => {
                           onChange={handleSearchChange}
                           className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64"
                         />
-                        <i className="bx bx-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <TbSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                       </div>
                     </div>
 
@@ -1694,7 +1681,7 @@ const calcularFechas = (fechaInicioStr) => {
                             grupo.empleador.cedula.includes(searchTerm)
                         ).length === 0 ? (
                         <div className="text-center py-8">
-                          <i className="bx bx-folder-open text-4xl text-gray-400 mb-3"></i>
+                          <TbFolderOpen size={48} className="text-gray-400 mb-3 mx-auto" />
                           <p className="text-gray-500">
                             No hay contratos asignados
                           </p>
@@ -1758,7 +1745,7 @@ const calcularFechas = (fechaInicioStr) => {
                                 className="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
                                 onClick={() => verDetalles(grupo.empleador)}
                               >
-                                <i className="bx bx-show mr-1"></i>
+                                <TbEye size={16} className="mr-1" />
                                 Ver detalles del contrato
                               </button>
                             </div>
@@ -1873,7 +1860,7 @@ const calcularFechas = (fechaInicioStr) => {
 
                         {depositoData.sizeError && (
                           <div className="mt-2 p-2 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-                            <i className="bx bx-error-circle align-middle mr-1"></i>
+                            <TbErrorCircle className="align-middle mr-1" size={16} />
                             {depositoData.sizeError}
                           </div>
                         )}
@@ -1901,7 +1888,7 @@ const calcularFechas = (fechaInicioStr) => {
                         onClick={registrarDeposito}
                         disabled={!depositoData.comprobante}
                       >
-                        <i className="bx bx-check-circle mr-2"></i>
+                        <TbCircleCheck size={16} className="mr-2" />
                         Registrar Depósito
                       </button>
                     </div>
@@ -1914,7 +1901,7 @@ const calcularFechas = (fechaInicioStr) => {
 
                     {depositos.length === 0 ? (
                       <div className="text-center py-8">
-                        <i className="bx bx-receipt text-4xl text-gray-400 mb-3"></i>
+                        <TbReceipt size={48} className="text-gray-400 mb-3 mx-auto" />
                         <p className="text-gray-500">
                           No hay depósitos registrados
                         </p>
@@ -1972,7 +1959,7 @@ const calcularFechas = (fechaInicioStr) => {
                                       }
                                       className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center"
                                     >
-                                      <i className="bx bx-image-alt mr-1"></i>
+                                      <TbPhoto size={16} className="mr-1" />
                                       Ver comprobante
                                     </button>
                                   ) : (

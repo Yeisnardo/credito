@@ -4,6 +4,23 @@ import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api, { getUsuarioPorCedula } from '../services/api_usuario';
 import { generarResumenUsuario } from '../pdf/generarPdf';
+// Importar Tabler Icons
+import { 
+  TbHome,
+  TbUserCircle,
+  TbCreditCard,
+  TbCalendarEvent,
+  TbMessage,
+  TbFilter,
+  TbPlus,
+  TbAlertCircle,
+  TbInfoCircle,
+  TbChevronRight,
+  TbFile,
+  TbShieldCheck,
+  TbNews,
+  TbDownload
+} from "react-icons/tb";
 
 const Dashboard = ({ setUser }) => {
   const navigate = useNavigate();
@@ -16,11 +33,11 @@ const Dashboard = ({ setUser }) => {
   });
 
   const handleViewPdf = () => {
-  const doc = generarResumenUsuario(user, stats);
-  const pdfBlob = doc.output('blob');
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-  window.open(pdfUrl);
-};
+    const doc = generarResumenUsuario(user, stats);
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl);
+  };
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -92,7 +109,7 @@ const Dashboard = ({ setUser }) => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
-                <i className="bx bx-home text-3xl text-indigo-600"></i>
+                <TbHome size={24} className="text-indigo-600" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-800">Panel Principal</h1>
@@ -102,10 +119,10 @@ const Dashboard = ({ setUser }) => {
             
             <div className="flex space-x-3">
               <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors">
-                <i className="bx bx-filter-alt mr-2"></i> Filtros
+                <TbFilter size={18} className="mr-2" /> Filtros
               </button>
               <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors">
-                <i className="bx bx-plus mr-2"></i> Nueva acción
+                <TbPlus size={18} className="mr-2" /> Nueva acción
               </button>
             </div>
           </div>
@@ -125,15 +142,16 @@ const Dashboard = ({ setUser }) => {
                   </p>
                 </div>
                 <div className="bg-indigo-100 p-2 rounded-full">
-                  <i className="bx bx-user-circle text-2xl text-indigo-600"></i>
+                  <TbUserCircle size={24} className="text-indigo-600" />
                 </div>
               </div>
               <button
-  className="bg-green-600 text-white px-4 py-2 rounded-lg mb-4"
-  onClick={handleViewPdf}
->
-  Descargar Resumen PDF
-</button>
+                className="w-full mt-4 bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center hover:bg-green-700 transition-colors"
+                onClick={handleViewPdf}
+              >
+                <TbDownload size={18} className="mr-2" />
+                Descargar Resumen PDF
+              </button>
             </div>
 
             {/* Tarjeta 2 - Créditos activos */}
@@ -145,7 +163,7 @@ const Dashboard = ({ setUser }) => {
                   <p className="text-gray-500 text-sm">Total activos</p>
                 </div>
                 <div className="bg-blue-100 p-2 rounded-full">
-                  <i className="bx bx-credit-card text-2xl text-blue-600"></i>
+                  <TbCreditCard size={24} className="text-blue-600" />
                 </div>
               </div>
             </div>
@@ -159,7 +177,7 @@ const Dashboard = ({ setUser }) => {
                   <p className="text-gray-500 text-sm">Pendientes</p>
                 </div>
                 <div className="bg-amber-100 p-2 rounded-full">
-                  <i className="bx bx-calendar-event text-2xl text-amber-600"></i>
+                  <TbCalendarEvent size={24} className="text-amber-600" />
                 </div>
               </div>
             </div>
@@ -173,7 +191,7 @@ const Dashboard = ({ setUser }) => {
                   <p className="text-gray-500 text-sm">No leídos</p>
                 </div>
                 <div className="bg-purple-100 p-2 rounded-full">
-                  <i className="bx bx-chat text-2xl text-purple-600"></i>
+                  <TbMessage size={24} className="text-purple-600" />
                 </div>
               </div>
             </div>
@@ -205,37 +223,6 @@ const Dashboard = ({ setUser }) => {
                 ))}
               </div>
             </div>
-
-            {/* Actividad reciente */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-6">Actividad reciente</h2>
-              
-              <div className="space-y-4">
-                {recentActivities.map(activity => (
-                  <div key={activity.id} className="flex items-start">
-                    <div className={`rounded-full p-2 mr-3 ${
-                      activity.type === 'success' ? 'bg-green-100 text-green-600' : 
-                      activity.type === 'warning' ? 'bg-amber-100 text-amber-600' : 
-                      'bg-blue-100 text-blue-600'
-                    }`}>
-                      <i className={`bx ${
-                        activity.type === 'success' ? 'bx-check-circle' : 
-                        activity.type === 'warning' ? 'bx-error' : 
-                        'bx-info-circle'
-                      }`}></i>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{activity.action}</p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <button className="w-full mt-4 text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                Ver toda la actividad <i className="bx bx-chevron-right"></i>
-              </button>
-            </div>
           </section>
 
           {/* Acciones rápidas y noticias */}
@@ -249,7 +236,7 @@ const Dashboard = ({ setUser }) => {
                   className="bg-indigo-50 text-indigo-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-indigo-100 transition-colors"
                   onClick={() => navigate('/Requeri_solicit')}
                 >
-                  <i className="bx bx-file text-2xl mb-2"></i>
+                  <TbFile size={24} className="mb-2" />
                   <span className="text-sm font-medium">Solicitar crédito</span>
                 </button>
                 
@@ -257,7 +244,7 @@ const Dashboard = ({ setUser }) => {
                   className="bg-green-50 text-green-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-green-100 transition-colors"
                   onClick={() => navigate('/cuotas')}
                 >
-                  <i className="bx bx-credit-card text-2xl mb-2"></i>
+                  <TbCreditCard size={24} className="mb-2" />
                   <span className="text-sm font-medium">Ver cuotas</span>
                 </button>
                 
@@ -265,7 +252,6 @@ const Dashboard = ({ setUser }) => {
                   className="bg-blue-50 text-blue-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-blue-100 transition-colors"
                   onClick={() => navigate('/Banco')}
                 >
-                  <i className="bx bx-bank text-2xl mb-2"></i>
                   <span className="text-sm font-medium">Información bancaria</span>
                 </button>
                 
@@ -273,7 +259,7 @@ const Dashboard = ({ setUser }) => {
                   className="bg-purple-50 text-purple-700 p-4 rounded-lg flex flex-col items-center justify-center hover:bg-purple-100 transition-colors"
                   onClick={() => navigate('/Aprobacion')}
                 >
-                  <i className="bx bx-check-shield text-2xl mb-2"></i>
+                  <TbShieldCheck size={24} className="mb-2" />
                   <span className="text-sm font-medium">Solicitudes pendientes</span>
                 </button>
               </div>
@@ -300,8 +286,8 @@ const Dashboard = ({ setUser }) => {
                 </div>
               </div>
               
-              <button className="w-full mt-4 text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                Ver todas las noticias <i className="bx bx-news"></i>
+              <button className="w-full mt-4 text-center text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center justify-center">
+                Ver todas las noticias <TbNews size={16} className="ml-1" />
               </button>
             </div>
           </section>

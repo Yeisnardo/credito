@@ -5,6 +5,14 @@ import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api, { getUsuarioPorCedula } from '../services/api_usuario';
 
+// Importar Tabler Icons
+import {
+  TbHome,
+  TbSearch,
+  TbChevronLeft,
+  TbChevronRight,
+} from "react-icons/tb";
+
 const Bitacora = ({ setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
@@ -81,10 +89,10 @@ const Bitacora = ({ setUser }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100 font-serif">
+    <div className="flex min-h-screen bg-gray-100 font-sans">
       {menuOpen && <Menu />}
 
-      <div className={`flex-1 flex flex-col transition-margin duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-0'}`}>
         {/* Header */}
         <Header toggleMenu={toggleMenu} />
 
@@ -94,9 +102,9 @@ const Bitacora = ({ setUser }) => {
           <div className="flex items-center justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4">
               <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
-                <i className="bx bx-home text-3xl text-gray-700"></i>
+                <TbHome size={24} className="text-gray-700" />
               </div>
-              <h1 className="text-3xl font-semibold text-gray-800">Bitacora</h1>
+              <h1 className="text-3xl font-semibold text-gray-800">Bitácora</h1>
             </div>
           </div>
 
@@ -128,9 +136,9 @@ const Bitacora = ({ setUser }) => {
                     placeholder="Buscar en bitácora..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border border-gray-300 rounded-lg px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
                   />
-                  <i className="bx bx-search absolute right-3 top-2.5 text-gray-400"></i>
+                  <TbSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 </div>
               </div>
             </div>
@@ -160,7 +168,7 @@ const Bitacora = ({ setUser }) => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentItems.length > 0 ? (
                     currentItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
+                      <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(item.fecha)}
                         </td>
@@ -200,44 +208,52 @@ const Bitacora = ({ setUser }) => {
 
             {/* Paginación */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
                 <div className="text-sm text-gray-700">
                   Mostrando <span className="font-medium">{indexOfFirstItem + 1}</span> a <span className="font-medium">
                     {Math.min(indexOfLastItem, filteredData.length)}
                   </span> de <span className="font-medium">{filteredData.length}</span> resultados
                 </div>
                 
-                <div className="flex space-x-2">
+                <div className="flex items-center space-x-2">
                   <button
                     onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded-md ${currentPage === 1 
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`p-2 rounded-md flex items-center justify-center ${
+                      currentPage === 1 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
-                    Anterior
+                    <TbChevronLeft size={16} />
                   </button>
                   
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => paginate(page)}
-                      className={`px-3 py-1 rounded-md ${currentPage === page 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  <div className="flex space-x-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => paginate(page)}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          currentPage === page 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
                   
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded-md ${currentPage === totalPages 
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    className={`p-2 rounded-md flex items-center justify-center ${
+                      currentPage === totalPages 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
                   >
-                    Siguiente
+                    <TbChevronRight size={16} />
                   </button>
                 </div>
               </div>
@@ -246,7 +262,7 @@ const Bitacora = ({ setUser }) => {
         </main>
 
         {/* Pie */}
-        <footer className="mt-auto p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
+        <footer className="mt-auto p-4 bg-white border-t border-gray-200 text-center text-sm text-gray-600">
           © {new Date().getFullYear()} IFEMI & UPTYAB. Todos los derechos reservados.
         </footer>
       </div>

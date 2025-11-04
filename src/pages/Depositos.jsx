@@ -10,6 +10,16 @@ import {
   updateDepositoPorId,
 } from "../services/api_deposito";
 
+// Importar Tabler Icons
+import {
+  TbCreditCard,
+  TbInfoCircle,
+  TbCheck,
+  TbPhoto,
+  TbX,
+  TbRefresh
+} from 'react-icons/tb';
+
 const Deposito = ({ setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
@@ -133,10 +143,10 @@ const Deposito = ({ setUser }) => {
 
         <main className="flex-1 p-6">
           {/* Header Section */}
-          <div className="mb-8 mt-4">
+          <div className="mb-8 mt-12">
             <div className="flex items-center space-x-4 mb-6">
               <div className="bg-white p-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <i className="bx bx-credit-card text-4xl text-blue-600"></i>
+                <TbCreditCard size={32} className="text-blue-600" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-800">
@@ -154,7 +164,7 @@ const Deposito = ({ setUser }) => {
                 Transferencias Pendientes
               </h2>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <i className="bx bx-info-circle"></i>
+                <TbInfoCircle size={16} />
                 <span>{depositosPendientes.length} depósito(s) por confirmar</span>
               </div>
             </div>
@@ -169,7 +179,6 @@ const Deposito = ({ setUser }) => {
             ) : depositosPendientes.length === 0 ? (
               <div className="text-center py-12">
                 <div className="bg-green-50 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-                  <i className="bx bx-check-circle text-5xl text-green-500"></i>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
                   ¡Todo al día!
@@ -222,7 +231,7 @@ const Deposito = ({ setUser }) => {
                               disabled={deposito.estado === "Recibido"}
                               className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-all duration-300 font-medium flex items-center space-x-2"
                             >
-                              <i className="bx bx-check"></i>
+                              <TbCheck size={16} />
                               <span>Confirmar</span>
                             </button>
                             
@@ -231,7 +240,7 @@ const Deposito = ({ setUser }) => {
                                 onClick={() => handleVerComprobante(`http://localhost:5000${deposito.comprobante}`)}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-300 font-medium flex items-center space-x-2"
                               >
-                                <i className="bx bx-image-alt"></i>
+                                <TbPhoto size={16} />
                                 <span>Comprobante</span>
                               </button>
                             )}
@@ -264,7 +273,7 @@ const Deposito = ({ setUser }) => {
                 className="text-gray-400 hover:text-gray-600 transition-colors duration-200 text-2xl"
                 onClick={cerrarModal}
               >
-                <i className="bx bx-x"></i>
+                <TbX size={24} />
               </button>
             </div>
             <div className="p-4 max-h-[80vh] overflow-auto">

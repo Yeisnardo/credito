@@ -5,12 +5,22 @@ import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api from "../services/api_clasificacion";
 
+// Importación CORREGIDA de Tabler Icons - solo los que existen
+import {
+  TbCategory,
+  TbCategory2,
+  TbPlus,
+  TbBuilding,
+  TbInbox,
+  TbLoader
+} from 'react-icons/tb';
+
 // Componente para mostrar cada sector
 const SectorCard = ({ sector, clasificaciones, onRegistrarNegocio, onVerDetalles }) => (
   <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 flex flex-col justify-between border border-gray-100">
     <div>
       <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mx-auto mb-3">
-        <i className="bx bx-category-alt text-indigo-600 text-xl"></i>
+        <TbCategory2 className="text-indigo-600" size={24} />
       </div>
       <h2 className="text-xl font-bold mb-3 text-center text-indigo-700 truncate" title={sector}>
         {sector}
@@ -236,7 +246,7 @@ const App = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-xl shadow-sm">
-                <i className="bx bx-category text-2xl text-indigo-600"></i>
+                <TbCategory className="text-indigo-600" size={24} />
               </div>
               <div>
                 <h1 className="text-2xl font-semibold text-gray-800">Clasificación de Emprendimientos</h1>
@@ -248,7 +258,7 @@ const App = () => {
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition"
               onClick={() => setMostrarFormSector(!mostrarFormSector)}
             >
-              <i className="bx bx-plus"></i>
+              <TbPlus size={20} />
               <span>{mostrarFormSector ? 'Cancelar' : 'Nuevo Sector'}</span>
             </button>
           </div>
@@ -257,7 +267,7 @@ const App = () => {
           {mostrarFormSector && (
             <section className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-semibold text-indigo-700 mb-4 flex items-center">
-                <i className="bx bx-plus-circle mr-2"></i>
+                <TbPlus className="mr-2" size={20} />
                 Agregar Nuevo Sector
               </h2>
               <div className="flex flex-col md:flex-row gap-4 mb-4">
@@ -283,7 +293,7 @@ const App = () => {
           {Object.keys(sectoresAgrupados).length > 0 && (
             <section className="mb-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
               <h2 className="text-xl font-semibold text-indigo-700 mb-4 flex items-center">
-                <i className="bx bx-building mr-2"></i>
+                <TbBuilding className="mr-2" size={20} />
                 Agregar Negocio
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -336,11 +346,11 @@ const App = () => {
             
             {cargando ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+                <TbLoader className="animate-spin text-indigo-600" size={32} />
               </div>
             ) : Object.keys(sectoresAgrupados).length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
-                <i className="bx bx-inbox text-4xl text-gray-300 mb-3"></i>
+                <TbInbox className="text-gray-300 mx-auto mb-3" size={48} />
                 <p className="text-gray-500">No hay sectores registrados</p>
                 <button 
                   className="text-indigo-600 hover:text-indigo-800 mt-2 font-medium"

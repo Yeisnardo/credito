@@ -9,6 +9,28 @@ import {
 } from "../services/api_contrato";
 import { visualizarContratoPdf, descargarContratoPdf } from '../pdf/contrato';
 
+// Importar Tabler Icons
+import {
+  TbFileText,
+  TbCheck,
+  TbListCheck,
+  TbFileDescription,
+  TbShieldCheck,
+  TbInfoCircle,
+  TbArrowBack,
+  TbX,
+  TbDownload,
+  TbEye,
+  TbCalendar,
+  TbCalendarEvent,
+  TbTrendingUp,
+  TbCreditCard,
+  TbCoin,
+  TbBarcode,
+  TbBook,
+  TbRefresh
+} from 'react-icons/tb';
+
 // Componentes internos para mejor organización
 const LoadingState = () => (
   <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 font-sans items-center justify-center">
@@ -24,7 +46,7 @@ const SuccessState = ({ navigate }) => (
     <div className="relative inline-flex mb-6">
       <div className="absolute inset-0 bg-green-400/20 blur-lg rounded-full"></div>
       <div className="relative bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg">
-        <i className="bx bx-check-circle text-4xl text-white"></i>
+        <TbCheck size={32} className="text-white" />
       </div>
     </div>
     <h2 className="text-2xl font-bold bg-gradient-to-r from-green-700 to-emerald-800 bg-clip-text text-transparent mb-4">
@@ -47,7 +69,7 @@ const NoContractsState = ({ navigate }) => (
     <div className="relative inline-flex mb-6">
       <div className="absolute inset-0 bg-gray-400/20 blur-lg rounded-full"></div>
       <div className="relative bg-gradient-to-br from-gray-500 to-gray-600 p-4 rounded-2xl shadow-lg">
-        <i className="bx bx-file text-4xl text-white"></i>
+        <TbFileText size={32} className="text-white" />
       </div>
     </div>
     <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-700 to-gray-800 bg-clip-text text-transparent mb-4">
@@ -68,7 +90,7 @@ const NoContractsState = ({ navigate }) => (
 const ContractSelector = ({ contratos, contratoSeleccionado, onSelectContrato }) => (
   <div className="bg-white rounded-2xl shadow-sm p-6 lg:col-span-3 border border-gray-100/50">
     <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-      <i className="bx bx-list-check text-2xl text-indigo-600 mr-2"></i>
+      <TbListCheck size={24} className="text-indigo-600 mr-2" />
       Seleccione un Contrato
     </h2>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -121,21 +143,21 @@ const ContractSelector = ({ contratos, contratoSeleccionado, onSelectContrato })
 
 const ContractDetails = ({ contratoSeleccionado, totalContratos, user }) => {
   const detalles = [
-    { label: "Número de Contrato", value: contratoSeleccionado?.numero_contrato, icon: "bx-barcode" },
+    { label: "Número de Contrato", value: contratoSeleccionado?.numero_contrato, icon: TbBarcode },
     { label: "Estado", value: contratoSeleccionado?.estatus, status: true },
-    { label: "Monto Aprobado", value: formatearMonto(contratoSeleccionado?.monto_aprob_euro), icon: "bx-euro" },
-    { label: "Monto Aprobado (Bs)", value: formatearMontoBs(contratoSeleccionado?.monto_bs), icon: "bx-coin" },
-    { label: "Fecha de Inicio", value: formatearFecha(contratoSeleccionado?.fecha_desde), icon: "bx-calendar" },
-    { label: "Fecha de Vencimiento", value: formatearFecha(contratoSeleccionado?.fecha_hasta), icon: "bx-calendar-event" },
-    { label: "Monto a devolver", value: formatearMonto(contratoSeleccionado?.monto_devolver), icon: "bx-trending-up" },
-    { label: "Cuota semanal", value: formatearMonto(contratoSeleccionado?.monto_semanal), icon: "bx-credit-card" }
+    { label: "Monto Aprobado", value: formatearMonto(contratoSeleccionado?.monto_aprob_euro), icon: TbCoin },
+    { label: "Monto Aprobado (Bs)", value: formatearMontoBs(contratoSeleccionado?.monto_bs), icon: TbCoin },
+    { label: "Fecha de Inicio", value: formatearFecha(contratoSeleccionado?.fecha_desde), icon: TbCalendar },
+    { label: "Fecha de Vencimiento", value: formatearFecha(contratoSeleccionado?.fecha_hasta), icon: TbCalendarEvent },
+    { label: "Monto a devolver", value: formatearMonto(contratoSeleccionado?.monto_devolver), icon: TbTrendingUp },
+    { label: "Cuota semanal", value: formatearMonto(contratoSeleccionado?.monto_semanal), icon: TbCreditCard }
   ];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-6 lg:col-span-2 border border-gray-100/50">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-800 flex items-center">
-          <i className="bx bx-detail text-2xl text-indigo-600 mr-2"></i>
+          <TbFileDescription size={24} className="text-indigo-600 mr-2" />
           Detalles del Contrato
         </h2>
         {totalContratos > 1 && (
@@ -146,25 +168,28 @@ const ContractDetails = ({ contratoSeleccionado, totalContratos, user }) => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
-        {detalles.map((item, index) => (
-          <div key={index} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 hover:bg-gray-100/50 transition-colors duration-200">
-            <div className="flex items-center mb-2">
-              {item.icon && <i className={`bx ${item.icon} text-gray-400 mr-2 text-lg`}></i>}
-              <h3 className="text-sm font-medium text-gray-500">{item.label}</h3>
+        {detalles.map((item, index) => {
+          const IconComponent = item.icon;
+          return (
+            <div key={index} className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 hover:bg-gray-100/50 transition-colors duration-200">
+              <div className="flex items-center mb-2">
+                {item.icon && <IconComponent size={18} className="text-gray-400 mr-2" />}
+                <h3 className="text-sm font-medium text-gray-500">{item.label}</h3>
+              </div>
+              {item.status ? (
+                <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
+                  item.value === "aceptado" ? "bg-green-100 text-green-800 border border-green-200" :
+                  item.value === "Pendiente" ? "bg-amber-100 text-amber-800 border border-amber-200" :
+                  "bg-gray-100 text-gray-800 border border-gray-200"
+                }`}>
+                  {item.value || "N/A"}
+                </span>
+              ) : (
+                <p className="text-lg font-semibold text-gray-800 break-words">{item.value || "N/A"}</p>
+              )}
             </div>
-            {item.status ? (
-              <span className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
-                item.value === "aceptado" ? "bg-green-100 text-green-800 border border-green-200" :
-                item.value === "Pendiente" ? "bg-amber-100 text-amber-800 border border-amber-200" :
-                "bg-gray-100 text-gray-800 border border-gray-200"
-              }`}>
-                {item.value || "N/A"}
-              </span>
-            ) : (
-              <p className="text-lg font-semibold text-gray-800 break-words">{item.value || "N/A"}</p>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <TermsAndConditions />
@@ -172,7 +197,7 @@ const ContractDetails = ({ contratoSeleccionado, totalContratos, user }) => {
       {/* Sección de descarga de PDF */}
       <div className="mt-6 pt-6 border-t border-gray-200">
         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-          <i className="bx bx-download text-gray-400 mr-2"></i>
+          <TbDownload size={16} className="text-gray-400 mr-2" />
           Descargar Contrato
         </h3>
         <div className="flex space-x-2">
@@ -181,7 +206,7 @@ const ContractDetails = ({ contratoSeleccionado, totalContratos, user }) => {
             onClick={() => visualizarContratoPdf(contratoSeleccionado, user)}
             title="Ver contrato antes de descargar"
           >
-            <i className="bx bx-show mr-1"></i> Ver PDF
+            <TbEye size={16} className="mr-1" /> Ver PDF
           </button>
           
           <button 
@@ -189,7 +214,7 @@ const ContractDetails = ({ contratoSeleccionado, totalContratos, user }) => {
             onClick={() => descargarContratoPdf(contratoSeleccionado, user)}
             title="Descargar contrato completo"
           >
-            <i className="bx bx-download mr-1"></i> Descargar
+            <TbDownload size={16} className="mr-1" /> Descargar
           </button>
         </div>
       </div>
@@ -210,7 +235,7 @@ const TermsAndConditions = () => {
   return (
     <div className="border-t border-gray-200 pt-6">
       <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-        <i className="bx bx-book text-xl text-indigo-600 mr-2"></i>
+        <TbBook size={20} className="text-indigo-600 mr-2" />
         Términos y Condiciones
       </h3>
       <div className="bg-gradient-to-br from-gray-50 to-blue-50/30 p-4 sm:p-6 rounded-xl border border-gray-200/50 max-h-80 overflow-y-auto custom-scrollbar">
@@ -237,14 +262,14 @@ const AcceptancePanel = ({
 }) => (
   <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100/50">
     <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-      <i className="bx bx-check-shield text-2xl text-indigo-600 mr-2"></i>
+      <TbShieldCheck size={24} className="text-indigo-600 mr-2" />
       Confirmación
     </h2>
     
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-6">
       <div className="flex items-start">
         <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-          <i className="bx bx-info-circle text-blue-600 text-lg"></i>
+          <TbInfoCircle size={18} className="text-blue-600" />
         </div>
         <div>
           <p className="text-sm text-blue-800 font-semibold mb-1">
@@ -290,7 +315,7 @@ const AcceptancePanel = ({
           </div>
         ) : (
           <>
-            <i className="bx bx-check-circle mr-2"></i> 
+            <TbCheck size={18} className="mr-2" /> 
             Aceptar Contrato
           </>
         )}
@@ -300,21 +325,21 @@ const AcceptancePanel = ({
         className="w-full border-2 border-gray-300 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transform hover:scale-105 transition-all duration-300"
         onClick={() => navigate(-1)}
       >
-        <i className="bx bx-x-circle mr-2"></i> Cancelar
+        <TbX size={18} className="mr-2" /> Cancelar
       </button>
     </div>
 
     {contratoSeleccionado?.estatus !== "Aceptado" && (
       <div className="mt-6 pt-6 border-t border-gray-200">
         <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-          <i className="bx bx-support text-gray-400 mr-2"></i>
+          
           ¿Necesita ayuda?
         </h3>
         <p className="text-xs text-gray-600 mb-3 leading-relaxed">
           Si tiene dudas sobre los términos del contrato, contacte a su asesor financiero.
         </p>
         <button className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center font-medium transition-colors duration-200">
-          <i className="bx bx-envelope mr-1"></i> Contactar soporte
+          Contactar soporte
         </button>
       </div>
     )}
@@ -460,7 +485,7 @@ const AceptacionContrato = ({ setUser }) => {
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
                 <div className="relative bg-white p-3 sm:p-4 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer border border-indigo-100">
-                  <i className="bx bx-file text-2xl sm:text-3xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"></i>
+                  <TbFileText size={24} className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text" />
                 </div>
               </div>
               <div>
@@ -477,7 +502,7 @@ const AceptacionContrato = ({ setUser }) => {
                 className="bg-white border border-gray-200 text-gray-700 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center hover:bg-gray-50 hover:border-gray-300 transform hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md text-sm sm:text-base"
                 onClick={() => navigate(-1)}
               >
-                <i className="bx bx-arrow-back mr-2"></i> Volver
+                <TbArrowBack size={16} className="mr-2" /> Volver
               </button>
             </div>
           </div>

@@ -17,6 +17,37 @@ import {
 } from "../services/api_solicitud";
 import apiArchivo from "../services/api_archivo";
 
+// Importar Tabler Icons - ADDED MISSING IMPORTS
+import {
+  TbX,
+  TbCheck,
+  TbCalendar,
+  TbFile,
+  TbCalendarEvent,
+  TbFolder,
+  TbEdit,
+  TbListCheck,
+  TbCloudUpload,
+  TbMessage,
+  TbBulb,
+  TbSend,
+  TbLoader,
+  TbChevronRight,
+  TbChevronLeft,
+  TbArrowBack,
+  TbPlus,
+  TbCalendarTime,
+  TbFileText,
+  TbRefresh,
+  TbZoomIn,
+  TbDownload,
+  TbInfoCircle,
+  TbAlertCircle,
+  TbPhoto, // ADDED THIS IMPORT
+  TbEdit as TbEditAlt, // ALIAS FOR TbEdit since TbEditAlt doesn't exist
+  TbCircleCheck // ADDED FOR APPROVED STATUS
+} from "react-icons/tb";
+
 // Componente Modal mejorado para visualización de imagen
 const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
   const [imagenArchivo, setImagenArchivo] = useState(null);
@@ -125,22 +156,22 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
     const config = {
       "Aprobada": { 
         color: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        icon: "bx-check-circle",
-        badge: "bg-emerald-500"
+        badge: "bg-emerald-500",
+        icon: TbCircleCheck,
       },
       "Rechazado": { 
         color: "bg-rose-50 text-rose-700 border-rose-200",
-        icon: "bx-x-circle", 
+        icon: TbX, 
         badge: "bg-rose-500"
       },
       "En revisión": { 
         color: "bg-blue-50 text-blue-700 border-blue-200",
-        icon: "bx-time",
+        icon: TbRefresh,
         badge: "bg-blue-500"
       },
       "Pendiente": { 
         color: "bg-amber-50 text-amber-700 border-amber-200",
-        icon: "bx-hourglass",
+        icon: TbCalendarTime,
         badge: "bg-amber-500"
       }
     };
@@ -148,6 +179,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
   };
 
   const estadoConfig = getEstadoConfig(solicitud.estatus);
+  const EstadoIcon = estadoConfig.icon || TbInfoCircle;
 
   return (
     <>
@@ -159,25 +191,19 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-2xl font-bold mb-1">
-                  Solicitud #{solicitud.id_req || "N/A"}
-                </h2>
-                <p className="text-blue-100 opacity-90">
                   Detalles completos de tu solicitud
-                </p>
-                <p className="text-blue-200 text-sm mt-1">
-                  Cédula: {solicitud.cedula_emprendedor}
-                </p>
+                </h2>
               </div>
               <button
                 onClick={onClose}
                 className="text-white/80 hover:text-white text-2xl transition-all hover:scale-110 bg-white/10 p-1 rounded-lg"
               >
-                <i className="bx bx-x"></i>
+                <TbX size={24} />
               </button>
             </div>
             <div className="absolute -bottom-4 left-6">
               <span className={`${estadoConfig.badge} text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2`}>
-                <i className={`bx ${estadoConfig.icon}`}></i>
+                <EstadoIcon size={16} />
                 {solicitud.estatus || "Pendiente"}
               </span>
             </div>
@@ -190,7 +216,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="bg-blue-100 p-2 rounded-lg">
-                    <i className="bx bx-calendar text-blue-600 text-xl"></i>
+                    <TbCalendar size={20} className="text-blue-600" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Fecha de creación</p>
@@ -208,7 +234,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                 <div className="flex items-center gap-3">
                   <div className="bg-green-100 p-2 rounded-lg">
-                    <i className="bx bx-file text-green-600 text-xl"></i>
+                    <TbFile size={20} className="text-green-600" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Documentos</p>
@@ -223,7 +249,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
-                      <i className="bx bx-calendar-event text-blue-600 text-xl"></i>
+                      <TbCalendarEvent size={20} className="text-blue-600" />
                     </div>
                     <div>
                       <p className="text-sm text-blue-600">Próxima cita</p>
@@ -239,16 +265,16 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
             {/* Sección de imagen del documento MEJORADA */}
             <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
               <div className="flex items-center gap-2 mb-4">
-                <i className="bx bx-image text-gray-600"></i>
+                <TbPhoto size={20} className="text-gray-600" />
                 <h3 className="font-semibold text-gray-800">Imagen del Documento</h3>
                 {imagenArchivo && (
                   <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">
-                    <i className="bx bx-check"></i> Disponible
+                    <TbCheck size={12} /> Disponible
                   </span>
                 )}
                 {errorImagen && (
                   <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded-full ml-2">
-                    <i className="bx bx-error"></i> Error
+                    <TbAlertCircle size={12} /> Error
                   </span>
                 )}
               </div>
@@ -261,14 +287,14 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                 </div>
               ) : errorImagen ? (
                 <div className="text-center text-gray-500 py-8 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                  <i className="bx bx-error text-3xl mb-2 text-amber-500"></i>
+                  <TbAlertCircle size={32} className="mb-2 text-amber-500 mx-auto" />
                   <p className="text-lg font-medium mb-2">No se pudo cargar la imagen</p>
                   <p className="text-sm text-gray-400 mb-4">{errorImagen}</p>
                   <button 
                     onClick={cargarImagenSolicitud}
                     className="mt-3 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 mx-auto"
                   >
-                    <i className="bx bx-refresh"></i>
+                    <TbRefresh size={16} />
                     Reintentar
                   </button>
                 </div>
@@ -289,7 +315,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="bg-black/50 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                        <i className="bx bx-zoom-in text-xl"></i>
+                        <TbZoomIn size={20} />
                         <span>Haz clic para ampliar</span>
                       </div>
                     </div>
@@ -299,7 +325,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                       onClick={() => abrirModalImagen(imagenArchivo)}
                       className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
                     >
-                      <i className="bx bx-zoom-in"></i>
+                      <TbZoomIn size={16} />
                       Ver imagen completa
                     </button>
                     <a 
@@ -308,21 +334,21 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                       rel="noopener noreferrer"
                       className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
                     >
-                      <i className="bx bx-download"></i>
+                      <TbDownload size={16} />
                       Descargar imagen
                     </a>
                     <button 
                       onClick={cargarImagenSolicitud}
                       className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2"
                     >
-                      <i className="bx bx-refresh"></i>
+                      <TbRefresh size={16} />
                       Recargar
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center text-gray-500 py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                  <i className="bx bx-image-alt text-4xl mb-3 opacity-50"></i>
+                  <TbPhoto size={32} className="mb-3 opacity-50 mx-auto" />
                   <p className="text-lg font-medium mb-2">No hay imagen disponible</p>
                   <p className="text-sm">Esta solicitud no tiene documentos adjuntos</p>
                 </div>
@@ -332,7 +358,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
             {/* Motivo */}
             <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
               <div className="flex items-center gap-2 mb-3">
-                <i className="bx bx-edit text-gray-600"></i>
+                <TbEdit size={20} className="text-gray-600" />
                 <h3 className="font-semibold text-gray-800">Motivo de la solicitud</h3>
               </div>
               <p className="text-gray-700 leading-relaxed bg-white p-4 rounded-lg border">
@@ -340,29 +366,6 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
               </p>
             </div>
 
-            {/* Documentos requeridos */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <div className="flex items-center gap-2 mb-4">
-                <i className="bx bx-folder text-gray-600"></i>
-                <h3 className="font-semibold text-gray-800">Documentos adjuntados</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {nombresRequerimientos.map((nombre, index) => (
-                  <div key={index} className="flex items-center bg-white rounded-lg p-3 border border-green-200 shadow-sm">
-                    <div className="bg-green-100 p-2 rounded-lg mr-3">
-                      <i className="bx bx-check text-green-600"></i>
-                    </div>
-                    <span className="text-gray-800 font-medium text-sm">{nombre}</span>
-                  </div>
-                ))}
-              </div>
-              {nombresRequerimientos.length === 0 && (
-                <div className="text-center text-gray-500 py-6 bg-white rounded-lg border border-dashed">
-                  <i className="bx bx-file-blank text-3xl mb-2 opacity-50"></i>
-                  <p>No se adjuntaron documentos</p>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Footer del modal */}
@@ -386,7 +389,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
               onClick={cerrarModalImagen}
               className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl transition-all hover:scale-110 bg-black/50 p-2 rounded-lg z-10"
             >
-              <i className="bx bx-x"></i>
+              <TbX size={24} />
             </button>
 
             {/* Controles de imagen */}
@@ -400,14 +403,14 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                 }}
                 className="hover:text-blue-300 transition-colors flex items-center gap-2"
               >
-                <i className="bx bx-download"></i>
+                <TbDownload size={16} />
                 Descargar
               </button>
               <button
                 onClick={cerrarModalImagen}
                 className="hover:text-red-300 transition-colors flex items-center gap-2"
               >
-                <i className="bx bx-fullscreen"></i>
+                <TbX size={16} />
                 Salir de pantalla completa
               </button>
             </div>
@@ -454,7 +457,7 @@ const ProgressIndicator = ({ step }) => (
             } font-bold text-sm relative z-10`}
           >
             {step >= stepNumber ? (
-              <i className="bx bx-check text-sm"></i>
+              <TbCheck size={16} />
             ) : (
               stepNumber
             )}
@@ -496,7 +499,7 @@ const Step1Requerimientos = ({
   <div className="space-y-6">
     <div className="text-center mb-8">
       <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <i className="bx bx-list-check text-2xl text-blue-600"></i>
+        <TbListCheck size={32} className="text-blue-600" />
       </div>
       <h3 className="text-2xl font-bold text-gray-800 mb-2">
         Selecciona tus requisitos
@@ -521,7 +524,7 @@ const Step1Requerimientos = ({
               : "border-gray-400 bg-white group-hover:border-blue-400"
           }`}>
             {selectAll && (
-              <i className="bx bx-check text-white text-sm font-bold"></i>
+              <TbCheck size={14} className="text-white font-bold" />
             )}
           </div>
         </div>
@@ -569,16 +572,16 @@ const Step1Requerimientos = ({
                 }`}
               >
                 {formData.opt_requerimiento.includes(req.id_requerimientos) && (
-                  <i className="bx bx-check text-white text-sm font-bold"></i>
+                  <TbCheck size={14} className="text-white font-bold" />
                 )}
               </div>
             </div>
             <span className="ml-4 text-gray-800 font-medium flex-1">
               {req.nombre_requerimiento}
             </span>
-            <i className={`bx bx-chevron-right text-gray-400 group-hover:text-blue-500 transition-colors ${
+            <TbChevronRight size={20} className={`text-gray-400 group-hover:text-blue-500 transition-colors ${
               formData.opt_requerimiento.includes(req.id_requerimientos) ? "text-blue-500" : ""
-            }`}></i>
+            }`} />
           </label>
         </div>
       ))}
@@ -587,7 +590,7 @@ const Step1Requerimientos = ({
     {errors.opt_requerimiento && (
       <div className="flex items-center bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl p-4 mt-4 animate-shake">
         <div className="bg-red-100 p-2 rounded-lg mr-3">
-          <i className="bx bx-error-circle text-red-500 text-xl"></i>
+          <TbAlertCircle size={20} className="text-red-500" />
         </div>
         <p className="text-red-700 font-medium">
           {errors.opt_requerimiento}
@@ -603,7 +606,7 @@ const Step1Requerimientos = ({
         className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center shadow-lg shadow-blue-200"
       >
         Continuar
-        <i className="bx bx-chevron-right ml-2 text-lg"></i>
+        <TbChevronRight size={20} className="ml-2" />
       </button>
     </div>
   </div>
@@ -621,7 +624,7 @@ const Step2Documentos = ({
   <div className="space-y-6">
     <div className="text-center mb-8">
       <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <i className="bx bx-cloud-upload text-2xl text-blue-600"></i>
+        <TbCloudUpload size={32} className="text-blue-600" />
       </div>
       <h3 className="text-2xl font-bold text-gray-800 mb-2">
         Sube tu imagen
@@ -635,7 +638,7 @@ const Step2Documentos = ({
       {/* Upload Section para imágenes */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
         <label className="block mb-4 text-gray-800 font-semibold text-lg">
-          <i className="bx bx-image mr-2 text-blue-600"></i>
+          <TbPhoto size={20} className="text-blue-600 mr-2 inline" />
           Imagen del documento
         </label>
         <div className="relative">
@@ -660,7 +663,7 @@ const Step2Documentos = ({
             {formData.archivo ? (
               <>
                 <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <i className="bx bx-check text-green-600 text-2xl"></i>
+                  <TbCheck size={24} className="text-green-600" />
                 </div>
                 <p className="text-gray-800 font-semibold mb-1">
                   {formData.archivo.name}
@@ -691,14 +694,14 @@ const Step2Documentos = ({
                     className="w-full h-auto rounded-lg shadow-md max-h-32 object-cover hover:scale-105 transition-transform cursor-pointer"
                   />
                   <p className="text-blue-600 text-xs mt-2 flex items-center justify-center gap-1">
-                    <i className="bx bx-zoom-in"></i>
+                    <TbZoomIn size={12} />
                     Haz clic para ver en grande
                   </p>
                 </div>
               </>
             ) : (
               <>
-                <i className="bx bx-image-add text-4xl text-blue-500 mb-3"></i>
+                <TbCloudUpload size={40} className="text-blue-500 mb-3 mx-auto" />
                 <p className="text-gray-800 font-semibold mb-1">
                   Haz clic para subir tu imagen
                 </p>
@@ -711,7 +714,7 @@ const Step2Documentos = ({
         </div>
         {errors.archivo && (
           <div className="flex items-center bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
-            <i className="bx bx-error-circle text-red-500 mr-3 text-xl"></i>
+            <TbAlertCircle size={20} className="text-red-500 mr-3" />
             <p className="text-red-700 font-medium">{errors.archivo}</p>
           </div>
         )}
@@ -720,12 +723,12 @@ const Step2Documentos = ({
       {/* Date Section */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
         <label className="block mb-4 text-gray-800 font-semibold text-lg">
-          <i className="bx bx-calendar mr-2 text-blue-600"></i>
+          <TbCalendar size={20} className="text-blue-600 mr-2 inline" />
           Fecha para llevar los documentos
         </label>
         <div className="relative">
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 z-10">
-            <i className="bx bx-calendar text-xl"></i>
+            <TbCalendar size={20} />
           </div>
           <input
             type="date"
@@ -742,7 +745,7 @@ const Step2Documentos = ({
         </div>
         {errors.fecha_llevar && (
           <div className="flex items-center bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
-            <i className="bx bx-error-circle text-red-500 mr-3 text-xl"></i>
+            <TbAlertCircle size={20} className="text-red-500 mr-3" />
             <p className="text-red-700 font-medium">{errors.fecha_llevar}</p>
           </div>
         )}
@@ -750,7 +753,7 @@ const Step2Documentos = ({
         {formData.fecha_llevar && (
           <div className="mt-4 p-3 bg-blue-100 rounded-lg border border-blue-300">
             <p className="text-blue-800 text-sm font-medium flex items-center">
-              <i className="bx bx-info-circle mr-2"></i>
+              <TbInfoCircle size={16} className="mr-2" />
               Cita programada para el {new Date(formData.fecha_llevar).toLocaleDateString('es-ES', {
                 weekday: 'long',
                 year: 'numeric',
@@ -769,7 +772,7 @@ const Step2Documentos = ({
         onClick={handleBack}
         className="bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-gray-200"
       >
-        <i className="bx bx-chevron-left mr-2 text-lg"></i>
+        <TbChevronLeft size={20} className="mr-2" />
         Regresar
       </button>
       <button
@@ -779,7 +782,7 @@ const Step2Documentos = ({
         className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center shadow-lg shadow-blue-200"
       >
         Continuar
-        <i className="bx bx-chevron-right ml-2 text-lg"></i>
+        <TbChevronRight size={20} className="ml-2" />
       </button>
     </div>
   </div>
@@ -797,7 +800,7 @@ const Step3Motivo = ({
   <div className="space-y-6">
     <div className="text-center mb-8">
       <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <i className="bx bx-edit text-2xl text-blue-600"></i>
+        <TbEdit size={32} className="text-blue-600" />
       </div>
       <h3 className="text-2xl font-bold text-gray-800 mb-2">
         Cuéntanos tu motivo
@@ -809,7 +812,7 @@ const Step3Motivo = ({
 
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
       <label className="block mb-4 text-gray-800 font-semibold text-lg">
-        <i className="bx bx-message-dots mr-2 text-blue-600"></i>
+        <TbMessage size={20} className="text-blue-600 mr-2 inline" />
         Motivo de solicitud
       </label>
       <div className="relative">
@@ -828,7 +831,7 @@ const Step3Motivo = ({
       </div>
       {errors.motivo && (
         <div className="flex items-center bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
-          <i className="bx bx-error-circle text-red-500 mr-3 text-xl"></i>
+          <TbAlertCircle size={20} className="text-red-500 mr-3" />
           <p className="text-red-700 font-medium">{errors.motivo}</p>
         </div>
       )}
@@ -836,7 +839,7 @@ const Step3Motivo = ({
       {/* Tips */}
       <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200">
         <p className="text-sm text-gray-600 font-medium mb-2 flex items-center">
-          <i className="bx bx-bulb text-amber-500 mr-2"></i>
+          <TbBulb size={16} className="text-amber-500 mr-2" />
           Consejos para una buena descripción:
         </p>
         <ul className="text-sm text-gray-500 space-y-1">
@@ -854,7 +857,7 @@ const Step3Motivo = ({
         onClick={handleBack}
         className="bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-gray-200"
       >
-        <i className="bx bx-chevron-left mr-2 text-lg"></i>
+        <TbChevronLeft size={20} className="mr-2" />
         Regresar
       </button>
       <button
@@ -864,12 +867,12 @@ const Step3Motivo = ({
       >
         {loading ? (
           <>
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+            <TbLoader size={20} className="animate-spin mr-2" />
             Enviando...
           </>
         ) : (
           <>
-            <i className="bx bx-send mr-2 text-lg"></i>
+            <TbSend size={20} className="mr-2" />
             Enviar Solicitud
           </>
         )}
@@ -878,7 +881,7 @@ const Step3Motivo = ({
   </div>
 );
 
-// Componente SolicitudCard con indicador de imagen
+// Componente SolicitudCard con indicador de imagen - FIXED ICON ISSUES
 const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
   const [tieneImagen, setTieneImagen] = useState(false);
   const [verificandoImagen, setVerificandoImagen] = useState(false);
@@ -915,22 +918,22 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
     const config = {
       "Aprobada": { 
         color: "bg-emerald-500 text-white",
-        icon: "bx-check-circle",
-        gradient: "from-emerald-500 to-emerald-600"
+        gradient: "from-emerald-500 to-emerald-600",
+        icon: TbCircleCheck,
       },
       "Rechazado": { 
         color: "bg-rose-500 text-white",
-        icon: "bx-x-circle",
+        icon: TbX,
         gradient: "from-rose-500 to-rose-600"
       },
       "En revisión": { 
         color: "bg-blue-500 text-white",
-        icon: "bx-time",
+        icon: TbRefresh,
         gradient: "from-blue-500 to-blue-600"
       },
       "Pendiente": { 
         color: "bg-amber-500 text-white",
-        icon: "bx-hourglass",
+        icon: TbCalendarTime,
         gradient: "from-amber-500 to-amber-600"
       }
     };
@@ -938,6 +941,7 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
   };
 
   const estadoConfig = getEstadoConfig(estadoSolicitud);
+  const EstadoIcon = estadoConfig.icon || TbInfoCircle;
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-500 group hover:border-blue-300">
@@ -948,7 +952,7 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
             Solicitud #{solicitud.id_req || "N/A"}
           </h3>
           <p className="text-gray-500 text-sm flex items-center mt-1">
-            <i className="bx bx-calendar mr-1"></i>
+            <TbCalendar size={14} className="mr-1" />
             {new Date(fechaSolicitud).toLocaleDateString('es-ES', {
               year: 'numeric',
               month: 'short',
@@ -958,22 +962,22 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className={`bg-gradient-to-r ${estadoConfig.gradient} text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center shadow-lg`}>
-            <i className={`bx ${estadoConfig.icon} mr-1`}></i>
+            <EstadoIcon size={14} className="mr-1" />
             {estadoSolicitud}
           </span>
           {verificandoImagen ? (
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium flex items-center">
-              <i className="bx bx-loader-circle bx-spin mr-1"></i>
+              <TbLoader size={12} className="animate-spin mr-1" />
               Verificando...
             </span>
           ) : tieneImagen ? (
             <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium flex items-center">
-              <i className="bx bx-image mr-1"></i>
+              <TbPhoto size={12} className="mr-1" />
               Con imagen
             </span>
           ) : (
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium flex items-center">
-              <i className="bx bx-no-entry mr-1"></i>
+              <TbX size={12} className="mr-1" />
               Sin imagen
             </span>
           )}
@@ -992,13 +996,13 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
       {/* Documentos */}
       <div className="mb-4">
         <div className="flex items-center mb-2">
-          <i className="bx bx-folder text-gray-600 mr-2"></i>
+          <TbFolder size={16} className="text-gray-600 mr-2" />
           <span className="text-gray-700 font-semibold text-sm">Documentos adjuntados:</span>
         </div>
         <div className="space-y-2">
           {nombresRequerimientos.slice(0, 2).map((nombre, idx) => (
             <div key={idx} className="flex items-center text-gray-600 text-sm bg-gray-50 rounded-lg px-3 py-2">
-              <i className="bx bx-check text-green-500 mr-2"></i>
+              <TbCheck size={14} className="text-green-500 mr-2" />
               <span className="truncate">{nombre}</span>
             </div>
           ))}
@@ -1019,7 +1023,7 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
       {solicitud.fecha_llevar && (
         <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
           <div className="flex items-center text-blue-700 text-sm">
-            <i className="bx bx-calendar-event mr-2 text-blue-600"></i>
+            <TbCalendarEvent size={14} className="text-blue-600 mr-2" />
             <span className="font-semibold">Próxima cita:</span>
           </div>
           <span className="text-blue-900 font-bold text-sm block mt-1">
@@ -1039,7 +1043,7 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
           onClick={() => onVerDetalles(solicitud)}
           className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center text-sm shadow-lg shadow-blue-200"
         >
-          <i className="bx bx-show mr-1"></i>
+          <TbZoomIn size={16} className="mr-2" />
           Ver Detalles
         </button>
         <div className="text-gray-400 text-xs bg-gray-100 px-2 py-1 rounded-full">
@@ -1066,7 +1070,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
           <div className="flex items-center space-x-4">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-2xl shadow-lg">
-              <i className="bx bx-file text-2xl text-white"></i>
+              <TbFileText size={24} className="text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-800">
@@ -1081,7 +1085,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
             onClick={onNuevaSolicitud}
             className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-blue-200 whitespace-nowrap"
           >
-            <i className="bx bx-plus-circle mr-2 text-lg"></i>
+            <TbPlus size={20} className="mr-2" />
             Nueva Solicitud
           </button>
         </div>
@@ -1095,7 +1099,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
                 <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
               </div>
               <div className="bg-blue-100 p-2 rounded-lg">
-                <i className="bx bx-file text-blue-600 text-xl"></i>
+                <TbFileText size={20} className="text-blue-600" />
               </div>
             </div>
           </div>
@@ -1107,7 +1111,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
                 <p className="text-2xl font-bold text-emerald-600">{stats.aprobadas}</p>
               </div>
               <div className="bg-emerald-100 p-2 rounded-lg">
-                <i className="bx bx-check-circle text-emerald-600 text-xl"></i>
+                <TbCircleCheck size={20} className="text-emerald-600" />
               </div>
             </div>
           </div>
@@ -1119,7 +1123,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
                 <p className="text-2xl font-bold text-amber-600">{stats.pendientes}</p>
               </div>
               <div className="bg-amber-100 p-2 rounded-lg">
-                <i className="bx bx-time text-amber-600 text-xl"></i>
+                <TbCalendarTime size={20} className="text-amber-600" />
               </div>
             </div>
           </div>
@@ -1131,7 +1135,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
                 <p className="text-2xl font-bold text-blue-600">{stats.revision}</p>
               </div>
               <div className="bg-blue-100 p-2 rounded-lg">
-                <i className="bx bx-refresh text-blue-600 text-xl"></i>
+                <TbRefresh size={20} className="text-blue-600" />
               </div>
             </div>
           </div>
@@ -1155,7 +1159,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
         <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl border-2 border-dashed border-gray-300">
           <div className="max-w-md mx-auto">
             <div className="w-20 h-20 mx-auto mb-6 bg-white rounded-2xl flex items-center justify-center border border-gray-200 shadow-lg">
-              <i className="bx bx-file-blank text-3xl text-gray-400"></i>
+              <TbFileText size={32} className="text-gray-400" />
             </div>
             <h3 className="text-xl font-bold text-gray-700 mb-3">
               No hay solicitudes
@@ -1167,7 +1171,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
               onClick={onNuevaSolicitud}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center mx-auto shadow-lg shadow-blue-200"
             >
-              <i className="bx bx-plus-circle mr-2 text-lg"></i>
+              <TbPlus size={20} className="mr-2" />
               Crear Primera Solicitud
             </button>
           </div>
@@ -1177,7 +1181,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
   );
 };
 
-// Componente FormularioSolicitud
+// Componente FormularioSolicitud - FIXED TbEditAlt ISSUE
 const FormularioSolicitud = ({ 
   requerimientos, 
   formData, 
@@ -1247,7 +1251,7 @@ const FormularioSolicitud = ({
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 mt-6 gap-6">
         <div className="flex items-center space-x-4">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-2xl shadow-lg">
-            <i className="bx bx-edit-alt text-2xl text-white"></i>
+            <TbEdit size={24} className="text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
@@ -1262,7 +1266,7 @@ const FormularioSolicitud = ({
           onClick={onCancelar}
           className="bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-gray-200 border border-gray-300"
         >
-          <i className="bx bx-arrow-back mr-2"></i>
+          <TbArrowBack size={20} className="mr-2" />
           Volver al Listado
         </button>
       </div>
@@ -1276,7 +1280,7 @@ const FormularioSolicitud = ({
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
             step === 1 ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400"
           }`}>
-            <i className="bx bx-list-check text-xl"></i>
+            <TbListCheck size={20} />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
@@ -1370,7 +1374,7 @@ const RequireSolicit = ({ setUser }) => {
   const [loading, setLoading] = useState(false);
   const [modalDetalles, setModalDetalles] = useState({ open: false, solicitud: null });
 
-  // Efectos y funciones
+  // Efectos
   useEffect(() => {
     if (formData.opt_requerimiento.length > 0 && errors.opt_requerimiento) {
       setErrors((prev) => ({ ...prev, opt_requerimiento: "" }));
@@ -1464,6 +1468,7 @@ const RequireSolicit = ({ setUser }) => {
     }
   }, [requerimientos, formData.opt_requerimiento]);
 
+  // Funciones de manejo
   const handleSelectAllChange = (e) => {
     const checked = e.target.checked;
     setSelectAll(checked);

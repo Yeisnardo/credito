@@ -4,6 +4,24 @@ import Header from "../components/Header";
 import Menu from "../components/Menu";
 import apiConfiguracion from "../services/api_configuracion_contratos"; // API actualizada
 
+// Importación CORREGIDA de Tabler Icons - solo los que DEFINITIVAMENTE existen
+import {
+  TbSettings,
+  TbArrowBack,
+  TbDashboard,
+  TbCheck,
+  TbAlertCircle,
+  TbCalendar,
+  TbTrendingUp,
+  TbChartLine,
+  TbClock,
+  TbRefresh,
+  TbGift,
+  TbCalendarEvent,
+  TbLoader,
+  TbInfoCircle,
+} from 'react-icons/tb';
+
 const ConfiguracionContratos = () => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
@@ -223,7 +241,7 @@ const ConfiguracionContratos = () => {
       <div className="flex min-h-screen bg-gray-50 font-sans">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <i className="bx bx-loader-circle bx-spin text-4xl text-indigo-600 mb-4"></i>
+            <TbLoader className="animate-spin text-4xl text-indigo-600 mb-4" />
             <p className="text-gray-600">Cargando configuración...</p>
           </div>
         </div>
@@ -247,7 +265,7 @@ const ConfiguracionContratos = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
-                <i className="bx bx-cog text-3xl text-indigo-600"></i>
+                <TbSettings className="text-3xl text-indigo-600" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-800">Configuración de Contratos</h1>
@@ -260,13 +278,13 @@ const ConfiguracionContratos = () => {
                 onClick={() => navigate('/dashboard')}
                 className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors"
               >
-                <i className="bx bx-arrow-back mr-2"></i> Volver
+                <TbArrowBack className="mr-2" size={16} /> Volver
               </button>
               <button
                 onClick={() => navigate('/admin')}
                 className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors"
               >
-                <i className="bx bx-dashboard mr-2"></i> Panel Admin
+                <TbDashboard className="mr-2" size={16} /> Panel Admin
               </button>
             </div>
           </div>
@@ -279,9 +297,11 @@ const ConfiguracionContratos = () => {
                 : "bg-red-50 border-red-500 text-red-700"
             }`}>
               <div className="flex items-center">
-                <i className={`bx ${
-                  tipoMensaje === "success" ? "bx-check-circle" : "bx-error"
-                } mr-2 text-lg`}></i>
+                {tipoMensaje === "success" ? (
+                  <TbCheck className="mr-2 text-lg" />
+                ) : (
+                  <TbAlertCircle className="mr-2 text-lg" />
+                )}
                 {mensaje}
               </div>
             </div>
@@ -304,8 +324,8 @@ const ConfiguracionContratos = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Moneda */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-dollar-circle mr-1"></i> Moneda
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbSettings className="mr-1" size={16} /> Moneda
                     </label>
                     <select
                       name="moneda"
@@ -322,8 +342,8 @@ const ConfiguracionContratos = () => {
 
                   {/* Número de Cuotas */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-calendar mr-1"></i> Número de Cuotas
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbCalendar className="mr-1" size={16} /> Número de Cuotas
                     </label>
                     <input
                       type="number"
@@ -342,8 +362,8 @@ const ConfiguracionContratos = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Porcentaje Flat */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-trending-up mr-1"></i> Flat (%)
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbTrendingUp className="mr-1" size={16} /> Flat (%)
                     </label>
                     <input
                       type="number"
@@ -360,8 +380,8 @@ const ConfiguracionContratos = () => {
 
                   {/* Porcentaje Interés */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-line-chart mr-1"></i> Interés (%)
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbChartLine className="mr-1" size={16} /> Interés (%)
                     </label>
                     <input
                       type="number"
@@ -378,8 +398,8 @@ const ConfiguracionContratos = () => {
 
                   {/* Porcentaje Mora */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-time mr-1"></i> Mora (%)
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbClock className="mr-1" size={16} /> Mora (%)
                     </label>
                     <input
                       type="number"
@@ -398,8 +418,8 @@ const ConfiguracionContratos = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Frecuencia de pago */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-repost mr-1"></i> Frecuencia de Pago
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbRefresh className="mr-1" size={16} /> Frecuencia de Pago
                     </label>
                     <select
                       name="frecuencia_pago"
@@ -417,8 +437,8 @@ const ConfiguracionContratos = () => {
 
                   {/* Cuotas de Gracia */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-gift mr-1"></i> Cuotas de Gracia
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbGift className="mr-1" size={16} /> Cuotas de Gracia
                     </label>
                     <input
                       type="number"
@@ -436,8 +456,8 @@ const ConfiguracionContratos = () => {
                 {/* Días personalizados */}
                 {configuracion.frecuencia_pago === "personalizado" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <i className="bx bx-calendar-edit mr-1"></i> Días entre Pagos
+                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                      <TbCalendarEvent className="mr-1" size={16} /> Días entre Pagos
                     </label>
                     <input
                       type="number"
@@ -461,12 +481,12 @@ const ConfiguracionContratos = () => {
                 >
                   {saving ? (
                     <>
-                      <i className="bx bx-loader-circle bx-spin mr-2"></i>
+                      <TbLoader className="animate-spin mr-2" size={16} />
                       Guardando...
                     </>
                   ) : (
                     <>
-                      <i className="bx bx-save mr-2"></i>
+                      <TbCheck className="mr-2" size={16} />
                       {configuracion.id ? 'Actualizar Configuración' : 'Guardar Configuración'}
                     </>
                   )}
@@ -538,7 +558,7 @@ const ConfiguracionContratos = () => {
               {/* Información Importante */}
               <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
                 <h3 className="font-semibold text-blue-700 mb-2 flex items-center">
-                  <i className="bx bx-info-circle mr-2"></i> Información Importante
+                  <TbInfoCircle className="mr-2" size={16} /> Información Importante
                 </h3>
                 <ul className="text-sm text-blue-600 space-y-1">
                   <li>• Esta configuración se aplica a nuevos contratos</li>
@@ -560,7 +580,6 @@ const ConfiguracionContratos = () => {
 
             {historial.length === 0 ? (
               <div className="text-center py-8">
-                <i className="bx bx-time text-4xl text-gray-400 mb-4"></i>
                 <p className="text-gray-600">No hay cambios registrados</p>
               </div>
             ) : (
@@ -591,7 +610,7 @@ const ConfiguracionContratos = () => {
                         <td className="px-4 py-3 text-sm">{item.numero_cuotas}</td>
                         <td className="px-4 py-3 text-sm">{item.cuotasgracias || 0}</td>
                         <td className="px-4 py-3 text-sm capitalize">{item.frecuencia_pago}</td>
-                      </tr>
+                      </tr> 
                     ))}
                   </tbody>
                 </table>

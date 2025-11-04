@@ -9,6 +9,20 @@ import {
   deleteRequerimiento,
 } from "../services/api_requerimientos";
 
+// Importación CORREGIDA de Tabler Icons - solo los que DEFINITIVAMENTE existen
+import {
+  TbSettings,
+  TbPlus,
+  TbCheck,
+  TbList,
+  TbPackage,
+  TbEdit,
+  TbTrash,
+  TbX,
+  TbInfoCircle,
+  TbLoader
+} from 'react-icons/tb';
+
 const Requerimientos = ({ setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
@@ -139,14 +153,14 @@ const Requerimientos = ({ setUser }) => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 mt-13">
             <div className="flex items-center space-x-4 mb-4 md:mb-0">
               <div className="bg-white p-3 rounded-full shadow-md">
-                <i className="bx bx-cog text-2xl text-indigo-600"></i>
+                <TbSettings className="text-indigo-600" size={24} />
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
                   Gestión de Requerimientos
                 </h1>
                 <p className="text-gray-500 text-sm mt-1">
-                  Administra los requerimientos del los emprededores
+                  Administra los requerimientos de los emprendedores
                 </p>
               </div>
             </div>
@@ -154,8 +168,8 @@ const Requerimientos = ({ setUser }) => {
 
           {/* Sección para registrar requerimiento */}
           <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800 border-b pb-3 border-gray-200">
-              <i className="bx bx-plus-circle mr-2 text-indigo-600"></i>
+            <h2 className="text-xl font-semibold mb-6 text-gray-800 border-b pb-3 border-gray-200 flex items-center">
+              <TbPlus className="mr-2 text-indigo-600" size={20} />
               Registrar Nuevo Requerimiento
             </h2>
             
@@ -183,12 +197,12 @@ const Requerimientos = ({ setUser }) => {
               >
                 {submitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <TbLoader className="animate-spin mr-2" size={16} />
                     Registrando...
                   </>
                 ) : (
                   <>
-                    <i className="bx bx-check-circle mr-2"></i>
+                    <TbCheck className="mr-2" size={16} />
                     Registrar Requerimiento
                   </>
                 )}
@@ -198,19 +212,19 @@ const Requerimientos = ({ setUser }) => {
 
           {/* Tabla de requerimientos */}
           <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-            <h2 className="text-xl font-semibold mb-6 text-gray-800 border-b pb-3 border-gray-200">
-              <i className="bx bx-list-ul mr-2 text-indigo-600"></i>
+            <h2 className="text-xl font-semibold mb-6 text-gray-800 border-b pb-3 border-gray-200 flex items-center">
+              <TbList className="mr-2 text-indigo-600" size={20} />
               Listado de Requerimientos
             </h2>
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <TbLoader className="animate-spin text-indigo-600 mx-auto mb-4" size={32} />
                 <p className="text-gray-500">Cargando requerimientos...</p>
               </div>
             ) : requerimientosList.length === 0 ? (
               <div className="text-center py-12">
-                <i className="bx bx-package text-4xl text-gray-300 mb-3"></i>
+                <TbPackage className="text-gray-300 mx-auto mb-3" size={48} />
                 <p className="text-gray-500">No hay requerimientos registrados</p>
                 <p className="text-sm text-gray-400 mt-1">
                   Comienza agregando tu primer requerimiento
@@ -222,11 +236,11 @@ const Requerimientos = ({ setUser }) => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <i className="bx bx-font mr-1"></i>
+                        <TbList className="inline mr-1" size={14} />
                         Nombre del Requerimiento
                       </th>
                       <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <i className="bx bx-cog mr-1"></i>
+                        <TbSettings className="inline mr-1" size={14} />
                         Acciones
                       </th>
                     </tr>
@@ -259,14 +273,14 @@ const Requerimientos = ({ setUser }) => {
                                   className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md transition-colors"
                                   title="Guardar"
                                 >
-                                  <i className="bx bx-check text-lg"></i>
+                                  <TbCheck size={16} />
                                 </button>
                                 <button
                                   onClick={handleCancelar}
                                   className="bg-gray-500 hover:bg-gray-600 text-white p-2 rounded-md transition-colors"
                                   title="Cancelar"
                                 >
-                                  <i className="bx bx-x text-lg"></i>
+                                  <TbX size={16} />
                                 </button>
                               </>
                             ) : (
@@ -276,14 +290,14 @@ const Requerimientos = ({ setUser }) => {
                                   className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md transition-colors"
                                   title="Editar"
                                 >
-                                  <i className="bx bx-edit text-lg"></i>
+                                  <TbEdit size={16} />
                                 </button>
                                 <button
                                   onClick={() => handleEliminar(req.id_requerimientos, req.nombre_requerimiento)}
                                   className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-md transition-colors"
                                   title="Eliminar"
                                 >
-                                  <i className="bx bx-trash text-lg"></i>
+                                  <TbTrash size={16} />
                                 </button>
                               </>
                             )}
@@ -297,8 +311,8 @@ const Requerimientos = ({ setUser }) => {
             )}
 
             {requerimientosList.length > 0 && (
-              <div className="mt-4 text-sm text-gray-500">
-                <i className="bx bx-info-circle mr-1"></i>
+              <div className="mt-4 text-sm text-gray-500 flex items-center">
+                <TbInfoCircle className="mr-1" size={14} />
                 Total: {requerimientosList.length} requerimiento{requerimientosList.length !== 1 ? 's' : ''}
               </div>
             )}

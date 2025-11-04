@@ -6,6 +6,43 @@ import Menu from "../components/Menu";
 import apiCuotas from "../services/api_cuotas";
 import { generarReciboPagoProfesional, generarResumenUsuario } from '../pdf/reciboPago';
 
+// Importar Tabler Icons - CORREGIDOS
+import {
+  TbHome,
+  TbClock,
+  TbHistory,
+  TbFileText,
+  TbCreditCard,
+  TbBuildingBank,
+  TbRefresh,
+  TbDownload,
+  TbEye,
+  TbCheck,
+  TbX,
+  TbAlertCircle,
+  TbCalendar,
+  TbCalendarEvent,
+  TbTrendingUp,
+  TbTrendingDown,
+  TbMinus,
+  TbFile,
+  TbConfetti, // Reemplaza TbParty
+  TbTransfer,
+  TbCalendarPlus,
+  TbCalendarMinus,
+  TbCopyright,
+  TbUser,
+  TbCurrencyDollar, // Reemplaza TbDollar
+  TbId,
+  TbCoin,
+  TbReceipt2, // Reemplaza TbReceipt
+  TbArrowRight,
+  TbChevronRight,
+  TbCurrencyBitcoin, // Alternativa para moneda
+  TbStar, // Para estados destacados
+  TbAlertTriangle // Para advertencias
+} from 'react-icons/tb';
+
 const EmprendedorDashboard = ({ setUser }) => {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(true);
@@ -35,7 +72,6 @@ const EmprendedorDashboard = ({ setUser }) => {
   const extraerNumeroCuota = (textoSemana) => {
     if (!textoSemana) return 0;
     
-    // Buscar números en el texto (ej: "Semana 1", "Semana 10", etc.)
     const match = textoSemana.match(/(\d+)/);
     return match ? parseInt(match[1]) : 0;
   };
@@ -63,7 +99,7 @@ const EmprendedorDashboard = ({ setUser }) => {
       case 'mensual':
         return 30;
       default:
-        return 7; // Por defecto semanal
+        return 7;
     }
   };
 
@@ -85,7 +121,6 @@ const EmprendedorDashboard = ({ setUser }) => {
   const formatearNombreCuota = (textoSemana) => {
     const numero = extraerNumeroCuota(textoSemana);
     if (numero > 0) {
-      // USAR LA FRECUENCIA DEL CONTRATO SI ESTÁ DISPONIBLE
       const frecuencia = contrato?.frecuencia_pago_contrato || 'semanal';
       return generarNombreCuota(numero, frecuencia);
     }
@@ -159,7 +194,6 @@ const EmprendedorDashboard = ({ setUser }) => {
   // =============================================
 
   const calcularInteresMorosidad = (diasMora, montoOriginal) => {
-    // ✅ USAR MOROSIDAD DEL CONTRATO EN LUGAR DE CONFIGURACIÓN GLOBAL
     if (!contrato || !contrato.morosidad) return 0;
     
     const porcentajeDiario = contrato.morosidad / 100;
@@ -181,7 +215,6 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   const getInfoPorcentajeMora = () => {
-    // ✅ USAR MOROSIDAD DEL CONTRATO EN LUGAR DE CONFIGURACIÓN GLOBAL
     if (!contrato || !contrato.morosidad) {
       return "No configurado";
     }
@@ -293,20 +326,16 @@ const EmprendedorDashboard = ({ setUser }) => {
       const contratoData = await apiCuotas.getContratoPorCedula(cedula);
       setContrato(contratoData);
 
-      // OBTENER Y ORDENAR HISTORIAL DE PAGOS
       const historialData = await apiCuotas.getHistorialPagosEmprendedor(cedula);
       const historialOrdenado = ordenarCuotasNumericamente(historialData);
       setHistorialPagos(historialOrdenado);
 
-      // OBTENER Y ORDENAR CUOTAS PENDIENTES
       const pendientesData = await apiCuotas.getCuotasPendientesEmprendedor(cedula);
       
-      // OBTENER FRECUENCIA DEL CONTRATO
       const frecuencia = contratoData?.frecuencia_pago_contrato || 'semanal';
       const diasPorPeriodo = calcularDiasPorFrecuencia(frecuencia);
       
       const cuotasConFechas = pendientesData.map((cuota) => {
-        // Si ya tiene fechas, las respetamos
         if (cuota.fecha_desde && cuota.fecha_hasta) {
           return {
             ...cuota,
@@ -319,26 +348,23 @@ const EmprendedorDashboard = ({ setUser }) => {
           new Date(contratoData.fecha_desde) : 
           new Date();
         
-        // CALCULAR FECHAS SEGÚN FRECUENCIA
         const fechaDesde = new Date(fechaBase);
         fechaDesde.setDate(fechaBase.getDate() + ((numeroCuota - 1) * diasPorPeriodo));
         
         const fechaHasta = new Date(fechaDesde);
         fechaHasta.setDate(fechaDesde.getDate() + diasPorPeriodo);
         
-        // GENERAR NOMBRE CORRECTO DE LA CUOTA
         const nombreCuota = generarNombreCuota(numeroCuota, frecuencia);
 
         return {
           ...cuota,
-          semana: nombreCuota, // Actualizar nombre según frecuencia
+          semana: nombreCuota,
           fecha_desde: fechaDesde.toISOString().split('T')[0],
           fecha_hasta: fechaHasta.toISOString().split('T')[0],
           interes_acumulado: 0
         };
       });
 
-      // ORDENAR LAS CUOTAS PENDIENTES NUMÉRICAMENTE
       const cuotasOrdenadas = ordenarCuotasNumericamente(cuotasConFechas);
       
       setCuotasPendientes(cuotasOrdenadas);
@@ -419,35 +445,35 @@ const EmprendedorDashboard = ({ setUser }) => {
         return { 
           color: 'green', 
           text: 'Confirmado', 
-          icon: 'bx-check-circle',
+          icon: TbCheck,
           puedeDescargar: true 
         };
       case 'Rechazado':
         return { 
           color: 'red', 
           text: 'Rechazado', 
-          icon: 'bx-x-circle',
+          icon: TbX,
           puedeDescargar: false 
         };
       case 'A Recibido':
         return { 
           color: 'blue', 
           text: 'Por Confirmar', 
-          icon: 'bx-time-five',
+          icon: TbClock,
           puedeDescargar: false 
         };
       case 'En Espera':
         return { 
           color: 'gray', 
           text: 'En Espera', 
-          icon: 'bx-time',
+          icon: TbClock,
           puedeDescargar: false 
         };
       default:
         return { 
           color: 'gray', 
           text: 'Pendiente', 
-          icon: 'bx-time',
+          icon: TbClock,
           puedeDescargar: false 
         };
     }
@@ -566,7 +592,7 @@ const EmprendedorDashboard = ({ setUser }) => {
   // COMPONENTES VISUALES MEJORADOS
   // =============================================
 
-  const LayoutContainer = ({ children, title, subtitle, icon, actionButton }) => (
+  const LayoutContainer = ({ children, title, subtitle, actionButton }) => (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 font-sans">
       {menuOpen && <Menu />}
 
@@ -578,7 +604,7 @@ const EmprendedorDashboard = ({ setUser }) => {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="bg-white p-4 rounded-2xl shadow-lg border border-gray-100">
-                  <i className={`bx ${icon} text-3xl text-blue-600`}></i>
+                  <TbHome size={28} className="text-blue-600" />
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
@@ -606,7 +632,7 @@ const EmprendedorDashboard = ({ setUser }) => {
                   onClick={recargarDatos}
                   disabled={loading}
                 >
-                  <i className={`bx bx-refresh ${loading ? 'animate-spin' : ''}`}></i>
+                  <TbRefresh size={18} className={loading ? 'animate-spin' : ''} />
                   {loading ? 'Actualizando...' : 'Actualizar'}
                 </button>
               </div>
@@ -619,7 +645,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         <footer className="mt-auto p-6 bg-white border-t border-gray-200">
           <div className="text-center text-sm text-gray-600">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <i className="bx bx-copyright"></i>
+              <TbCopyright size={16} />
               <span>{new Date().getFullYear()} IFEMI & UPTYAB</span>
             </div>
             <p className="text-gray-500">Panel del Emprendedor - Sistema de Gestión de Cuotas</p>
@@ -638,7 +664,7 @@ const EmprendedorDashboard = ({ setUser }) => {
           <p className="text-gray-500 text-sm">{subtitulo}</p>
         </div>
         <div className={`bg-${color}-50 p-3 rounded-xl group-hover:scale-110 transition-transform duration-300`}>
-          <i className={`bx ${icono} text-2xl text-${color}-600`}></i>
+          {icono}
         </div>
       </div>
       {trend && (
@@ -646,10 +672,9 @@ const EmprendedorDashboard = ({ setUser }) => {
           trend === 'positive' ? 'text-green-600' : 
           trend === 'warning' ? 'text-amber-600' : 'text-blue-600'
         }`}>
-          <i className={`bx ${
-            trend === 'positive' ? 'bx-trending-up' : 
-            trend === 'warning' ? 'bx-trending-down' : 'bx-minus'
-          } mr-1`}></i>
+          {trend === 'positive' ? <TbTrendingUp size={16} className="mr-1" /> : 
+           trend === 'warning' ? <TbTrendingDown size={16} className="mr-1" /> : 
+           <TbMinus size={16} className="mr-1" />}
           <span>Estado actual</span>
         </div>
       )}
@@ -663,7 +688,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         valor={`$${stats.totalPagado.toLocaleString()}`}
         subtitulo="Monto cancelado"
         color="green"
-        icono="bx-check-circle"
+        icono={<TbCheck size={24} className="text-green-600" />}
         trend="positive"
       />
       <StatsCard
@@ -671,7 +696,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         valor={`$${stats.totalPendiente.toLocaleString()}`}
         subtitulo="Saldo pendiente"
         color="amber"
-        icono="bx-time"
+        icono={<TbClock size={24} className="text-amber-600" />}
         trend="warning"
       />
       <StatsCard
@@ -679,7 +704,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         valor={stats.proximasCuotas}
         subtitulo="Por vencer"
         color="blue"
-        icono="bx-calendar-event"
+        icono={<TbCalendarEvent size={24} className="text-blue-600" />}
         trend="neutral"
       />
       <StatsCard
@@ -687,7 +712,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         valor={`${stats.progreso}%`}
         subtitulo="Del total"
         color="purple"
-        icono="bx-trending-up"
+        icono={<TbTrendingUp size={24} className="text-purple-600" />}
         trend="positive"
       />
     </div>
@@ -700,7 +725,7 @@ const EmprendedorDashboard = ({ setUser }) => {
     if (cuota.estado_cuota === "Pagado") {
       return (
         <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-          <i className="bx bx-check-circle"></i>
+          <TbCheck size={14} />
           Pagado
         </span>
       );
@@ -713,7 +738,6 @@ const EmprendedorDashboard = ({ setUser }) => {
       
       return (
         <span className={`${estilo} px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1`}>
-          <i className="bx bx-timer"></i>
           {diasRest} días
         </span>
       );
@@ -726,7 +750,7 @@ const EmprendedorDashboard = ({ setUser }) => {
       
       return (
         <span className={`${estilo} px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1`}>
-          <i className="bx bx-error-alt"></i>
+          <TbAlertCircle size={14} />
           {diasMora} días de mora
         </span>
       );
@@ -734,7 +758,7 @@ const EmprendedorDashboard = ({ setUser }) => {
     
     return (
       <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-        <i className="bx bx-time-five"></i>
+        <TbClock size={14} />
         Vencido hoy
       </span>
     );
@@ -750,7 +774,7 @@ const EmprendedorDashboard = ({ setUser }) => {
     return (
       <div className="mt-4 p-4 bg-red-50 rounded-xl border border-red-200">
         <div className="flex items-center gap-2 mb-2">
-          <i className="bx bx-error text-red-600"></i>
+          <TbAlertCircle size={16} className="text-red-600" />
           <span className="text-red-700 font-semibold">Cuota en Mora</span>
         </div>
         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -763,7 +787,6 @@ const EmprendedorDashboard = ({ setUser }) => {
           <div className="text-red-800 font-semibold">Total a pagar:</div>
           <div className="text-red-800 font-bold text-right">${totalConMora.toFixed(2)}</div>
         </div>
-        {/* ✅ MOSTRAR PORCENTAJE DEL CONTRATO */}
         <div className="text-xs text-red-600 mt-2">
           {diasMora} días × {getInfoPorcentajeMora()}
         </div>
@@ -780,7 +803,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <div className="flex items-center gap-2 text-gray-700">
             <div className="bg-green-100 p-2 rounded-lg">
-              <i className="bx bx-calendar-plus text-green-600"></i>
+              <TbCalendarPlus size={16} className="text-green-600" />
             </div>
             <div>
               <div className="font-medium text-gray-500">Disponible desde</div>
@@ -789,7 +812,7 @@ const EmprendedorDashboard = ({ setUser }) => {
           </div>
           <div className="flex items-center gap-2 text-gray-700">
             <div className="bg-red-100 p-2 rounded-lg">
-              <i className="bx bx-calendar-minus text-red-600"></i>
+              <TbCalendarMinus size={16} className="text-red-600" />
             </div>
             <div>
               <div className="font-medium text-gray-500">Vence el</div>
@@ -806,21 +829,23 @@ const EmprendedorDashboard = ({ setUser }) => {
 
   const ConversionMonetaria = ({ monto }) => (
     <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-      <i className="bx bx-transfer"></i>
+      <TbTransfer size={16} />
       <span>≈ {convertirAVes(monto)} Bs (Tasa: {rates.dolar?.toFixed(2)} Bs/$)</span>
     </div>
   );
 
   const AlertMessage = ({ tipo, mensaje }) => {
     const config = {
-      error: { icon: 'bx-error', color: 'red' },
-      warning: { icon: 'bx-time', color: 'orange' },
-      success: { icon: 'bx-check', color: 'green' }
+      error: { icon: TbAlertCircle, color: 'red' },
+      warning: { icon: TbAlertTriangle, color: 'orange' },
+      success: { icon: TbCheck, color: 'green' }
     }[tipo];
+
+    const IconComponent = config.icon;
 
     return (
       <div className={`mt-3 p-3 bg-${config.color}-50 border border-${config.color}-200 rounded-xl flex items-center gap-2 text-${config.color}-700`}>
-        <i className={`bx ${config.icon} text-${config.color}-600`}></i>
+        <IconComponent size={16} className={`text-${config.color}-600`} />
         <span className="text-sm font-medium">{mensaje}</span>
       </div>
     );
@@ -835,18 +860,17 @@ const EmprendedorDashboard = ({ setUser }) => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              {/* USAR NOMBRE FORMATEADO SEGÚN FRECUENCIA */}
               <h3 className="text-lg font-semibold text-gray-900">{formatearNombreCuota(cuota.semana)}</h3>
               <EstadoCronometro cuota={cuota} />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
               <div className="flex items-center gap-2">
-                <i className="bx bx-file text-gray-400"></i>
+                <TbFileText size={16} className="text-gray-400" />
                 <span>Contrato: {cuota.numero_contrato}</span>
               </div>
               <div className="flex items-center gap-2">
-                <i className="bx bx-dollar text-gray-400"></i>
+                <TbCurrencyDollar size={16} className="text-gray-400" />
                 <span>Monto: ${cuota.monto}</span>
               </div>
             </div>
@@ -874,7 +898,7 @@ const EmprendedorDashboard = ({ setUser }) => {
               onClick={() => puedePagar && registrarPagoManual(cuota.id_cuota)}
               disabled={loading || !puedePagar}
             >
-              <i className="bx bx-credit-card"></i>
+              <TbCreditCard size={16} />
               {loading ? 'Procesando...' : 
                estaEnMora(cuota) ? 'Pagar con Mora' :
                !puedePagar ? 'No disponible' : 
@@ -897,28 +921,28 @@ const EmprendedorDashboard = ({ setUser }) => {
       <TabButton 
         activo={vista === 'resumen'} 
         onClick={() => setVista('resumen')}
-        icon="bx-home"
+        icon={TbHome}
         label="Resumen"
         badge={null}
       />
       <TabButton 
         activo={vista === 'pendientes'} 
         onClick={() => setVista('pendientes')}
-        icon="bx-time"
+        icon={TbClock}
         label="Pendientes"
         badge={cuotasPendientes.length}
       />
       <TabButton 
         activo={vista === 'historial'} 
         onClick={() => setVista('historial')}
-        icon="bx-history"
+        icon={TbHistory}
         label="Historial"
         badge={historialPagos.length}
       />
     </div>
   );
 
-  const TabButton = ({ activo, onClick, icon, label, badge }) => (
+  const TabButton = ({ activo, onClick, icon: Icon, label, badge }) => (
     <button
       className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
         activo 
@@ -927,7 +951,7 @@ const EmprendedorDashboard = ({ setUser }) => {
       }`}
       onClick={onClick}
     >
-      <i className={`bx ${icon} text-lg`}></i>
+      <Icon size={18} />
       <span>{label}</span>
       {badge !== null && badge > 0 && (
         <span className={`px-2 py-1 rounded-full text-xs font-bold ${
@@ -958,19 +982,19 @@ const EmprendedorDashboard = ({ setUser }) => {
     </div>
   );
 
-  const ActionButton = ({ icon, label, color, onClick }) => (
+  const ActionButton = ({ icon: Icon, label, color, onClick }) => (
     <button
       className={`bg-${color}-50 text-${color}-700 p-4 rounded-xl flex flex-col items-center justify-center hover:bg-${color}-100 transition-all duration-200 group hover:scale-105`}
       onClick={onClick}
     >
-      <i className={`bx ${icon} text-2xl mb-2 group-hover:scale-110 transition-transform`}></i>
+      <Icon size={24} className="mb-2 group-hover:scale-110 transition-transform" />
       <span className="text-sm font-medium text-center">{label}</span>
     </button>
   );
 
-  const EmptyState = ({ icon, title, description, action }) => (
+  const EmptyState = ({ icon: Icon, title, description, action }) => (
     <div className="text-center py-8">
-      <i className={`bx ${icon} text-4xl text-gray-400 mb-4`}></i>
+      <Icon size={48} className="text-gray-400 mb-4 mx-auto" />
       <p className="text-gray-600 font-medium">{title}</p>
       {description && <p className="text-gray-500 text-sm mt-1">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
@@ -979,21 +1003,21 @@ const EmprendedorDashboard = ({ setUser }) => {
 
   const PagoItem = ({ pago }) => {
     const estado = getEstadoConfirmacion(pago.confirmacionifemi);
+    const IconComponent = estado.icon;
     
     return (
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
         <div className="flex items-center gap-4">
           <div className={`bg-${estado.color}-100 p-3 rounded-lg`}>
-            <i className={`bx ${estado.icon} text-${estado.color}-600 text-xl`}></i>
+            <IconComponent size={20} className={`text-${estado.color}-600`} />
           </div>
           <div>
-            {/* USAR NOMBRE FORMATEADO SEGÚN FRECUENCIA */}
             <p className="font-medium text-gray-900">{formatearNombreCuota(pago.semana)} pagada</p>
             <p className="text-sm text-gray-600">
               {pago.fecha_pagada} • Contrato: {pago.numero_contrato}
             </p>
             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-${estado.color}-100 text-${estado.color}-800 mt-1`}>
-              <i className={`bx ${estado.icon}`}></i>
+              <IconComponent size={12} />
               {estado.text}
             </span>
           </div>
@@ -1004,7 +1028,7 @@ const EmprendedorDashboard = ({ setUser }) => {
             className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-1"
             onClick={() => descargarComprobante(pago.id_cuota)}
           >
-            <i className="bx bx-download"></i>Comprobante
+            <TbDownload size={14} /> Comprobante
           </button>
         </div>
       </div>
@@ -1013,19 +1037,19 @@ const EmprendedorDashboard = ({ setUser }) => {
 
   const PagoTableRow = ({ pago }) => {
     const estado = getEstadoConfirmacion(pago.confirmacionifemi);
+    const IconComponent = estado.icon;
     
     return (
       <tr className="hover:bg-gray-50 transition-colors">
         <td className="py-4 px-6 text-sm text-gray-900">
           {pago.fecha_pagada || 'Fecha no disponible'}
         </td>
-        {/* USAR NOMBRE FORMATEADO SEGÚN FRECUENCIA */}
         <td className="py-4 px-6 text-sm text-gray-900">{formatearNombreCuota(pago.semana)}</td>
         <td className="py-4 px-6 text-sm text-gray-900 font-semibold">${pago.monto}</td>
         <td className="py-4 px-6 text-sm text-gray-900">{pago.numero_contrato}</td>
         <td className="py-4 px-6">
           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-${estado.color}-100 text-${estado.color}-800`}>
-            <i className={`bx ${estado.icon}`}></i>
+            <IconComponent size={12} />
             {estado.text}
           </span>
         </td>
@@ -1035,7 +1059,7 @@ const EmprendedorDashboard = ({ setUser }) => {
               className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-blue-100 transition-colors text-sm font-medium"
               onClick={() => descargarComprobante(pago.id_cuota)}
             >
-              <i className="bx bx-download"></i> Comprobante
+              <TbDownload size={14} /> Comprobante
             </button>
             
             {estado.puedeDescargar && (
@@ -1045,7 +1069,7 @@ const EmprendedorDashboard = ({ setUser }) => {
                   onClick={() => manejarReciboPago(pago, 'visualizar')}
                   disabled={loading}
                 >
-                  <i className="bx bx-show"></i> 
+                  <TbEye size={14} /> 
                   {loading ? 'Cargando...' : 'Ver Recibo'}
                 </button>
                 
@@ -1054,7 +1078,7 @@ const EmprendedorDashboard = ({ setUser }) => {
                   onClick={() => manejarReciboPago(pago, 'descargar')}
                   disabled={loading}
                 >
-                  <i className="bx bx-download"></i> 
+                  <TbDownload size={14} /> 
                   {loading ? 'Procesando...' : 'PDF'}
                 </button>
               </>
@@ -1073,14 +1097,13 @@ const EmprendedorDashboard = ({ setUser }) => {
     <LayoutContainer
       title="Mi Panel de Cuotas"
       subtitle={`Bienvenido/a, ${user?.nombre_completo?.split(' ')[0] || 'Emprendedor'}`}
-      icon="bx-home"
       actionButton={
         <div className="flex gap-3">
           <button 
             className="bg-white border border-gray-200 text-gray-700 px-4 py-3 rounded-xl flex items-center gap-2 hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md"
             onClick={handleViewPdf}
           >
-            <i className="bx bx-file"></i>
+            <TbFileText size={18} />
             Generar Reporte
           </button>
         </div>
@@ -1100,7 +1123,7 @@ const EmprendedorDashboard = ({ setUser }) => {
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
                 onClick={() => setVista('pendientes')}
               >
-                Ver todas <i className="bx bx-chevron-right"></i>
+                Ver todas <TbChevronRight size={14} />
               </button>
             )
           }
@@ -1108,12 +1131,11 @@ const EmprendedorDashboard = ({ setUser }) => {
           <div className="space-y-4">
             {cuotasPendientes.length === 0 ? (
               <EmptyState 
-                icon="bx-party"
+                icon={TbConfetti}
                 title="🎉 No tienes cuotas pendientes"
                 description="Has completado todos tus pagos pendientes"
               />
             ) : (
-              // LAS CUOTAS YA VIENEN ORDENADAS DESDE LA CARGA
               cuotasPendientes.slice(0, 3).map(cuota => (
                 <CuotaCard key={cuota.id_cuota} cuota={cuota} esResumen={true} />
               ))
@@ -1127,25 +1149,25 @@ const EmprendedorDashboard = ({ setUser }) => {
         >
           <div className="grid grid-cols-2 gap-4">
             <ActionButton
-              icon="bx-file"
+              icon={TbFileText}
               label="Solicitar crédito"
               color="indigo"
               onClick={() => navigate('/Requeri_solicit')}
             />
             <ActionButton
-              icon="bx-credit-card"
+              icon={TbCreditCard}
               label="Ver cuotas"
               color="green"
               onClick={() => setVista('pendientes')}
             />
             <ActionButton
-              icon="bx-bank"
+              icon={TbBuildingBank}
               label="Información bancaria"
               color="blue"
               onClick={() => navigate('/Banco')}
             />
             <ActionButton
-              icon="bx-history"
+              icon={TbHistory}
               label="Historial de pagos"
               color="purple"
               onClick={() => setVista('historial')}
@@ -1163,7 +1185,7 @@ const EmprendedorDashboard = ({ setUser }) => {
               className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
               onClick={() => setVista('historial')}
             >
-              Ver todo <i className="bx bx-chevron-right"></i>
+              Ver todo <TbChevronRight size={14} />
             </button>
           )
         }
@@ -1171,12 +1193,11 @@ const EmprendedorDashboard = ({ setUser }) => {
         <div className="space-y-3">
           {historialPagos.length === 0 ? (
             <EmptyState 
-              icon="bx-file"
+              icon={TbFileText}
               title="No hay pagos registrados"
               description="Tu historial de pagos aparecerá aquí"
             />
           ) : (
-            // EL HISTORIAL YA VIENE ORDENADO DESDE LA CARGA
             historialPagos.slice(0, 3).map(pago => (
               <PagoItem key={pago.id_cuota} pago={pago} />
             ))
@@ -1190,7 +1211,6 @@ const EmprendedorDashboard = ({ setUser }) => {
     <LayoutContainer
       title="Mis Cuotas Pendientes"
       subtitle="Gestiona tus pagos dentro del período establecido"
-      icon="bx-time"
       actionButton={
         <div className="bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-semibold">
           {cuotasPendientes.length} pendientes
@@ -1206,7 +1226,7 @@ const EmprendedorDashboard = ({ setUser }) => {
         <div className="space-y-6">
           {cuotasPendientes.length === 0 ? (
             <EmptyState 
-              icon="bx-party"
+              icon={TbConfetti}
               title="🎉 No tienes cuotas pendientes"
               description="Has completado todos tus pagos pendientes"
               action={
@@ -1219,7 +1239,6 @@ const EmprendedorDashboard = ({ setUser }) => {
               }
             />
           ) : (
-            // LAS CUOTAS YA VIENEN ORDENADAS DESDE LA CARGA
             cuotasPendientes.map(cuota => (
               <CuotaCard key={cuota.id_cuota} cuota={cuota} />
             ))
@@ -1233,8 +1252,6 @@ const EmprendedorDashboard = ({ setUser }) => {
     <LayoutContainer
       title="Mi Historial de Pagos"
       subtitle="Registro de todos tus pagos realizados"
-      icon="bx-history"
-      actionButton={null}
     >
       <NavigationTabs />
       
@@ -1244,7 +1261,7 @@ const EmprendedorDashboard = ({ setUser }) => {
       >
         {historialPagos.length === 0 ? (
           <EmptyState 
-            icon="bx-file"
+            icon={TbFileText}
             title="No hay pagos registrados"
             description="Tu historial de pagos aparecerá aquí"
           />
@@ -1261,7 +1278,6 @@ const EmprendedorDashboard = ({ setUser }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {/* EL HISTORIAL YA VIENE ORDENADO DESDE LA CARGA */}
                 {historialPagos.map(pago => (
                   <PagoTableRow key={pago.id_cuota} pago={pago} />
                 ))}

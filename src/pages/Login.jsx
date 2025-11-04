@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import axios from "axios";
-import { motion } from "framer-motion"; // Importar motion
+import { motion } from "framer-motion";
+// Importar Tabler Icons
+import { TbUser, TbLock, TbLogin } from "react-icons/tb";
 import miImagen from "../assets/imagenes/logo_ifemi.jpg";
 
 const Login = ({ setUser }) => {
@@ -123,7 +125,7 @@ const Login = ({ setUser }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                  <i className="bx bxs-user text-xl"></i>
+                  <TbUser size={20} className="text-gray-500" />
                 </div>
                 <input
                   type="text"
@@ -146,7 +148,7 @@ const Login = ({ setUser }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                  <i className="bx bxs-lock text-xl"></i>
+                  <TbLock size={20} className="text-gray-500" />
                 </div>
                 <input
                   type="password"
@@ -164,9 +166,10 @@ const Login = ({ setUser }) => {
               type="submit"
               whileHover={{ scale: 1.05, boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)" }}
               transition={{ duration: 0.3 }}
-              className="w-full py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
+              className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-blue-900 text-white font-semibold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition-transform duration-300"
             >
-              Ingresar
+              <TbLogin size={20} />
+              <span>Ingresar</span>
             </motion.button>
           </form>
 
