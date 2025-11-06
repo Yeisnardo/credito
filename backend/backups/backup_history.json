@@ -1,0 +1,13 @@
+[
+  {
+    "id": "1762437926982",
+    "filename": "backup_2025-11-06T14-05-22-527Z.sql",
+    "path": "C:\\Users\\Yei5\\credito\\backend\\backups\\backup_2025-11-06T14-05-22-527Z.sql",
+    "size": 28489,
+    "size_formatted": "27.82 KB",
+    "status": "completed",
+    "created_at": "2025-11-06T14:05:27.099Z",
+    "database": "Unknown",
+    "tables_backed_up": 17
+  }
+]

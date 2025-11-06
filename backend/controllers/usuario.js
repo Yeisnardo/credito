@@ -6,6 +6,8 @@ const router = express.Router();
 
 const rolesValidos = ['Administrador', 'Emprendedor', 'Credito1', 'Credito2'];
 
+// Función para validar datos del usuario
+
 // Obtener todos los usuarios
 router.get('/', async (req, res) => {
   try {
@@ -93,27 +95,125 @@ router.post('/', async (req, res) => {
 });
 
 // Actualizar un usuario existente
+// Actualizar un usuario existente - VERSIÓN CORREGIDA
 router.put('/:cedula_usuario', async (req, res) => {
   try {
     const { cedula_usuario } = req.params;
     const usuarioData = req.body;
-    validarUsuario(usuarioData);
+    
+    // Validar datos requeridos
+    if (!usuarioData.usuario || !usuarioData.rol) {
+      return res.status(400).json({ message: 'Usuario y rol son requeridos' });
+    }
 
-    const resultado = await query(`
-      UPDATE usuario SET
-        usuario = $1,
-        clave = $2,
-        rol = $3,
-        estatus = $4
-      WHERE cedula_usuario = $5
-      RETURNING *`, [usuarioData.usuario, usuarioData.clave, usuarioData.rol, usuarioData.estatus, cedula_usuario]);
+    // Construir la consulta dinámicamente para permitir actualizaciones parciales
+    let queryParts = [];
+    let queryParams = [];
+    let paramCount = 1;
+
+    if (usuarioData.usuario) {
+      queryParts.push(`usuario = $${paramCount}`);
+      queryParams.push(usuarioData.usuario);
+      paramCount++;
+    }
+
+    if (usuarioData.clave) {
+      queryParts.push(`clave = $${paramCount}`);
+      queryParams.push(usuarioData.clave);
+      paramCount++;
+    }
+
+    if (usuarioData.rol) {
+      queryParts.push(`rol = $${paramCount}`);
+      queryParams.push(usuarioData.rol);
+      paramCount++;
+    }
+
+    if (usuarioData.estatus) {
+      queryParts.push(`estatus = $${paramCount}`);
+      queryParams.push(usuarioData.estatus);
+      paramCount++;
+    }
+
+    if (queryParts.length === 0) {
+      return res.status(400).json({ message: 'No hay campos para actualizar' });
+    }
+
+    queryParams.push(cedula_usuario);
+
+    const queryString = `
+      UPDATE usuario 
+      SET ${queryParts.join(', ')} 
+      WHERE cedula_usuario = $${paramCount} 
+      RETURNING *
+    `;
+
+    const resultado = await query(queryString, queryParams);
     
     if (resultado.rows.length === 0) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
+    
     res.json(resultado.rows[0]);
   } catch (err) {
     console.error('Error en updateUsuario:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Verificar contraseña - RUTA CORREGIDA
+router.post('/verify-password', async (req, res) => {
+  try {
+    const { cedula_usuario, password } = req.body;
+    
+    if (!cedula_usuario || !password) {
+      return res.status(400).json({ valid: false, message: 'Datos incompletos' });
+    }
+    
+    const resultado = await query(
+      'SELECT clave FROM usuario WHERE cedula_usuario = $1',
+      [cedula_usuario]
+    );
+    
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ valid: false, message: 'Usuario no encontrado' });
+    }
+    
+    const user = resultado.rows[0];
+    const isValid = user.clave === password;
+    
+    res.json({ valid: isValid });
+  } catch (err) {
+    console.error('Error verificando contraseña:', err);
+    res.status(500).json({ valid: false, message: 'Error del servidor' });
+  }
+});
+
+// Actualizar solo contraseña - RUTA CORREGIDA
+router.put('/:cedula_usuario/password', async (req, res) => {
+  try {
+    const { cedula_usuario } = req.params;
+    const { clave } = req.body;
+    
+    if (!clave || clave.length < 6) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    
+    const resultado = await query(
+      'UPDATE usuario SET clave = $1 WHERE cedula_usuario = $2 RETURNING cedula_usuario, usuario, rol, estatus',
+      [clave, cedula_usuario]
+    );
+    
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    
+    res.json({ 
+      message: 'Contraseña actualizada correctamente',
+      usuario: resultado.rows[0] 
+    });
+  } catch (err) {
+    console.error('Error actualizando contraseña:', err);
     res.status(500).json({ message: err.message });
   }
 });

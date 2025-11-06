@@ -235,28 +235,42 @@ const Usuario = () => {
   };
 
   const handleGuardarEdicion = async () => {
-    try {
-      await api.updateUsuario(editableUser.cedula_usuario, {
-        usuario: editableUser.usuario,
-        password: editableUser.clave || undefined, // Solo enviar si hay cambio
-        rol: editableUser.rol,
-        nombre: editableUser.nombre,
-      });
-      
-      setData((prev) =>
-        prev.map((u) =>
-          u.cedula_usuario === editableUser.cedula_usuario
-            ? { ...u, ...editableUser }
-            : u
-        )
-      );
-      closeModal("edit");
-      alert("Usuario actualizado con éxito");
-    } catch (error) {
-      console.error("Error al actualizar usuario:", error);
-      alert("Error al actualizar el usuario");
+  try {
+    // Preparar los datos para enviar
+    const datosActualizacion = {
+      usuario: editableUser.usuario,
+      rol: editableUser.rol,
+      estatus: editableUser.estatus // Asegurar que el estatus se envíe
+    };
+
+    // Solo incluir la contraseña si se cambió (no está vacía)
+    if (editableUser.clave && editableUser.clave.trim() !== "") {
+      if (editableUser.clave.length < 6 || editableUser.clave.length > 20) {
+        alert("La contraseña debe tener entre 6 y 20 caracteres");
+        return;
+      }
+      datosActualizacion.clave = editableUser.clave;
     }
-  };
+
+    // Actualizar en la base de datos
+    await api.updateUsuario(editableUser.cedula_usuario, datosActualizacion);
+    
+    // Actualizar el estado local
+    setData((prev) =>
+      prev.map((u) =>
+        u.cedula_usuario === editableUser.cedula_usuario
+          ? { ...u, ...editableUser }
+          : u
+      )
+    );
+    
+    closeModal("edit");
+    alert("Usuario actualizado con éxito");
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    alert("Error al actualizar el usuario: " + (error.response?.data?.message || error.message));
+  }
+};
 
   const handleConfirmarEliminar = async () => {
     try {
@@ -642,6 +656,7 @@ const Usuario = () => {
               <input
                 type="text"
                 value={editableUser.nombre_completo || editableUser.nombre || ""}
+                disabled
                 onChange={(e) => setEditableUser({ ...editableUser, nombre: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
@@ -657,16 +672,21 @@ const Usuario = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña (dejar en blanco para mantener la actual)</label>
-              <input
-                type="password"
-                value={editableUser.clave || ""}
-                onChange={(e) => setEditableUser({ ...editableUser, clave: e.target.value })}
-                placeholder="Nueva contraseña"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Contraseña (dejar en blanco para mantener la actual)
+  </label>
+  <input
+    type="password"
+    value={editableUser.clave || ""}
+    onChange={(e) => setEditableUser({ ...editableUser, clave: e.target.value })}
+    placeholder="Nueva contraseña (mínimo 6 caracteres)"
+    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+  />
+  <p className="text-xs text-gray-500 mt-1">
+    {editableUser.clave && `Longitud: ${editableUser.clave.length} caracteres`}
+  </p>
+</div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>

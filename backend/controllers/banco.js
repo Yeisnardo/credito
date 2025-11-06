@@ -69,6 +69,9 @@ router.put('/:cedula_emprendedor', async (req, res) => {
   try {
     const { cedula_emprendedor } = req.params;
     const cuentaData = req.body;
+    
+    console.log("Datos recibidos para actualizar:", cuentaData);
+    
     validarCuenta(cuentaData);
     const { banco, cedula_titular, nombre_completo, numero_cuenta } = cuentaData;
 
@@ -81,6 +84,8 @@ router.put('/:cedula_emprendedor', async (req, res) => {
     if (resultado.rows.length === 0) {
       return res.status(404).json({ message: 'Cuenta no encontrada' });
     }
+    
+    console.log("Cuenta actualizada:", resultado.rows[0]);
     res.json(resultado.rows[0]);
   } catch (err) {
     console.error('Error en actualizarCuenta:', err);

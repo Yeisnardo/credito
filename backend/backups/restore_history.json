@@ -1,0 +1,527 @@
+[
+  {
+    "id": "1762438570176",
+    "filename": "backup_2025-11-06 (1).sql",
+    "restored_at": "2025-11-06T14:16:10.176Z",
+    "file_size": 28489,
+    "statements_executed": 0,
+    "errors": [
+      {
+        "statement": "CREATE TABLE \"backup_history\" (\n  \"id\" INTEGER NOT NULL DEFAULT nextval('backup_history_id_seq'::regclass),\n  \"filename\" CHARACTER VARYING NOT NULL,\n  \"path\" TEXT NOT NULL,\n  \"size\" BIGINT NOT NULL,\n ",
+        "error": "la relación «backup_history» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"bitacora\" (\n  \"id_bitacora\" INTEGER NOT NULL DEFAULT nextval('bitacora_id_bitacora_seq'::regclass),\n  \"cedula_usuario\" CHARACTER VARYING NOT NULL,\n  \"usuario\" CHARACTER VARYING NOT NULL,",
+        "error": "la relación «bitacora» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"clasificacion\" (\n  \"id_clasificacion\" INTEGER NOT NULL DEFAULT nextval('clasificacion_id_clasificacion_seq'::regclass),\n  \"sector\" CHARACTER VARYING NOT NULL,\n  \"negocio\" CHARACTER VARYI",
+        "error": "la relación «clasificacion» ya existe"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (7, 'Ganadería', 'Cría de aves')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (8, 'Ganadería', 'Cría de cerdos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (9, 'Ganadería', 'Cría de ovinos y caprinos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (10, 'Ganadería', 'Apicultura')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (11, 'Pesca', 'Acuicultura')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (12, 'Pesca', 'Pesca comercial')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (13, 'Pesca', 'Pesca recreativa')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (14, 'Pesca', 'Pesca artesanal')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (15, 'Minería', 'Extracción de minerales metálicos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (16, 'Minería', 'Extracción de minerales no metálicos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (17, 'Minería', 'Extracción de recursos energéticos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (18, 'Minería', 'Minería de metales preciosos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (19, 'Minería', 'Minería de minerales industriales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (20, 'Industria Manufacturera', 'Producción de alimentos y bebidas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (21, 'Industria Manufacturera', 'Fabricación de productos químicos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (22, 'Industria Manufacturera', 'Fabricación de maquinaria y equipo')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (23, 'Industria Manufacturera', 'Producción de textiles y confección')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (24, 'Industria Manufacturera', 'Fabricación de productos electrónicos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (25, 'Industria Manufacturera', 'Fabricación de muebles')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (26, 'Industria Manufacturera', 'Producción de papel y productos de papel')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (27, 'Industria Manufacturera', 'Fabricación de productos de plástico')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (28, 'Construcción', 'Desarrollo de viviendas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (29, 'Construcción', 'Construcción de infraestructuras')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (30, 'Construcción', 'Obras públicas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (31, 'Construcción', 'Renovación y rehabilitación de edificios')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (32, 'Energía', 'Producción de energía solar')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (33, 'Energía', 'Producción de energía eólica')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (34, 'Energía', 'Producción de energía hidroeléctrica')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (35, 'Energía', 'Producción de biocombustibles')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (36, 'Energía', 'Energía geotérmica')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (37, 'Comercio', 'Tiendas de abarrotes')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (38, 'Comercio', 'Comercio electrónico')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (39, 'Comercio', 'Mayoristas y minoristas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (41, 'Comercio', 'Comercio al por menor')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (42, 'Transporte', 'Servicios de mensajería')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (43, 'Transporte', 'Transporte de pasajeros')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (44, 'Transporte', 'Transporte de carga')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (45, 'Transporte', 'Transporte ferroviario')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (46, 'Transporte', 'Transporte aéreo')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (47, 'Turismo', 'Agencias de viajes')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (48, 'Turismo', 'Hoteles y alojamientos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (49, 'Turismo', 'Restaurantes y servicios de alimentación')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (50, 'Turismo', 'Actividades recreativas y de ocio')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (51, 'Educación', 'Escuelas privadas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (52, 'Educación', 'Clases particulares')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (53, 'Educación', 'Universidades y centros de formación')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (54, 'Educación', 'Educación en línea')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (55, 'Salud', 'Clínicas privadas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (56, 'Salud', 'Servicios de bienestar')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (57, 'Salud', 'Farmacias y distribución de medicamentos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (58, 'Salud', 'Servicios de atención domiciliaria')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (59, 'Tecnología de la Información', 'Desarrollo de software')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (60, 'Tecnología de la Información', 'Servicios de ciberseguridad')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (61, 'Tecnología de la Información', 'Consultoría en tecnología')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (62, 'Tecnología de la Información', 'Desarrollo de aplicaciones móviles')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (63, 'Consultoría', 'Consultoría empresarial')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (64, 'Consultoría', 'Consultoría en marketing digital')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (65, 'Consultoría', 'Consultoría financiera')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (66, 'Consultoría', 'Consultoría en recursos humanos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (67, 'Investigación y Desarrollo', 'Laboratorios de investigación')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (68, 'Investigación y Desarrollo', 'Startups tecnológicas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (69, 'Investigación y Desarrollo', 'Innovación en biotecnología')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (70, 'Investigación y Desarrollo', 'Investigación en ciencias sociales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (71, 'Organizaciones No Gubernamentales (ONG)', 'Proyectos de desarrollo comunitario')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (72, 'Organizaciones No Gubernamentales (ONG)', 'Iniciativas medioambientales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (73, 'Organizaciones No Gubernamentales (ONG)', 'Programas de derechos humanos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (74, 'Servicios Comunitarios', 'Programas de apoyo a la comunidad')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (75, 'Servicios Comunitarios', 'Actividades culturales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (76, 'Servicios Comunitarios', 'Servicios de voluntariado')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (77, 'Cultura y Arte', 'Producción de eventos culturales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (78, 'Cultura y Arte', 'Creación de contenido artístico')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (79, 'Cultura y Arte', 'Actividades recreativas y deportivas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (80, 'Economía Digital', 'Comercio electrónico')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (81, 'Economía Digital', 'Marketing digital')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (82, 'Economía Digital', 'Criptomonedas y blockchain')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (83, 'Economía Digital', 'Servicios de streaming')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (84, 'Economía Verde', 'Energías renovables')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (85, 'Economía Verde', 'Agricultura sostenible')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (86, 'Economía Verde', 'Gestión de residuos')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (87, 'Economía Verde', 'Conservación de recursos naturales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (88, 'Economía Colaborativa', 'Plataformas de economía compartida')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (89, 'Economía Colaborativa', 'Servicios de coworking')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (90, 'Economía Colaborativa', 'Intercambio de bienes y servicios')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (92, 'Aguacate', NULL)",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (93, 'Comercio', 'Comercio al por mayor')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (4, 'Agricultura', 'Cultivo de flores y plantas ornamentales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (5, 'Agricultura', 'Cultivo de legumbres')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (2, 'Agricultura', 'Cultivo de verduras')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (3, 'Agricultura', 'Cultivo de cereales')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"clasificacion\" (\"id_clasificacion\", \"sector\", \"negocio\") VALUES (1, 'Agricultura', 'Cultivo de frutas')",
+        "error": "llave duplicada viola restricción de unicidad «clasificacion_pkey»"
+      },
+      {
+        "statement": "CREATE TABLE \"configuracion_contratos\" (\n  \"id\" INTEGER NOT NULL DEFAULT nextval('configuracion_contratos_id_seq'::regclass),\n  \"moneda\" TEXT NOT NULL,\n  \"porcentaje_flat\" TEXT,\n  \"porcentaje_interes\"",
+        "error": "la relación «configuracion_contratos» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"contrato\" (\n  \"id_contrato\" INTEGER NOT NULL,\n  \"numero_contrato\" CHARACTER VARYING NOT NULL,\n  \"cedula_emprendedor\" CHARACTER VARYING,\n  \"monto_aprob_euro\" NUMERIC,\n  \"monto_bs\" NUMERIC",
+        "error": "la relación «contrato» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"cuenta\" (\n  \"cedula_emprendedor\" CHARACTER VARYING NOT NULL,\n  \"banco\" TEXT,\n  \"cedula_titular\" CHARACTER VARYING NOT NULL,\n  \"nombre_completo\" CHARACTER VARYING NOT NULL,\n  \"numero_cuen",
+        "error": "la relación «cuenta» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"cuota\" (\n  \"id_cuota\" INTEGER NOT NULL,\n  \"id_cuota_c\" INTEGER NOT NULL,\n  \"cedula_emprendedor\" CHARACTER VARYING NOT NULL,\n  \"semana\" CHARACTER VARYING NOT NULL,\n  \"monto\" CHARACTER VAR",
+        "error": "la relación «cuota» ya existe"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"cuota\" (\"id_cuota\", \"id_cuota_c\", \"cedula_emprendedor\", \"semana\", \"monto\", \"monto_ves\", \"fecha_pagada\", \"estado_cuota\", \"dias_mora_cuota\", \"interes_acumulado\", \"monto_morosidad\", \"confirm",
+        "error": "llave duplicada viola restricción de unicidad «cuota_pkey»"
+      },
+      {
+        "statement": "CREATE TABLE \"deposito\" (\n  \"id_deposito\" INTEGER NOT NULL DEFAULT nextval('deposito_id_deposito_seq'::regclass),\n  \"cedula_emprendedor\" CHARACTER VARYING NOT NULL,\n  \"comprobante\" TEXT,\n  \"estado\" CH",
+        "error": "la relación «deposito» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"emprendimientos\" (\n  \"cedula_emprendedor\" CHARACTER VARYING NOT NULL,\n  \"tipo_sector\" CHARACTER VARYING NOT NULL,\n  \"tipo_negocio\" CHARACTER VARYING NOT NULL,\n  \"nombre_emprendimiento\" C",
+        "error": "la relación «emprendimientos» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"historial_configuracion_contratos\" (\n  \"id\" INTEGER NOT NULL DEFAULT nextval('historial_configuracion_contratos_id_seq'::regclass),\n  \"configuracion_id\" INTEGER,\n  \"moneda\" CHARACTER VAR",
+        "error": "la relación «historial_configuracion_contratos» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"n_contrato\" (\n  \"cedula_emprendedor\" CHARACTER VARYING NOT NULL,\n  \"numero_contrato\" CHARACTER VARYING NOT NULL\n)",
+        "error": "la relación «n_contrato» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"persona\" (\n  \"cedula\" CHARACTER VARYING NOT NULL,\n  \"nombre_completo\" CHARACTER VARYING,\n  \"edad\" CHARACTER VARYING,\n  \"telefono\" CHARACTER VARYING,\n  \"email\" CHARACTER VARYING,\n  \"estad",
+        "error": "la relación «persona» ya existe"
+      },
+      {
+        "statement": "INSERT INTO \"persona\" (\"cedula\", \"nombre_completo\", \"edad\", \"telefono\", \"email\", \"estado\", \"municipio\", \"direccion_actual\", \"tipo_persona\") VALUES ('30608696', 'Yeisnardo Eliander Bravo Colina', '21',",
+        "error": "llave duplicada viola restricción de unicidad «persona_pkey»"
+      },
+      {
+        "statement": "CREATE TABLE \"requerimiento_archivo\" (\n  \"id_archivo\" INTEGER NOT NULL DEFAULT nextval('requerimiento_archivo_id_archivo_seq'::regclass),\n  \"cedula_emprendedor\" CHARACTER VARYING NOT NULL,\n  \"archivo\"",
+        "error": "la relación «requerimiento_archivo» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"requerimiento_emprendedor\" (\n  \"id_req\" INTEGER NOT NULL DEFAULT nextval('requerimiento_emprendedor_id_req_seq'::regclass),\n  \"cedula_emprendedor\" CHARACTER VARYING NOT NULL,\n  \"opt_requ",
+        "error": "la relación «requerimiento_emprendedor» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"requerimientos\" (\n  \"id_requerimientos\" INTEGER NOT NULL DEFAULT nextval('requerimientos_id_requerimientos_seq'::regclass),\n  \"nombre_requerimiento\" CHARACTER VARYING\n)",
+        "error": "la relación «requerimientos» ya existe"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (2, 'Postulación UBCH')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (3, 'Certificado de emprender juntos')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (4, 'Registro Municipal')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (5, 'Carta de residencia')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (6, 'Copia de cédula')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (7, 'RIF personal')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (8, 'Fotos del emprendimiento')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (9, 'RIF de emprendimiento')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "INSERT INTO \"requerimientos\" (\"id_requerimientos\", \"nombre_requerimiento\") VALUES (10, 'Referencia bancaria')",
+        "error": "llave duplicada viola restricción de unicidad «requerimientos_pkey»"
+      },
+      {
+        "statement": "CREATE TABLE \"solicitud\" (\n  \"id_contrato\" INTEGER NOT NULL DEFAULT nextval('solicitud_id_contrato_seq'::regclass),\n  \"cedula_emprendedor\" CHARACTER VARYING,\n  \"motivo\" CHARACTER VARYING NOT NULL,\n  \"",
+        "error": "la relación «solicitud» ya existe"
+      },
+      {
+        "statement": "CREATE TABLE \"usuario\" (\n  \"cedula_usuario\" CHARACTER VARYING NOT NULL,\n  \"usuario\" CHARACTER VARYING NOT NULL,\n  \"clave\" CHARACTER VARYING NOT NULL,\n  \"rol\" CHARACTER VARYING NOT NULL,\n  \"estatus\" CH",
+        "error": "la relación «usuario» ya existe"
+      },
+      {
+        "statement": "INSERT INTO \"usuario\" (\"cedula_usuario\", \"usuario\", \"clave\", \"rol\", \"estatus\") VALUES ('30608696', 'Yeisnardo06', '123456', 'Emprendedor', 'Activo')",
+        "error": "llave duplicada viola restricción de unicidad «usuario_pkey»"
+      }
+    ]
+  }
+]

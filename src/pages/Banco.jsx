@@ -4,7 +4,7 @@ import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import api, { getUsuarioPorCedula } from "../services/api_usuario";
-import { crearBanco, getCuentaPorCedulaEmprendedor } from "../services/api_banco";
+import { crearBanco, getCuentaPorCedulaEmprendedor, actualizarBanco } from "../services/api_banco";
 
 // Importar Tabler Icons
 import {
@@ -139,25 +139,31 @@ const Dashboard = ({ setUser }) => {
   };
 
   const handleActualizarBanco = () => {
-    const cedulaUsuario = localStorage.getItem("cedula_usuario");
-    const bancoData = {
-      cedula: cedulaUsuario,
-      nombreCompleto: editBanco.nombreCompleto,
-      banco: editBanco.banco,
-      numeroCuenta: editBanco.numeroCuenta,
-    };
-
-    api
-      .actualizarBanco(cedulaUsuario, bancoData)
-      .then((response) => {
-        alert("Información actualizada");
-        setBancoGuardado(response);
-        setShowEditModal(false);
-      })
-      .catch((error) => {
-        console.error("Error al actualizar:", error);
-      });
+  const cedulaUsuario = localStorage.getItem("cedula_usuario");
+  
+  // Preparar los datos en el formato que espera el backend
+  const bancoData = {
+    cedula_emprendedor: cedulaUsuario,
+    cedula_titular: editBanco.cedula_titular,
+    banco: editBanco.banco,
+    nombre_completo: editBanco.nombre_completo,
+    numero_cuenta: editBanco.numero_cuenta
   };
+
+  console.log("Actualizando banco con datos:", bancoData);
+
+  // Usar la función correcta de la API
+  actualizarBanco(cedulaUsuario, bancoData)
+    .then((response) => {
+      alert("Información actualizada correctamente");
+      setBancoGuardado(response);
+      setShowEditModal(false);
+    })
+    .catch((error) => {
+      console.error("Error al actualizar:", error);
+      alert("Error al actualizar la información");
+    });
+};
 
   const formatearNumeroCuenta = (valor) => {
     const soloNumeros = valor.replace(/\D/g, "");
@@ -212,6 +218,12 @@ const Dashboard = ({ setUser }) => {
     };
   }, []);
 
+  const handleSelectBankEdit = (banco) => {
+  setEditBanco({ ...editBanco, banco: banco });
+  setShowDropdown(false);
+  setSearchTerm("");
+};
+
   const handleSelectBank = (banco) => {
     setBancoSeleccionado(banco);
     setNuevoBanco({ ...nuevoBanco, banco: banco });
@@ -239,9 +251,16 @@ const Dashboard = ({ setUser }) => {
 
   // Función para abrir modal de edición
   const handleEditar = () => {
-    setEditBanco({ ...bancoGuardado });
+  if (bancoGuardado) {
+    setEditBanco({ 
+      cedula_titular: bancoGuardado.cedula_titular || "",
+      nombre_completo: bancoGuardado.nombre_completo || "",
+      banco: bancoGuardado.banco || "",
+      numero_cuenta: bancoGuardado.numero_cuenta || ""
+    });
     setShowEditModal(true);
-  };
+  }
+};
 
   // Función para guardar cambios en modal
   const handleGuardarEdicion = () => {
@@ -607,7 +626,7 @@ const Dashboard = ({ setUser }) => {
                           <div
                             key={index}
                             className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleSelectBank(banco)}
+                            onClick={() => handleSelectBankEdit(banco)} // Cambiado a handleSelectBankEdit
                           >
                             {banco}
                           </div>
@@ -649,12 +668,12 @@ const Dashboard = ({ setUser }) => {
                 Cancelar
               </button>
               <button
-                onClick={handleGuardarEdicion}
-                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
-              >
-                <TbCheck size={16} className="mr-1" />
-                Guardar
-              </button>
+  onClick={handleActualizarBanco} // Cambiado de handleGuardarEdicion a handleActualizarBanco
+  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
+>
+  <TbCheck size={16} className="mr-1" />
+  Guardar cambios
+</button>
             </div>
           </div>
         </div>

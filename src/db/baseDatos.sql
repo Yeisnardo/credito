@@ -102,7 +102,7 @@ CREATE TABLE cuenta (
 CREATE TABLE clasificacion (
   id_clasificacion SERIAL PRIMARY KEY,
   sector VARCHAR(100) NOT NULL,
-  negocio VARCHAR(100) NOT NULL
+  negocio VARCHAR(100)
 );
 
 CREATE TABLE n_contrato(
@@ -200,6 +200,17 @@ CREATE TABLE bitacora (
     ip VARCHAR(45),
     datos_adicionales JSONB,
     fecha TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE backup_history (
+    id SERIAL PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    path TEXT NOT NULL,
+    size BIGINT NOT NULL,
+    status VARCHAR(50) DEFAULT 'completed',
+    created_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    database VARCHAR(100)
 );
 
 ----------------------------------------------------------------------------------

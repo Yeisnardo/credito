@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // ajusta si es necesario
+  baseURL: 'http://localhost:5000',
 });
 
-// Funciones API
+// Funciones API existentes
 export const getUsuarios = async () => {
   const response = await api.get('/api/usuarios');
   return response.data;
@@ -35,12 +35,25 @@ export const updateUsuarioEstatus = async (cedula_usuario, estatus) => {
   return response.data;
 };
 
-// Interceptor para manejar respuestas de error (como 401 Unauthorized)
+// NUEVAS FUNCIONES PARA CONTRASEÑA
+export const verifyPassword = async (cedula_usuario, password) => {
+  const response = await api.post('/api/usuarios/verify-password', {
+    cedula_usuario,
+    password
+  });
+  return response.data;
+};
+
+export const updatePassword = async (cedula_usuario, clave) => {
+  const response = await api.put(`/api/usuarios/${cedula_usuario}/password`, { clave });
+  return response.data;
+};
+
+// Interceptor para manejar respuestas de error
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expirado o inválido - limpiar y redirigir
       localStorage.clear();
       sessionStorage.clear();
       window.location.href = '/Login';
@@ -67,5 +80,7 @@ export default {
   updateUsuario,
   deleteUsuario,
   updateUsuarioEstatus,
+  verifyPassword,
+  updatePassword,
   logoutUsuario
 };

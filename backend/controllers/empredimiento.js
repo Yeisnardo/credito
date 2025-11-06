@@ -65,40 +65,59 @@ router.post('/', async (req, res) => {
 });
 
 // Actualizar un emprendimiento existente
+// Actualizar un emprendimiento existente - VERSIÓN MEJORADA
 router.put('/:cedula_emprendedor', async (req, res) => {
   try {
     const { cedula_emprendedor } = req.params;
     const emprendimientoData = req.body;
-    validarEmprendimiento(emprendimientoData);
-
-    const resultado = await query(
-      `UPDATE emprendimientos SET
-        tipo_sector = $1,
-        tipo_negocio = $2,
-        nombre_emprendimiento = $3,
-        direccion_emprendimiento = $4,
-        consejo_nombre = $5,
-        comuna = $6
-       WHERE cedula_emprendedor = $7
-       RETURNING *`,
-      [
-        emprendimientoData.tipo_sector,
-        emprendimientoData.tipo_negocio,
-        emprendimientoData.nombre_emprendimiento,
-        emprendimientoData.direccion_emprendimiento,
-        emprendimientoData.consejo_nombre,
-        emprendimientoData.comuna,
-        cedula_emprendedor
-      ]
-    );
-
-    if (resultado.rows.length === 0) {
+    
+    // Validar que el emprendimiento exista
+    const emprendimientoExistente = await query('SELECT * FROM emprendimientos WHERE cedula_emprendedor = $1', [cedula_emprendedor]);
+    if (emprendimientoExistente.rows.length === 0) {
       return res.status(404).json({ message: 'Emprendimiento no encontrado' });
     }
-    res.json(resultado.rows[0]);
+
+    // Construir la consulta dinámicamente para permitir actualizaciones parciales
+    let queryParts = [];
+    let queryParams = [];
+    let paramCount = 1;
+
+    const camposPermitidos = [
+      'tipo_sector', 'tipo_negocio', 'nombre_emprendimiento', 
+      'direccion_emprendimiento', 'consejo_nombre', 'comuna'
+    ];
+
+    camposPermitidos.forEach(campo => {
+      if (emprendimientoData[campo] !== undefined) {
+        queryParts.push(`${campo} = $${paramCount}`);
+        queryParams.push(emprendimientoData[campo]);
+        paramCount++;
+      }
+    });
+
+    if (queryParts.length === 0) {
+      return res.status(400).json({ message: 'No hay campos para actualizar' });
+    }
+
+    queryParams.push(cedula_emprendedor);
+
+    const queryString = `
+      UPDATE emprendimientos 
+      SET ${queryParts.join(', ')} 
+      WHERE cedula_emprendedor = $${paramCount} 
+      RETURNING *
+    `;
+
+    const resultado = await query(queryString, queryParams);
+    
+    res.json({
+      message: 'Emprendimiento actualizado correctamente',
+      emprendimiento: resultado.rows[0]
+    });
+    
   } catch (err) {
     console.error('Error en updateEmprendimiento:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

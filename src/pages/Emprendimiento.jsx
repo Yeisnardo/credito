@@ -12,15 +12,48 @@ import {
   TbPlus,
   TbBuilding,
   TbInbox,
-  TbLoader
+  TbLoader,
+  TbEdit,
+  TbTrash
 } from 'react-icons/tb';
 
 // Componente para mostrar cada sector
-const SectorCard = ({ sector, clasificaciones, onRegistrarNegocio, onVerDetalles }) => (
+const SectorCard = ({ 
+  sector, 
+  clasificaciones, 
+  onRegistrarNegocio, 
+  onVerDetalles, 
+  onEditarSector, 
+  onEliminarSector 
+}) => (
   <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 flex flex-col justify-between border border-gray-100">
     <div>
-      <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mx-auto mb-3">
-        <TbCategory2 className="text-indigo-600" size={24} />
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full">
+          <TbCategory2 className="text-indigo-600" size={24} />
+        </div>
+        <div className="flex space-x-2">
+          <button
+            className="text-indigo-600 hover:text-indigo-800 p-1 rounded transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditarSector(sector);
+            }}
+            title="Editar sector"
+          >
+            <TbEdit size={18} />
+          </button>
+          <button
+            className="text-red-600 hover:text-red-800 p-1 rounded transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEliminarSector(sector, clasificaciones);
+            }}
+            title="Eliminar sector"
+          >
+            <TbTrash size={18} />
+          </button>
+        </div>
       </div>
       <h2 className="text-xl font-bold mb-3 text-center text-indigo-700 truncate" title={sector}>
         {sector}
@@ -132,6 +165,81 @@ const App = () => {
     }
   };
 
+  // NUEVA FUNCIÓN: Editar sector
+  const handleEditarSector = async (sectorActual) => {
+    const { value: nuevoNombreSector } = await Swal.fire({
+      title: 'Editar Sector',
+      input: 'text',
+      inputValue: sectorActual,
+      inputLabel: 'Nuevo nombre del sector',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value.trim()) {
+          return 'Por favor ingrese un nombre válido';
+        }
+        if (value === sectorActual) {
+          return 'El nombre es igual al actual';
+        }
+      }
+    });
+
+    if (nuevoNombreSector) {
+      try {
+        // Obtener todas las clasificaciones de este sector
+        const clasificacionesDelSector = clasificaciones.filter(c => c.sector === sectorActual);
+        
+        // Actualizar cada clasificación con el nuevo nombre del sector
+        const promises = clasificacionesDelSector.map(clasificacion => 
+          api.updateClasificacion(clasificacion.id_clasificacion, {
+            sector: nuevoNombreSector.trim(),
+            negocio: clasificacion.negocio
+          })
+        );
+        
+        await Promise.all(promises);
+        await cargarClasificaciones(); // Recargar datos
+        Swal.fire('¡Éxito!', `Sector actualizado a "${nuevoNombreSector}"`, 'success');
+      } catch (err) {
+        Swal.fire("Error", "No se pudo actualizar el sector: " + err.message, "error");
+      }
+    }
+  };
+
+  // NUEVA FUNCIÓN: Eliminar sector
+  const handleEliminarSector = async (sector, clasificacionesSector) => {
+    const tieneNegocios = clasificacionesSector.some(c => c.negocio);
+    
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      html: `¿Eliminar el sector "${sector}"?${
+        tieneNegocios ? '<br><strong class="text-red-600">¡ADVERTENCIA! Este sector tiene negocios asociados que también serán eliminados.</strong>' : ''
+      }`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        // Eliminar todas las clasificaciones de este sector
+        const promises = clasificacionesSector.map(clasificacion => 
+          api.deleteClasificacion(clasificacion.id_clasificacion)
+        );
+        
+        await Promise.all(promises);
+        await cargarClasificaciones(); // Recargar datos
+        Swal.fire('Eliminado', `El sector "${sector}" ha sido eliminado.`, 'success');
+      } catch (err) {
+        Swal.fire("Error", "No se pudo eliminar el sector: " + err.message, "error");
+      }
+    }
+  };
+
   // Función para eliminar un negocio
   const handleEliminarNegocio = async (clasificacion) => {
     const result = await Swal.fire({
@@ -164,7 +272,12 @@ const App = () => {
       title: `Detalles de ${sector}`,
       html: `
         <div class="text-left">
-          <p class="mb-3"><strong class="text-indigo-700">Sector:</strong> ${sector}</p>
+          <div class="flex justify-between items-center mb-4">
+            <p><strong class="text-indigo-700">Sector:</strong> ${sector}</p>
+            <div class="flex space-x-2">
+              <button class="edit-sector-btn px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 transition">Editar Sector</button>
+            </div>
+          </div>
           <p class="mb-2"><strong class="text-indigo-700">Negocios (${negocios.length}):</strong></p>
           <ul class="max-h-60 overflow-y-auto mb-4">
             ${negocios.length > 0 ? negocios.map((clasificacion, index) => `
@@ -183,6 +296,12 @@ const App = () => {
       showCloseButton: true,
       width: '600px',
       didOpen: () => {
+        // Evento para editar sector desde el modal de detalles
+        document.querySelector('.edit-sector-btn').onclick = async () => {
+          Swal.close(); // Cerrar el modal de detalles primero
+          await handleEditarSector(sector);
+        };
+
         // Eventos para editar cada negocio
         document.querySelectorAll('.edit-btn').forEach(btn => {
           btn.onclick = async () => {
@@ -374,6 +493,8 @@ const App = () => {
                       }, 100);
                     }}
                     onVerDetalles={handleVerDetalles}
+                    onEditarSector={handleEditarSector}
+                    onEliminarSector={handleEliminarSector}
                   />
                 ))}
               </div>

@@ -23,6 +23,8 @@ import Aprobacion from "./pages/Aprobacion";
 import Requerimientos from "./pages/Requerimientos";
 import Bitacora from './pages/Bitacora';
 import AdministracionCuota from './pages/AdministracionCuota';
+import Respaldo from './pages/Respaldo';
+
 
 
 // Importación de componentes adicionales
@@ -60,6 +62,7 @@ function App() {
         <Route path='/Bitacora' element={<Bitacora />} />
         <Route path='/AdministracionCuota' element={<AdministracionCuota/>} />
         <Route path='/FormatoContrato' element={<FormatoContrato />} />
+        <Route path='/Respaldo' element={<Respaldo />} />
       </Routes>
     </Router>
   );

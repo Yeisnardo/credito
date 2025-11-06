@@ -9,7 +9,6 @@ import {
   TbWallet,
   TbCheckbox,
   TbCreditCard,
-  TbMoneybag,
   TbBook,
   TbCalendar,
   TbSettings,
@@ -21,7 +20,8 @@ import {
   TbChevronUp,
   TbChevronRight,
   TbUser,
-  TbCreditCardOff
+  TbCreditCardOff,
+  TbDatabaseExport
 } from 'react-icons/tb';
 
 const Menu = ({ onClose }) => {
@@ -103,12 +103,6 @@ const Menu = ({ onClose }) => {
         roles: ["Credito1", "Administrador"]
       },
       {
-        path: "/Fondo",
-        icon: TbMoneybag,
-        label: "Fondo Financiero",
-        roles: ["Administrador"]
-      },
-      {
         path: "/Bitacora",
         icon: TbBook,
         label: "Bitácora",
@@ -118,6 +112,12 @@ const Menu = ({ onClose }) => {
         path: "/AdministracionCuota",
         icon: TbCalendar,
         label: "Administración de cuotas",
+        roles: ["Administrador", "Credito1"]
+      },
+      {
+        path: "/Respaldo",
+        icon: TbDatabaseExport,
+        label: "Respaldo de la base de datos",
         roles: ["Administrador", "Credito1"]
       }
     ],

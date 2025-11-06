@@ -122,38 +122,58 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Actualizar una persona existente
+// Actualizar una persona existente - VERSIÓN MEJORADA
 router.put('/:cedula', async (req, res) => {
   try {
     const { cedula } = req.params;
     const personaData = req.body;
     
-    validarPersona(personaData);
-
-    const resultado = await query(
-      `UPDATE persona SET
-        nombre_completo = $1, edad = $2, telefono = $3, email = $4,
-        estado = $5, municipio = $6, direccion_actual = $7, tipo_persona = $8
-       WHERE cedula = $9 RETURNING *`,
-      [
-        personaData.nombre_completo, personaData.edad, personaData.telefono,
-        personaData.email, personaData.estado, personaData.municipio,
-        personaData.direccion_actual, personaData.tipo_persona, cedula
-      ]
-    );
-
-    if (resultado.rows.length === 0) {
+    // Validar que la persona exista
+    const personaExistente = await query('SELECT * FROM persona WHERE cedula = $1', [cedula]);
+    if (personaExistente.rows.length === 0) {
       return res.status(404).json({ message: 'Persona no encontrada' });
     }
+
+    // Construir la consulta dinámicamente para permitir actualizaciones parciales
+    let queryParts = [];
+    let queryParams = [];
+    let paramCount = 1;
+
+    const camposPermitidos = [
+      'nombre_completo', 'edad', 'telefono', 'email', 
+      'estado', 'municipio', 'direccion_actual', 'tipo_persona'
+    ];
+
+    camposPermitidos.forEach(campo => {
+      if (personaData[campo] !== undefined) {
+        queryParts.push(`${campo} = $${paramCount}`);
+        queryParams.push(personaData[campo]);
+        paramCount++;
+      }
+    });
+
+    if (queryParts.length === 0) {
+      return res.status(400).json({ message: 'No hay campos para actualizar' });
+    }
+
+    queryParams.push(cedula);
+
+    const queryString = `
+      UPDATE persona 
+      SET ${queryParts.join(', ')} 
+      WHERE cedula = $${paramCount} 
+      RETURNING *
+    `;
+
+    const resultado = await query(queryString, queryParams);
     
-    res.json(resultado.rows[0]);
+    res.json({
+      message: 'Persona actualizada correctamente',
+      persona: resultado.rows[0]
+    });
+    
   } catch (err) {
     console.error('Error en updatePersona:', err);
-    
-    if (err.message.includes('obligatorio')) {
-      return res.status(400).json({ error: err.message });
-    }
-    
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

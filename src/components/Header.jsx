@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import api, { getUsuarioPorCedula } from '../services/api_usuario';
+import emprendimientoApi from '../services/api_emprendimiento'; // Ajusta la ruta según tu estructura
+import personaApi from '../services/api_persona'; // Ajusta la ruta según tu estructura
 import logo from '../assets/imagenes/logo_header.jpg';
 
 // Importar Tabler Icons
@@ -257,169 +259,231 @@ const Header = ({ toggleMenu, menuOpen }) => {
     };
   }, []);
 
-  // Función genérica para actualizar datos vía API
-  const handleUpdate = useCallback(async (endpoint, data, successMsg) => {
+// Función genérica mejorada para actualizar datos vía API
+const handleUpdate = useCallback(async (endpoint, data, successMsg) => {
+  try {
+    const response = await api.put(endpoint, data);
+    
+    // Si se actualiza el usuario actual, actualizar el estado
+    if (endpoint.includes('/api/usuarios/') && user?.cedula_usuario) {
+      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
+      if (updatedUser) {
+        setUser(updatedUser);
+        localStorage.setItem('usuario', JSON.stringify(updatedUser));
+      }
+    }
+    
+    Swal.fire({
+      title: "¡Éxito!",
+      text: successMsg,
+      icon: "success",
+      confirmButtonColor: "#4f46e5",
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error al actualizar:', error);
+    const errorMessage = error.response?.data?.message || "No se pudo actualizar la información";
+    
+    Swal.fire({
+      title: "Error",
+      text: errorMessage,
+      icon: "error",
+      confirmButtonColor: "#ef4444",
+    });
+    throw error;
+  }
+}, [user]);
+
+// Configuración mejorada
+const handleAbrirConfiguracion = async () => {
+  const { value: option } = await Swal.fire({
+    title: "Configuración de Cuenta",
+    text: "¿Qué deseas modificar?",
+    icon: "question",
+    input: "select",
+    inputOptions: {
+      password: "Cambiar Contraseña",
+      user: "Cambiar Nombre de Usuario"
+    },
+    inputPlaceholder: "Selecciona una opción",
+    showCancelButton: true,
+    confirmButtonColor: "#4f46e5",
+    cancelButtonColor: "#6b7280",
+    inputValidator: (value) => {
+      if (!value) return "Por favor, selecciona una opción";
+    },
+  });
+  
+  if (option === "password") await handleCambiarContraseña();
+  if (option === "user") await handleCambiarUsuario();
+};
+
+// Cambiar Contraseña - VERSIÓN SIMPLIFICADA Y FUNCIONAL
+const handleCambiarContraseña = async () => {
+  const { value: formValues } = await Swal.fire({
+    title: "Cambiar Contraseña",
+    html: `
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña Actual</label>
+          <input 
+            id="currentPassword" 
+            type="password" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+            placeholder="Ingresa tu contraseña actual"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña</label>
+          <input 
+            id="newPassword" 
+            type="password" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+            placeholder="Mínimo 6 caracteres"
+            minlength="6"
+            required
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nueva Contraseña</label>
+          <input 
+            id="confirmPassword" 
+            type="password" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+            placeholder="Repite tu nueva contraseña"
+            required
+          />
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonColor: "#4f46e5",
+    cancelButtonColor: "#6b7280",
+    preConfirm: () => {
+      const currentPass = document.getElementById("currentPassword").value;
+      const newPass = document.getElementById("newPassword").value;
+      const confirmPass = document.getElementById("confirmPassword").value;
+      
+      if (!currentPass || !newPass || !confirmPass) {
+        Swal.showValidationMessage("Por favor, completa todos los campos");
+        return false;
+      }
+      
+      if (newPass.length < 6) {
+        Swal.showValidationMessage("La nueva contraseña debe tener al menos 6 caracteres");
+        return false;
+      }
+      
+      if (newPass !== confirmPass) {
+        Swal.showValidationMessage("Las nuevas contraseñas no coinciden");
+        return false;
+      }
+      
+      return { 
+        currentPassword: currentPass,
+        newPassword: newPass 
+      };
+    },
+  });
+  
+  if (formValues) {
     try {
-      await api.put(endpoint, data);
+      // Verificar contraseña actual primero
+      const verifyResponse = await api.verifyPassword(user?.cedula_usuario, formValues.currentPassword);
+      
+      if (!verifyResponse.valid) {
+        Swal.fire({
+          title: "Error",
+          text: "La contraseña actual es incorrecta",
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+        });
+        return;
+      }
+      
+      // Actualizar contraseña usando la nueva función
+      await api.updatePassword(user?.cedula_usuario, formValues.newPassword);
+      
       Swal.fire({
         title: "¡Éxito!",
-        text: successMsg,
+        text: "Contraseña actualizada correctamente",
         icon: "success",
         confirmButtonColor: "#4f46e5",
       });
+      
     } catch (error) {
-      console.error('Error al actualizar:', error);
+      console.error('Error al cambiar contraseña:', error);
       Swal.fire({
         title: "Error",
-        text: "No se pudo actualizar",
+        text: "No se pudo cambiar la contraseña. Verifica tu contraseña actual.",
         icon: "error",
         confirmButtonColor: "#ef4444",
       });
     }
-  }, []);
+  }
+};
 
-  // Configuración (cambiar contraseña o usuario)
-  const handleAbrirConfiguracion = async () => {
-    const { value } = await Swal.fire({
-      title: "Configuración de Cuenta",
-      text: "¿Qué deseas modificar?",
-      icon: "question",
-      input: "radio",
-      inputOptions: {
-        password: "Contraseña",
-        user: "Nombre de Usuario",
-      },
-      inputValidator: (value) => {
-        if (!value) return "Por favor, selecciona una opción";
-      },
-      showCancelButton: true,
-      confirmButtonColor: "#4f46e5",
-      cancelButtonColor: "#6b7280",
-    });
-    
-    if (value === "password") await handleCambiarContraseña();
-    if (value === "user") await handleCambiarUsuario();
-  };
-
-  // Cambiar Contraseña
-  const handleCambiarContraseña = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: "Cambiar Contraseña",
-      html: `
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña</label>
-            <input 
-              id="password" 
-              type="password" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-              placeholder="Mínimo 6 caracteres"
-              minlength="6"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Contraseña</label>
-            <input 
-              id="repeatPassword" 
-              type="password" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-              placeholder="Repite tu contraseña"
-            />
-          </div>
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonColor: "#4f46e5",
-      cancelButtonColor: "#6b7280",
-      preConfirm: () => {
-        const pass = document.getElementById("password").value.trim();
-        const repeatPass = document.getElementById("repeatPassword").value.trim();
-        
-        if (!pass || !repeatPass) {
-          Swal.showValidationMessage("Por favor, completa todos los campos");
-          return false;
-        }
-        if (pass.length < 6) {
-          Swal.showValidationMessage("La contraseña debe tener al menos 6 caracteres");
-          return false;
-        }
-        if (pass !== repeatPass) {
-          Swal.showValidationMessage("Las contraseñas no coinciden");
-          return false;
-        }
-        return { pass };
-      },
-    });
-    
-    if (formValues) {
-      await handleUpdate(
-        `/api/usuarios/${user?.cedula_usuario}`, 
-        { clave: formValues.pass }, 
-        "Contraseña actualizada correctamente"
-      );
+// Cambiar Usuario - VERSIÓN CORREGIDA
+const handleCambiarUsuario = async () => {
+  const { value: newUsername } = await Swal.fire({
+    title: "Cambiar Nombre de Usuario",
+    input: "text",
+    inputLabel: "Nuevo nombre de usuario",
+    inputValue: user?.usuario || "",
+    inputPlaceholder: "Ingresa tu nuevo nombre de usuario",
+    showCancelButton: true,
+    confirmButtonColor: "#4f46e5",
+    cancelButtonColor: "#6b7280",
+    inputValidator: (value) => {
+      if (!value) {
+        return "Por favor, ingresa un nombre de usuario";
+      }
+      if (value.length < 3) {
+        return "El usuario debe tener al menos 3 caracteres";
+      }
+      if (value === user?.usuario) {
+        return "Este es tu nombre de usuario actual";
+      }
     }
-  };
-
-  // Cambiar Usuario
-  const handleCambiarUsuario = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: "Cambiar Nombre de Usuario",
-      html: `
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nuevo Usuario</label>
-            <input 
-              id="usuario" 
-              type="text" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-              placeholder="Nuevo nombre de usuario"
-              minlength="3"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Usuario</label>
-            <input 
-              id="repeatUsuario" 
-              type="text" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-              placeholder="Repite el nombre de usuario"
-            />
-          </div>
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonColor: "#4f46e5",
-      cancelButtonColor: "#6b7280",
-      preConfirm: () => {
-        const userVal = document.getElementById("usuario").value.trim();
-        const repeatUser = document.getElementById("repeatUsuario").value.trim();
-        
-        if (!userVal || !repeatUser) {
-          Swal.showValidationMessage("Por favor, completa todos los campos");
-          return false;
-        }
-        if (userVal.length < 3) {
-          Swal.showValidationMessage("El usuario debe tener al menos 3 caracteres");
-          return false;
-        }
-        if (userVal !== repeatUser) {
-          Swal.showValidationMessage("Los nombres de usuario no coinciden");
-          return false;
-        }
-        return { user: userVal };
-      },
-    });
-    
-    if (formValues) {
-      await handleUpdate(
-        `/api/usuarios/${user?.cedula_usuario}`, 
-        { usuario: formValues.user }, 
-        "Nombre de usuario actualizado correctamente"
-      );
+  });
+  
+  if (newUsername) {
+    try {
+      // Actualizar solo el nombre de usuario
+      await api.updateUsuario(user?.cedula_usuario, { 
+        usuario: newUsername,
+        rol: user?.rol,
+        estatus: user?.estatus
+      });
+      
+      // Actualizar el usuario en el estado local
+      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
+      if (updatedUser) {
+        setUser(updatedUser);
+        localStorage.setItem('usuario', JSON.stringify(updatedUser));
+      }
+      
+      Swal.fire({
+        title: "¡Éxito!",
+        text: "Nombre de usuario actualizado correctamente",
+        icon: "success",
+        confirmButtonColor: "#4f46e5",
+      });
+      
+    } catch (error) {
+      console.error('Error al cambiar usuario:', error);
+      Swal.fire({
+        title: "Error",
+        text: "No se pudo cambiar el nombre de usuario",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
     }
-  };
+  }
+};
 
   // Ver perfil
   const handleVerPerfil = () => {
@@ -496,129 +560,358 @@ const Header = ({ toggleMenu, menuOpen }) => {
   };
 
   // Editar datos personales
-  const handleEditarDatosPersonales = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: "Editar Datos Personales",
-      html: `
-        <div class="space-y-4 max-h-96 overflow-y-auto">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo</label>
-              <input id="nombre" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.nombre_completo || ""}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Edad</label>
-              <input id="edad" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.edad || ""}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-              <input id="telefono" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.telefono || ""}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
-              <input id="email" type="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.email || ""}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
-              <input id="direccion" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.direccion_actual || ""}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-              <input id="estado" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.estado || ""}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Municipio</label>
-              <input id="municipio" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.municipio || ""}">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Persona</label>
-              <input id="tipo_persona" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.tipo_persona || ""}">
-            </div>
+  // Editar datos personales - VERSIÓN CORREGIDA CON API PERSONA
+const handleEditarDatosPersonales = async () => {
+  const { value: formValues } = await Swal.fire({
+    title: "Editar Datos Personales",
+    html: `
+      <div class="space-y-4 max-h-96 overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
+            <input 
+              id="nombre" 
+              type="text" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.nombre_completo || ""}"
+              required
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Edad *</label>
+            <input 
+              id="edad" 
+              type="number" 
+              min="18" 
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.edad || ""}"
+              required
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+            <input 
+              id="telefono" 
+              type="tel" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.telefono || ""}"
+            >
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico *</label>
+            <input 
+              id="email" 
+              type="email" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.email || ""}"
+              required
+            >
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+            <input 
+              id="direccion" 
+              type="text" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.direccion_actual || ""}"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+            <input 
+              id="estado" 
+              type="text" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.estado || ""}"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Municipio</label>
+            <input 
+              id="municipio" 
+              type="text" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.municipio || ""}"
+            >
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Persona *</label>
+            <select 
+              id="tipo_persona" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              required
+            >
+              <option value="">Selecciona un tipo</option>
+              <option value="Natural" ${user?.tipo_persona === 'Natural' ? 'selected' : ''}>Natural</option>
+              <option value="Jurídica" ${user?.tipo_persona === 'Jurídica' ? 'selected' : ''}>Jurídica</option>
+              <option value="Emprendedor" ${user?.tipo_persona === 'Emprendedor' ? 'selected' : ''}>Emprendedor</option>
+            </select>
           </div>
         </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonColor: "#4f46e5",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Guardar Cambios",
-      preConfirm: () => {
-        const nombre = document.getElementById("nombre").value.trim();
-        const edad = document.getElementById("edad").value.trim();
-        const telefono = document.getElementById("telefono").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const direccion = document.getElementById("direccion").value.trim();
-        const estado = document.getElementById("estado").value.trim();
-        const municipio = document.getElementById("municipio").value.trim();
-        const tipo_persona = document.getElementById("tipo_persona").value.trim();
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonColor: "#4f46e5",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Guardar Cambios",
+    preConfirm: () => {
+      const nombre = document.getElementById("nombre").value.trim();
+      const edad = document.getElementById("edad").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const direccion = document.getElementById("direccion").value.trim();
+      const estado = document.getElementById("estado").value.trim();
+      const municipio = document.getElementById("municipio").value.trim();
+      const tipo_persona = document.getElementById("tipo_persona").value;
 
-        if (!nombre || !email || !edad) {
-          Swal.showValidationMessage("Nombre, Edad y Email son obligatorios");
-          return false;
-        }
-        return { nombre_completo: nombre, edad, telefono, email, direccion_actual: direccion, estado, municipio, tipo_persona };
-      },
-    });
-    
-    if (formValues) {
-      await handleUpdate(
-        `/api/persona/${user?.cedula_usuario}`, 
-        formValues, 
-        "Datos personales actualizados correctamente"
-      );
+      // Validaciones
+      if (!nombre) {
+        Swal.showValidationMessage("El nombre completo es obligatorio");
+        return false;
+      }
+      if (!edad || edad < 18 || edad > 100) {
+        Swal.showValidationMessage("La edad debe estar entre 18 y 100 años");
+        return false;
+      }
+      if (!email) {
+        Swal.showValidationMessage("El correo electrónico es obligatorio");
+        return false;
+      }
+      if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+        Swal.showValidationMessage("Por favor ingresa un email válido");
+        return false;
+      }
+      if (!tipo_persona) {
+        Swal.showValidationMessage("El tipo de persona es obligatorio");
+        return false;
+      }
+
+      return { 
+        nombre_completo: nombre, 
+        edad: parseInt(edad), 
+        telefono, 
+        email, 
+        direccion_actual: direccion, 
+        estado, 
+        municipio,
+        tipo_persona 
+      };
+    },
+  });
+  
+  if (formValues) {
+    try {
+      // Importar la API de persona (asegúrate de tener esta importación al inicio del archivo)
+      // import personaApi from '../services/api_persona';
+      
+      // Usar la API específica para actualizar persona
+      await personaApi.updatePersona(user?.cedula_usuario, formValues);
+      
+      // Actualizar el usuario en el estado local
+      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
+      if (updatedUser) {
+        setUser(updatedUser);
+        localStorage.setItem('usuario', JSON.stringify(updatedUser));
+      }
+      
+      Swal.fire({
+        title: "¡Éxito!",
+        text: "Datos personales actualizados correctamente",
+        icon: "success",
+        confirmButtonColor: "#4f46e5",
+      });
+      
+    } catch (error) {
+      console.error('Error al actualizar datos personales:', error);
+      Swal.fire({
+        title: "Error",
+        text: "No se pudieron actualizar los datos personales",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
     }
-  };
+  }
+};
 
   // Editar emprendimiento
-  const handleEditarEmprendimiento = async () => {
-    const { value: formValues } = await Swal.fire({
-      title: "Editar Emprendimiento",
-      html: `
-        <div class="space-y-4">
+  // Editar emprendimiento - VERSIÓN CORREGIDA CON API EMPRENDIMIENTOS
+const handleEditarEmprendimiento = async () => {
+  const { value: formValues } = await Swal.fire({
+    title: "Editar Emprendimiento",
+    html: `
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Emprendimiento *</label>
+          <input 
+            id="nombre_emprendimiento" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+            value="${user?.nombre_emprendimiento || ""}"
+            placeholder="Ingresa el nombre de tu emprendimiento"
+            required
+          />
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Emprendimiento</label>
-            <input id="emprendimiento" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.nombre_emprendimiento || ""}"/>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Sector *</label>
+            <select 
+              id="tipo_sector" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              required
+            >
+              <option value="">Selecciona un sector</option>
+              <option value="Comercio" ${user?.tipo_sector === 'Comercio' ? 'selected' : ''}>Comercio</option>
+              <option value="Servicios" ${user?.tipo_sector === 'Servicios' ? 'selected' : ''}>Servicios</option>
+              <option value="Producción" ${user?.tipo_sector === 'Producción' ? 'selected' : ''}>Producción</option>
+              <option value="Agroindustria" ${user?.tipo_sector === 'Agroindustria' ? 'selected' : ''}>Agroindustria</option>
+              <option value="Tecnología" ${user?.tipo_sector === 'Tecnología' ? 'selected' : ''}>Tecnología</option>
+              <option value="Artesanía" ${user?.tipo_sector === 'Artesanía' ? 'selected' : ''}>Artesanía</option>
+              <option value="Turismo" ${user?.tipo_sector === 'Turismo' ? 'selected' : ''}>Turismo</option>
+              <option value="Otro" ${user?.tipo_sector === 'Otro' ? 'selected' : ''}>Otro</option>
+            </select>
           </div>
+          
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Sector</label>
-            <input id="tipo_sector" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.tipo_sector || ""}"/>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Negocio</label>
-            <input id="tipo_negocio" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.tipo_negocio || ""}"/>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección del Emprendimiento</label>
-            <input id="direccion_emprendimiento" class="w-full px-3 py-2 border border-gray-300 rounded-lg" value="${user?.direccion_emprendimiento || ""}"/>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Negocio *</label>
+            <select 
+              id="tipo_negocio" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              required
+            >
+              <option value="">Selecciona un tipo</option>
+              <option value="Microempresa" ${user?.tipo_negocio === 'Microempresa' ? 'selected' : ''}>Microempresa</option>
+              <option value="Pequeña Empresa" ${user?.tipo_negocio === 'Pequeña Empresa' ? 'selected' : ''}>Pequeña Empresa</option>
+              <option value="Emprendimiento Individual" ${user?.tipo_negocio === 'Emprendimiento Individual' ? 'selected' : ''}>Emprendimiento Individual</option>
+              <option value="Cooperativa" ${user?.tipo_negocio === 'Cooperativa' ? 'selected' : ''}>Cooperativa</option>
+              <option value="Asociación" ${user?.tipo_negocio === 'Asociación' ? 'selected' : ''}>Asociación</option>
+              <option value="Otro" ${user?.tipo_negocio === 'Otro' ? 'selected' : ''}>Otro</option>
+            </select>
           </div>
         </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonColor: "#4f46e5",
-      cancelButtonColor: "#6b7280",
-      preConfirm: () => {
-        const emprendimiento = document.getElementById("emprendimiento").value.trim();
-        const tipo_sector = document.getElementById("tipo_sector").value.trim();
-        const tipo_negocio = document.getElementById("tipo_negocio").value.trim();
-        const direccion_emprendimiento = document.getElementById("direccion_emprendimiento").value.trim();
 
-        if (!emprendimiento || !tipo_sector || !tipo_negocio) {
-          Swal.showValidationMessage("Todos los campos son obligatorios");
-          return false;
-        }
-        return { nombre_emprendimiento: emprendimiento, tipo_sector, tipo_negocio, direccion_emprendimiento };
-      },
-    });
-    
-    if (formValues) {
-      await handleUpdate(
-        `/api/emprendimientos/${user?.cedula_usuario}`, 
-        formValues, 
-        "Emprendimiento actualizado correctamente"
-      );
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Consejo Comunal *</label>
+            <input 
+              id="consejo_nombre" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.consejo_nombre || ""}"
+              placeholder="Nombre del consejo comunal"
+              required
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Comuna *</label>
+            <input 
+              id="comuna" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.comuna || ""}"
+              placeholder="Nombre de la comuna"
+              required
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Dirección del Emprendimiento *</label>
+          <input 
+            id="direccion_emprendimiento" 
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+            value="${user?.direccion_emprendimiento || ""}"
+            placeholder="Dirección completa del emprendimiento"
+            required
+          />
+        </div>
+      </div>
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonColor: "#4f46e5",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Guardar Cambios",
+    preConfirm: () => {
+      const nombre_emprendimiento = document.getElementById("nombre_emprendimiento").value.trim();
+      const tipo_sector = document.getElementById("tipo_sector").value;
+      const tipo_negocio = document.getElementById("tipo_negocio").value;
+      const consejo_nombre = document.getElementById("consejo_nombre").value.trim();
+      const comuna = document.getElementById("comuna").value.trim();
+      const direccion_emprendimiento = document.getElementById("direccion_emprendimiento").value.trim();
+
+      // Validaciones
+      if (!nombre_emprendimiento) {
+        Swal.showValidationMessage("El nombre del emprendimiento es obligatorio");
+        return false;
+      }
+      if (!tipo_sector) {
+        Swal.showValidationMessage("El tipo de sector es obligatorio");
+        return false;
+      }
+      if (!tipo_negocio) {
+        Swal.showValidationMessage("El tipo de negocio es obligatorio");
+        return false;
+      }
+      if (!consejo_nombre) {
+        Swal.showValidationMessage("El consejo comunal es obligatorio");
+        return false;
+      }
+      if (!comuna) {
+        Swal.showValidationMessage("La comuna es obligatoria");
+        return false;
+      }
+      if (!direccion_emprendimiento) {
+        Swal.showValidationMessage("La dirección del emprendimiento es obligatoria");
+        return false;
+      }
+
+      return { 
+        nombre_emprendimiento, 
+        tipo_sector, 
+        tipo_negocio, 
+        consejo_nombre, 
+        comuna, 
+        direccion_emprendimiento 
+      };
+    },
+  });
+  
+  if (formValues) {
+    try {
+      // Importar la API de emprendimientos (asegúrate de tener esta importación al inicio del archivo)
+      // import emprendimientoApi from '../services/api_emprendimientos';
+      
+      // Usar la API específica para actualizar emprendimiento
+      await emprendimientoApi.updateEmprendimiento(user?.cedula_usuario, formValues);
+      
+      // Actualizar el usuario en el estado local
+      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
+      if (updatedUser) {
+        setUser(updatedUser);
+        localStorage.setItem('usuario', JSON.stringify(updatedUser));
+      }
+      
+      Swal.fire({
+        title: "¡Éxito!",
+        text: "Emprendimiento actualizado correctamente",
+        icon: "success",
+        confirmButtonColor: "#4f46e5",
+      });
+      
+    } catch (error) {
+      console.error('Error al actualizar emprendimiento:', error);
+      const errorMessage = error.response?.data?.error || "No se pudo actualizar el emprendimiento";
+      
+      Swal.fire({
+        title: "Error",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
     }
-  };
+  }
+};
 
   // Función de búsqueda
   const handleSearch = (query) => {
@@ -659,24 +952,6 @@ const Header = ({ toggleMenu, menuOpen }) => {
               className="w-10 h-10 rounded-lg object-cover"
             />
             <h1 className="text-xl font-bold text-gray-800 hidden md:inline">IFEMI</h1>
-          </div>
-        </div>
-
-        {/* Barra de búsqueda */}
-        <div className="flex-1 max-w-xl mx-4 relative" ref={searchRef}>
-          <div className={`relative transition-all duration-300 ${searchOpen ? 'w-full' : 'w-10/12 mx-auto'}`}>
-            <input
-              type="text"
-              placeholder="Buscar..."
-              className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${searchOpen ? 'block' : 'hidden'}`}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch(e.target.value)}
-            />
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 ${searchOpen ? '' : 'left-1/2 -translate-x-1/2'}`}
-            >
-              <TbSearch size={20} />
-            </button>
           </div>
         </div>
 

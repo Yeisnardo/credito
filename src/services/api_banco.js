@@ -17,8 +17,8 @@ export const crearBanco = async (banco) => {
 };
 
 // Actualizar cuenta existente
-export const actualizarBanco = async (id_banco, banco) => {
-  const response = await api.put(`/api/cuenta/${id_banco}`, banco);
+export const actualizarBanco = async (cedula_emprendedor, banco) => {
+  const response = await api.put(`/api/cuenta/${cedula_emprendedor}`, banco);
   return response.data;
 };
 

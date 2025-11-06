@@ -20,6 +20,7 @@ const clasificacion_requerimientoAPI = require('./controllers/clasificacion_requ
 const requerimientoEmprendedorAPI = require('./controllers/requerimiento');
 const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasificacion_emprendimiento');
 const configAPi = require('./controllers/configuracion_contratos');
+const RespaldoAPi = require('./routes/backupRoutes');
 
 const app = express();
 
@@ -53,6 +54,8 @@ app.use('/api/cuotas', coutaAPI);
 app.use('/api/requerimiento_emprendedor', requerimientoEmprendedorAPI);
 app.use('/api/clasificacion', clasificacionEmprendimientoEmprendedorAPI);
 app.use('/api/configuracion', configAPi);
+app.use('/api/backup', RespaldoAPi);
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 
 
@@ -84,4 +87,5 @@ app.listen(PORT, () => {
   console.log('   /api/requerimiento_emprendedor');
   console.log('   /api/clasificacion');
   console.log('   /api/configuracion');
+  console.log('   /api/backup');
 });

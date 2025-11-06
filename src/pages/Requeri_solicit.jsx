@@ -1066,7 +1066,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header con estadísticas */}
-      <div className="mb-8 mt-6">
+      <div className="mb-8 mt-11">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
           <div className="flex items-center space-x-4">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-2xl shadow-lg">
@@ -1074,7 +1074,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-800">
-                Mis Solicitudes de Crédito
+                Mis solicitudes de crédito
               </h1>
               <p className="text-gray-600">
                 Gestiona y revisa el estado de todas tus solicitudes
