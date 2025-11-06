@@ -191,16 +191,16 @@ CREATE TABLE historial_configuracion_contratos (
 
 CREATE TABLE bitacora (
     id_bitacora SERIAL PRIMARY KEY,
-    cedula_usuario VARCHAR(20) NOT NULL,
-    usuario VARCHAR(100) NOT NULL,
-    accion VARCHAR(200) NOT NULL,
-    metodo VARCHAR(10) NOT NULL,
-    ruta VARCHAR(500) NOT NULL,
-    estado INTEGER NOT NULL,
-    ip VARCHAR(45),
-    datos_adicionales JSONB,
-    fecha TIMESTAMP DEFAULT NOW()
+    accion VARCHAR(100) NOT NULL,
+    cedula_usuario VARCHAR(20),
+    fecha TIMESTAMP DEFAULT NOW(),
+    detalles JSONB
 );
+
+-- Índices para mejor performance
+CREATE INDEX idx_bitacora_cedula ON bitacora(cedula_usuario);
+CREATE INDEX idx_bitacora_fecha ON bitacora(fecha);
+CREATE INDEX idx_bitacora_accion ON bitacora(accion);
 
 CREATE TABLE backup_history (
     id SERIAL PRIMARY KEY,

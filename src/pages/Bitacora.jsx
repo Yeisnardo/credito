@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "../assets/css/style.css";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import api, { getUsuarioPorCedula } from '../services/api_usuario';
+import { getUsuarioPorCedula } from '../services/api_usuario';
+import { getBitacora, getBitacoraFiltrada } from '../services/api_bitacora';
 
 // Importar Tabler Icons
 import {
@@ -11,6 +12,8 @@ import {
   TbSearch,
   TbChevronLeft,
   TbChevronRight,
+  TbFilter,
+  TbRefresh
 } from "react-icons/tb";
 
 const Bitacora = ({ setUser }) => {
@@ -18,10 +21,15 @@ const Bitacora = ({ setUser }) => {
   const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUserState] = useState(null);
   const [bitacoraData, setBitacoraData] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("todos");
+  const [pagination, setPagination] = useState({
+    total: 0,
+    paginas: 0
+  });
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -45,37 +53,60 @@ const Bitacora = ({ setUser }) => {
     if (!user) fetchUserData();
   }, [setUser, user]);
 
-  // Datos de ejemplo para la bitácora (en una aplicación real, estos vendrían de una API)
+  // Cargar datos reales de la bitácora
+  const fetchBitacoraData = async (pagina = 1) => {
+    try {
+      setLoading(true);
+      const offset = (pagina - 1) * itemsPerPage;
+      
+      let filtros = {
+        limite: itemsPerPage,
+        offset: offset
+      };
+
+      if (searchTerm) {
+        filtros.accion = searchTerm;
+      }
+
+      const response = await getBitacoraFiltrada(filtros);
+      
+      setBitacoraData(response.registros || []);
+      setPagination(response.paginacion || { total: 0, paginas: 0 });
+      setCurrentPage(pagina);
+    } catch (error) {
+      console.error('Error cargando bitácora:', error);
+      // En caso de error, mostrar datos vacíos
+      setBitacoraData([]);
+      setPagination({ total: 0, paginas: 0 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Simular carga de datos de la bitácora
-    const mockBitacoraData = [
-      { id: 1, fecha: "2023-10-15 08:30:45", accion: "Inicio de sesión", tipo: "Autenticación", usuario: user?.nombre_completo || "Usuario", detalles: "Inicio de sesión exitoso desde navegador Chrome" },
-      { id: 2, fecha: "2023-10-15 09:15:22", accion: "Consulta de reportes", tipo: "Consulta", usuario: user?.nombre_completo || "Usuario", detalles: "Generó reporte de ventas del mes" },
-      { id: 3, fecha: "2023-10-15 11:40:18", accion: "Actualización de datos", tipo: "Modificación", usuario: user?.nombre_completo || "Usuario", detalles: "Actualizó información del cliente ID: 2456" },
-      { id: 4, fecha: "2023-10-14 14:22:37", accion: "Descarga de documento", tipo: "Descarga", usuario: user?.nombre_completo || "Usuario", detalles: "Descargó el archivo 'manual_usuario.pdf'" },
-      { id: 5, fecha: "2023-10-14 16:05:59", accion: "Cierre de sesión", tipo: "Autenticación", usuario: user?.nombre_completo || "Usuario", detalles: "Sesión finalizada por inactividad" },
-      { id: 6, fecha: "2023-10-13 10:30:15", accion: "Registro nuevo", tipo: "Creación", usuario: user?.nombre_completo || "Usuario", detalles: "Creó nuevo usuario en el sistema" },
-      { id: 7, fecha: "2023-10-13 13:45:28", accion: "Eliminación de registro", tipo: "Eliminación", usuario: user?.nombre_completo || "Usuario", detalles: "Eliminó producto del inventario" },
-    ];
-    
-    setBitacoraData(mockBitacoraData);
-  }, [user]);
+    fetchBitacoraData(1);
+  }, []);
 
-  // Filtrar y paginar datos
-  const filteredData = bitacoraData.filter(item => {
-    const matchesSearch = item.accion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.detalles.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterType === "todos" || item.tipo === filterType;
-    return matchesSearch && matchesFilter;
-  });
+  // Efecto para buscar cuando cambia el término de búsqueda
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchBitacoraData(1);
+    }, 500);
 
-  // Calcular páginas
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleRefresh = () => {
+    fetchBitacoraData(1);
+  };
+
+  const paginate = (pageNumber) => {
+    fetchBitacoraData(pageNumber);
+  };
 
   const formatDate = (dateString) => {
     const options = { 
@@ -83,9 +114,32 @@ const Bitacora = ({ setUser }) => {
       month: '2-digit', 
       day: '2-digit',
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      second: '2-digit'
     };
     return new Date(dateString).toLocaleDateString('es-ES', options);
+  };
+
+  const getTipoAccion = (accion) => {
+    if (accion.includes('SESION')) return 'Autenticación';
+    if (accion.includes('CREAR') || accion.includes('REGISTRAR')) return 'Creación';
+    if (accion.includes('ACTUALIZAR') || accion.includes('MODIFICAR')) return 'Modificación';
+    if (accion.includes('ELIMINAR')) return 'Eliminación';
+    if (accion.includes('CONSULTAR') || accion.includes('OBTENER')) return 'Consulta';
+    if (accion.includes('DESCARGAR') || accion.includes('EXPORTAR')) return 'Descarga';
+    return 'General';
+  };
+
+  const getColorTipo = (tipo) => {
+    switch (tipo) {
+      case 'Autenticación': return 'bg-blue-100 text-blue-800';
+      case 'Consulta': return 'bg-green-100 text-green-800';
+      case 'Modificación': return 'bg-yellow-100 text-yellow-800';
+      case 'Creación': return 'bg-purple-100 text-purple-800';
+      case 'Eliminación': return 'bg-red-100 text-red-800';
+      case 'Descarga': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -101,24 +155,37 @@ const Bitacora = ({ setUser }) => {
           {/* Encabezado */}
           <div className="flex items-center justify-between mb-8 mt-12">
             <div className="flex items-center space-x-4">
-              <div className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer">
+              <div 
+                className="bg-white p-3 rounded-full shadow-md hover:scale-105 transform transition duration-300 ease-in-out cursor-pointer"
+                onClick={() => navigate('/dashboard')}
+              >
                 <TbHome size={24} className="text-gray-700" />
               </div>
-              <h1 className="text-3xl font-semibold text-gray-800">Bitácora</h1>
+              <h1 className="text-3xl font-semibold text-gray-800">Bitácora del Sistema</h1>
             </div>
           </div>
 
           {/* Sección de Bitácora */}
           <section className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4 md:mb-0">Bitácora de Actividades</h2>
+              <div className="flex items-center space-x-4 mb-4 md:mb-0">
+                <h2 className="text-2xl font-semibold text-gray-800">Registros de Actividad</h2>
+                <button
+                  onClick={handleRefresh}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  <TbRefresh size={16} />
+                  <span>Actualizar</span>
+                </button>
+              </div>
               
               <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
-                <div className="relative">
+                <div className="relative flex items-center">
+                  <TbFilter className="absolute left-3 text-gray-400" size={16} />
                   <select 
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 w-full md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border border-gray-300 rounded-lg px-4 py-2 w-full md:w-auto focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
                   >
                     <option value="todos">Todos los tipos</option>
                     <option value="Autenticación">Autenticación</option>
@@ -133,9 +200,9 @@ const Bitacora = ({ setUser }) => {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Buscar en bitácora..."
+                    placeholder="Buscar por acción..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={handleSearch}
                     className="border border-gray-300 rounded-lg px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
                   />
                   <TbSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -161,43 +228,58 @@ const Bitacora = ({ setUser }) => {
                       Usuario
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rol
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Detalles
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {currentItems.length > 0 ? (
-                    currentItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(item.fecha)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {item.accion}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            item.tipo === 'Autenticación' ? 'bg-blue-100 text-blue-800' :
-                            item.tipo === 'Consulta' ? 'bg-green-100 text-green-800' :
-                            item.tipo === 'Modificación' ? 'bg-yellow-100 text-yellow-800' :
-                            item.tipo === 'Creación' ? 'bg-purple-100 text-purple-800' :
-                            item.tipo === 'Eliminación' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {item.tipo}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {item.usuario}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {item.detalles}
-                        </td>
-                      </tr>
-                    ))
+                  {loading ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center">
+                        <div className="flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                          <span className="ml-2">Cargando registros...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : bitacoraData.length > 0 ? (
+                    bitacoraData.map((item) => {
+                      const tipo = getTipoAccion(item.accion);
+                      return (
+                        <tr key={item.id_bitacora} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(item.fecha)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {item.accion}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getColorTipo(tipo)}`}>
+                              {tipo}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.nombre_completo || item.cedula_usuario || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.rol || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {item.detalles ? (
+                              typeof item.detalles === 'object' 
+                                ? JSON.stringify(item.detalles)
+                                : item.detalles
+                            ) : 'Sin detalles'}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
                         No se encontraron registros en la bitácora.
                       </td>
                     </tr>
@@ -207,12 +289,13 @@ const Bitacora = ({ setUser }) => {
             </div>
 
             {/* Paginación */}
-            {totalPages > 1 && (
+            {pagination.paginas > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between mt-6 space-y-4 sm:space-y-0">
                 <div className="text-sm text-gray-700">
-                  Mostrando <span className="font-medium">{indexOfFirstItem + 1}</span> a <span className="font-medium">
-                    {Math.min(indexOfLastItem, filteredData.length)}
-                  </span> de <span className="font-medium">{filteredData.length}</span> resultados
+                  Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a{' '}
+                  <span className="font-medium">
+                    {Math.min(currentPage * itemsPerPage, pagination.total)}
+                  </span> de <span className="font-medium">{pagination.total}</span> resultados
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -229,26 +312,38 @@ const Bitacora = ({ setUser }) => {
                   </button>
                   
                   <div className="flex space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => paginate(page)}
-                        className={`px-3 py-1 rounded-md text-sm ${
-                          currentPage === page 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                    {Array.from({ length: pagination.paginas }, (_, i) => i + 1)
+                      .filter(page => 
+                        page === 1 || 
+                        page === pagination.paginas || 
+                        (page >= currentPage - 2 && page <= currentPage + 2)
+                      )
+                      .map((page, index, array) => {
+                        // Agregar puntos suspensivos para paginas largas
+                        const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                        return (
+                          <div key={page} className="flex items-center">
+                            {showEllipsis && <span className="px-2">...</span>}
+                            <button
+                              onClick={() => paginate(page)}
+                              className={`px-3 py-1 rounded-md text-sm ${
+                                currentPage === page 
+                                  ? 'bg-blue-500 text-white' 
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </div>
+                        );
+                      })}
                   </div>
                   
                   <button
                     onClick={() => paginate(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === pagination.paginas}
                     className={`p-2 rounded-md flex items-center justify-center ${
-                      currentPage === totalPages 
+                      currentPage === pagination.paginas 
                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}

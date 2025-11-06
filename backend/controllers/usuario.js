@@ -1,12 +1,11 @@
 const express = require('express');
-const { query } = require('../config/conexion'); // Conexión a la base de datos
-const verificarEstatusUsuario = require('../middlewares/verificarEstatus'); // Middleware para verificar estatus
+const { query } = require('../config/conexion');
+const verificarEstatusUsuario = require('../middlewares/verificarEstatus');
+const { registrarBitacora, middlewareBitacora } = require('../middlewares/bitacora'); // Nuevo import
 
 const router = express.Router();
 
 const rolesValidos = ['Administrador', 'Emprendedor', 'Credito1', 'Credito2'];
-
-// Función para validar datos del usuario
 
 // Obtener todos los usuarios
 router.get('/', async (req, res) => {
@@ -77,7 +76,12 @@ router.get('/:cedula_usuario', async (req, res) => {
 });
 
 // Crear un nuevo usuario
-router.post('/', async (req, res) => {
+router.post('/', 
+  middlewareBitacora('CREAR_USUARIO', (req) => ({
+    usuario_creado: req.body.cedula_usuario,
+    rol: req.body.rol
+  })), 
+  async (req, res) => {
   try {
     const usuarioData = req.body;
     const { cedula_usuario, usuario: nombreUsuario, clave, rol, estatus } = usuarioData;
@@ -95,18 +99,20 @@ router.post('/', async (req, res) => {
 });
 
 // Actualizar un usuario existente
-// Actualizar un usuario existente - VERSIÓN CORREGIDA
-router.put('/:cedula_usuario', async (req, res) => {
+router.put('/:cedula_usuario', 
+  middlewareBitacora('ACTUALIZAR_USUARIO', (req) => ({
+    usuario_actualizado: req.params.cedula_usuario,
+    cambios: req.body
+  })), 
+  async (req, res) => {
   try {
     const { cedula_usuario } = req.params;
     const usuarioData = req.body;
     
-    // Validar datos requeridos
     if (!usuarioData.usuario || !usuarioData.rol) {
       return res.status(400).json({ message: 'Usuario y rol son requeridos' });
     }
 
-    // Construir la consulta dinámicamente para permitir actualizaciones parciales
     let queryParts = [];
     let queryParams = [];
     let paramCount = 1;
@@ -161,7 +167,7 @@ router.put('/:cedula_usuario', async (req, res) => {
   }
 });
 
-// Verificar contraseña - RUTA CORREGIDA
+// Verificar contraseña
 router.post('/verify-password', async (req, res) => {
   try {
     const { cedula_usuario, password } = req.body;
@@ -189,8 +195,10 @@ router.post('/verify-password', async (req, res) => {
   }
 });
 
-// Actualizar solo contraseña - RUTA CORREGIDA
-router.put('/:cedula_usuario/password', async (req, res) => {
+// Actualizar solo contraseña
+router.put('/:cedula_usuario/password', 
+  middlewareBitacora('CAMBIAR_CONTRASEÑA'), 
+  async (req, res) => {
   try {
     const { cedula_usuario } = req.params;
     const { clave } = req.body;
@@ -219,7 +227,11 @@ router.put('/:cedula_usuario/password', async (req, res) => {
 });
 
 // Eliminar un usuario por cédula
-router.delete('/:cedula_usuario', async (req, res) => {
+router.delete('/:cedula_usuario', 
+  middlewareBitacora('ELIMINAR_USUARIO', (req) => ({
+    usuario_eliminado: req.params.cedula_usuario
+  })), 
+  async (req, res) => {
   try {
     const { cedula_usuario } = req.params;
     const resultado = await query('DELETE FROM usuario WHERE cedula_usuario = $1 RETURNING *', [cedula_usuario]);
@@ -234,24 +246,43 @@ router.delete('/:cedula_usuario', async (req, res) => {
   }
 });
 
-// Iniciar sesión
+// INICIO DE SESIÓN - CON BITÁCORA
 router.post('/login', async (req, res) => {
   try {
     const { usuario, clave } = req.body;
     const resultado = await query('SELECT * FROM usuario WHERE usuario = $1', [usuario]);
     
     if (resultado.rows.length === 0) {
+      // Registrar intento fallido en bitácora
+      await registrarBitacora('INICIO_SESION_FALLIDO', null, {
+        usuario_intento: usuario,
+        razon: 'Usuario no encontrado'
+      });
       return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
     const user = resultado.rows[0];
     if (user.estatus && user.estatus.toLowerCase() === 'inactivo') {
+      // Registrar intento fallido por usuario inactivo
+      await registrarBitacora('INICIO_SESION_FALLIDO', user.cedula_usuario, {
+        razon: 'Usuario inactivo'
+      });
       return res.status(403).json({ error: 'Usuario inactivo' });
     }
 
     if (user.clave !== clave) {
+      // Registrar intento fallido por contraseña incorrecta
+      await registrarBitacora('INICIO_SESION_FALLIDO', user.cedula_usuario, {
+        razon: 'Contraseña incorrecta'
+      });
       return res.status(401).json({ error: 'Credenciales Incorrectas' });
     }
+
+    // REGISTRAR INICIO DE SESIÓN EXITOSO EN BITÁCORA
+    await registrarBitacora('INICIO_SESION', user.cedula_usuario, {
+      rol: user.rol,
+      estatus: user.estatus
+    });
 
     res.json({ message: 'Inicio de sesión exitoso', user });
   } catch (err) {
@@ -261,7 +292,12 @@ router.post('/login', async (req, res) => {
 });
 
 // Actualizar estatus de un usuario
-router.put('/:cedula_usuario/estatus', async (req, res) => {
+router.put('/:cedula_usuario/estatus', 
+  middlewareBitacora('CAMBIAR_ESTATUS', (req) => ({
+    usuario_afectado: req.params.cedula_usuario,
+    nuevo_estatus: req.body.estatus
+  })), 
+  async (req, res) => {
   try {
     const { cedula_usuario } = req.params;
     const { estatus } = req.body;
@@ -277,10 +313,11 @@ router.put('/:cedula_usuario/estatus', async (req, res) => {
   }
 });
 
-router.post('/logout', (req, res) => {
+// CERRAR SESIÓN - CON BITÁCORA
+router.post('/logout', 
+  middlewareBitacora('CIERRE_SESION'), 
+  (req, res) => {
   try {
-    // En una implementación real con tokens, aquí invalidarías el token
-    // Por ahora, simplemente respondemos con éxito
     res.json({ 
       success: true, 
       message: 'Sesión cerrada correctamente' 
