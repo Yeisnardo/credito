@@ -120,7 +120,7 @@ function App() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <span>Acceso Emprendedores</span>
+                <span>Persona en linea</span>
                 <motion.svg 
                   className="w-4 h-4" 
                   fill="none" 
