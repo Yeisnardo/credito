@@ -7,6 +7,7 @@ import Swal from "sweetalert2";
 
 import { getUsuarioPorCedula } from "../services/api_usuario";
 import { getRequerimientos } from "../services/api_requerimientos";
+import { getRequerimientosFiador } from "../services/api_requerimientos_fiador";
 import {
   createRequerimientoEmprendedor,
   getRequerimientoEmprendedor,
@@ -16,6 +17,7 @@ import {
   getSolicitudPorCedula,
 } from "../services/api_solicitud";
 import apiArchivo from "../services/api_archivo";
+import { createFiador, getFiadorPorIdReq } from "../services/api_fiador_solicitud";
 
 // Importar Tabler Icons
 import {
@@ -44,7 +46,11 @@ import {
   TbInfoCircle,
   TbAlertCircle,
   TbPhoto,
-  TbCircleCheck
+  TbCircleCheck,
+  TbUser,
+  TbId,
+  TbPhone,
+  TbMail
 } from "react-icons/tb";
 
 // Componente Modal mejorado para visualización de imagen
@@ -64,90 +70,81 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
   }, [isOpen, solicitud]);
 
   const cargarImagenSolicitud = async () => {
-  if (!solicitud?.cedula_emprendedor || !solicitud?.id_req) {
-    setErrorImagen("No hay información completa de la solicitud");
-    return;
-  }
-  
-  setCargandoImagen(true);
-  setErrorImagen(null);
-  setImagenArchivo(null);
-  
-  try {
-    console.log('🔍 Buscando imagen para:', {
-      cedula: solicitud.cedula_emprendedor,
-      id_req: solicitud.id_req,
-      id_contrato: solicitud.id_contrato
-    });
-    
-    // 🔥 CAMBIO: Buscar archivos por id_req en lugar de cédula
-    let archivos = [];
-    
-    // Primero intentar buscar por id_req específico
-    try {
-      archivos = await apiArchivo.getArchivosByReq(solicitud.id_req);
-      console.log('📁 Archivos por id_req:', archivos);
-    } catch (error) {
-      console.log('⚠️ No se encontraron archivos por id_req, buscando por cédula...');
-      // Fallback: buscar por cédula
-      archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
-      console.log('📁 Archivos por cédula:', archivos);
+    if (!solicitud?.cedula_emprendedor || !solicitud?.id_req) {
+      setErrorImagen("No hay información completa de la solicitud");
+      return;
     }
     
-    if (archivos && archivos.length > 0) {
-      // Buscar archivo que coincida con el id_req de la solicitud
-      let archivo = archivos.find(a => a.id_req === solicitud.id_req);
+    setCargandoImagen(true);
+    setErrorImagen(null);
+    setImagenArchivo(null);
+    
+    try {
+      console.log('🔍 Buscando imagen para:', {
+        cedula: solicitud.cedula_emprendedor,
+        id_req: solicitud.id_req,
+        id_contrato: solicitud.id_contrato
+      });
       
-      // Si no encuentra por id_req, tomar el más reciente
-      if (!archivo) {
-        archivo = archivos[0];
-        console.log('⚠️ Usando archivo más reciente en lugar del específico');
+      let archivos = [];
+      
+      try {
+        archivos = await apiArchivo.getArchivosByReq(solicitud.id_req);
+        console.log('📁 Archivos por id_req:', archivos);
+      } catch (error) {
+        console.log('⚠️ No se encontraron archivos por id_req, buscando por cédula...');
+        archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
+        console.log('📁 Archivos por cédula:', archivos);
       }
       
-      console.log('🎯 Archivo seleccionado:', archivo);
-      
-      let urlImagen = null;
-      
-      // Priorizar la URL proporcionada por el backend
-      if (archivo.url) {
-        urlImagen = archivo.url;
-      } 
-      // Si tenemos el nombre del archivo, construir URL
-      else if (archivo.archivo) {
-        urlImagen = apiArchivo.obtenerUrlImagen 
-          ? apiArchivo.obtenerUrlImagen(archivo.archivo)
-          : `http://localhost:5000/uploads/${archivo.archivo}`;
-      }
-      
-      if (urlImagen) {
-        console.log('🖼️ URL de imagen construida:', urlImagen);
+      if (archivos && archivos.length > 0) {
+        let archivo = archivos.find(a => a.id_req === solicitud.id_req);
         
-        // Verificar que la imagen sea accesible usando fetch
-        try {
-          const response = await fetch(urlImagen, { method: 'HEAD' });
-          if (response.ok) {
-            setImagenArchivo(urlImagen);
-            setCargandoImagen(false);
-          } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!archivo) {
+          archivo = archivos[0];
+          console.log('⚠️ Usando archivo más reciente en lugar del específico');
+        }
+        
+        console.log('🎯 Archivo seleccionado:', archivo);
+        
+        let urlImagen = null;
+        
+        if (archivo.url) {
+          urlImagen = archivo.url;
+        } else if (archivo.archivo) {
+          urlImagen = apiArchivo.obtenerUrlImagen 
+            ? apiArchivo.obtenerUrlImagen(archivo.archivo)
+            : `http://localhost:5000/uploads/${archivo.archivo}`;
+        }
+        
+        if (urlImagen) {
+          console.log('🖼️ URL de imagen construida:', urlImagen);
+          
+          try {
+            const response = await fetch(urlImagen, { method: 'HEAD' });
+            if (response.ok) {
+              setImagenArchivo(urlImagen);
+              setCargandoImagen(false);
+            } else {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+          } catch (fetchError) {
+            console.error('❌ Error al verificar imagen:', fetchError);
+            throw new Error('La imagen no es accesible desde el servidor');
           }
-        } catch (fetchError) {
-          console.error('❌ Error al verificar imagen:', fetchError);
-          throw new Error('La imagen no es accesible desde el servidor');
+        } else {
+          throw new Error("No se pudo generar la URL de la imagen");
         }
       } else {
-        throw new Error("No se pudo generar la URL de la imagen");
+        throw new Error("No se encontraron archivos para esta solicitud");
       }
-    } else {
-      throw new Error("No se encontraron archivos para esta solicitud");
+      
+    } catch (error) {
+      console.error("❌ Error al cargar la imagen:", error);
+      setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
+      setCargandoImagen(false);
     }
-    
-  } catch (error) {
-    console.error("❌ Error al cargar la imagen:", error);
-    setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
-    setCargandoImagen(false);
-  }
-};
+  };
 
   const abrirModalImagen = (imagenUrl) => {
     setModalImagen({ open: true, imagenUrl });
@@ -275,7 +272,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
               )}
             </div>
 
-            {/* Sección de imagen del documento MEJORADA */}
+            {/* Sección de imagen del documento */}
             <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
               <div className="flex items-center gap-2 mb-4">
                 <TbPhoto size={20} className="text-gray-600" />
@@ -457,10 +454,10 @@ const ProgressIndicator = ({ step }) => (
       <div
         className="absolute top-4 left-0 h-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full -z-10 transition-all duration-700 ease-out"
         style={{
-          width: step === 1 ? "0%" : step === 2 ? "50%" : "100%",
+          width: step === 1 ? "0%" : step === 2 ? "25%" : step === 3 ? "50%" : step === 4 ? "75%" : "100%",
         }}
       ></div>
-      {[1, 2, 3].map((stepNumber) => (
+      {[1, 2, 3, 4].map((stepNumber) => (
         <div key={stepNumber} className="flex flex-col items-center relative">
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${
@@ -480,7 +477,8 @@ const ProgressIndicator = ({ step }) => (
           }`}>
             {stepNumber === 1 && "Requerimientos"}
             {stepNumber === 2 && "Documentos"}
-            {stepNumber === 3 && "Motivo"}
+            {stepNumber === 3 && "Fiador"}
+            {stepNumber === 4 && "Motivo"}
           </span>
         </div>
       ))}
@@ -801,8 +799,278 @@ const Step2Documentos = ({
   </div>
 );
 
-// Componente Step 3 - Motivo de la solicitud
-const Step3Motivo = ({
+// Componente Step 3 - Registro del Fiador (ACTUALIZADO con lista de requerimientos)
+const Step3Fiador = ({
+  fiadorData,
+  errors,
+  setFiadorData,
+  setErrors,
+  requerimientosFiador,
+  handleBack,
+  handleNext,
+}) => {
+  console.log('🔍 Step3Fiador - requerimientosFiador:', requerimientosFiador);
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <TbUser size={32} className="text-blue-600" />
+        </div>
+        <h3 className="text-2xl font-bold text-gray-800 mb-2">
+          Datos del Fiador
+        </h3>
+        <p className="text-gray-600">
+          Ingresa la información del fiador que avalará tu solicitud de crédito
+        </p>
+      </div>
+
+      {/* SECCIÓN: Requerimientos del Fiador - MEJORADA */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+        <label className="block mb-4 text-gray-800 font-semibold text-lg">
+          <TbListCheck size={20} className="text-blue-600 mr-2 inline" />
+          Requerimientos del Fiador
+        </label>
+        
+        {requerimientosFiador && requerimientosFiador.length > 0 ? (
+          <>
+            <p className="text-gray-600 mb-4 text-sm">
+              El fiador deberá presentar los siguientes documentos:
+            </p>
+            
+            <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto rounded-2xl p-4 bg-white border border-gray-200 custom-scrollbar">
+              {requerimientosFiador.map((req, index) => (
+                <div
+                  key={req.id_requerimientos_fiador || index}
+                  className="flex items-center p-3 rounded-xl bg-white border border-gray-200 hover:border-blue-300 transition-all duration-300"
+                >
+                  <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <span className="text-blue-600 font-semibold text-sm">
+                      {index + 1}
+                    </span>
+                  </div>
+                  <span className="text-gray-800 text-sm flex-1">
+                    {req.nombre_requerimiento_fiador || `Requerimiento ${index + 1}`}
+                  </span>
+                  <TbInfoCircle size={16} className="text-gray-400 ml-2" />
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-amber-700 text-sm font-medium flex items-center">
+                <TbInfoCircle size={16} className="text-amber-500 mr-2" />
+                Información importante: El fiador debe presentar estos documentos en la cita programada
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-6">
+            <TbInfoCircle size={32} className="text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">
+              No hay requerimientos específicos para el fiador en este momento.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Resto del formulario del fiador */}
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Cédula del Fiador */}
+          <div>
+            <label className="block mb-3 text-gray-800 font-semibold">
+              <TbId size={18} className="text-blue-600 mr-2 inline" />
+              Cédula del Fiador *
+            </label>
+            <input
+              type="text"
+              value={fiadorData.cedula_fiador}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFiadorData(prev => ({ ...prev, cedula_fiador: value }));
+                if (errors.cedula_fiador) {
+                  setErrors(prev => ({ ...prev, cedula_fiador: "" }));
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition-all bg-white text-gray-800 font-medium"
+              placeholder="Ej: 1234567890"
+              maxLength={20}
+            />
+            {errors.cedula_fiador && (
+              <p className="text-red-600 text-sm mt-2 flex items-center">
+                <TbAlertCircle size={16} className="mr-1" />
+                {errors.cedula_fiador}
+              </p>
+            )}
+          </div>
+
+          {/* Nombre Completo */}
+          <div>
+            <label className="block mb-3 text-gray-800 font-semibold">
+              <TbUser size={18} className="text-blue-600 mr-2 inline" />
+              Nombre Completo *
+            </label>
+            <input
+              type="text"
+              value={fiadorData.nombre_completo_fiador}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFiadorData(prev => ({ ...prev, nombre_completo_fiador: value }));
+                if (errors.nombre_completo_fiador) {
+                  setErrors(prev => ({ ...prev, nombre_completo_fiador: "" }));
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition-all bg-white text-gray-800 font-medium"
+              placeholder="Ej: Juan Pérez García"
+              maxLength={100}
+            />
+            {errors.nombre_completo_fiador && (
+              <p className="text-red-600 text-sm mt-2 flex items-center">
+                <TbAlertCircle size={16} className="mr-1" />
+                {errors.nombre_completo_fiador}
+              </p>
+            )}
+          </div>
+
+          {/* Teléfono */}
+          <div>
+            <label className="block mb-3 text-gray-800 font-semibold">
+              <TbPhone size={18} className="text-blue-600 mr-2 inline" />
+              Teléfono *
+            </label>
+            <input
+              type="tel"
+              value={fiadorData.telefono_fiador}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFiadorData(prev => ({ ...prev, telefono_fiador: value }));
+                if (errors.telefono_fiador) {
+                  setErrors(prev => ({ ...prev, telefono_fiador: "" }));
+                }
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition-all bg-white text-gray-800 font-medium"
+              placeholder="Ej: 0412-1234567"
+              maxLength={20}
+            />
+            {errors.telefono_fiador && (
+              <p className="text-red-600 text-sm mt-2 flex items-center">
+                <TbAlertCircle size={16} className="mr-1" />
+                {errors.telefono_fiador}
+              </p>
+            )}
+          </div>
+
+          {/* Correo Electrónico */}
+          <div>
+            <label className="block mb-3 text-gray-800 font-semibold">
+              <TbMail size={18} className="text-blue-600 mr-2 inline" />
+              Correo Electrónico
+            </label>
+            <input
+              type="email"
+              value={fiadorData.correo_fiador}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFiadorData(prev => ({ ...prev, correo_fiador: value }));
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition-all bg-white text-gray-800 font-medium"
+              placeholder="Ej: fiador@ejemplo.com"
+              maxLength={100}
+            />
+          </div>
+        </div>
+
+        {/* Sección para RIF Fiscal */}
+        <div className="mt-6">
+          <label className="block mb-4 text-gray-800 font-semibold text-lg">
+            <TbFile size={18} className="text-blue-600 mr-2 inline" />
+            RIF Fiscal del Fiador (Opcional)
+          </label>
+          <div className="relative">
+            <input
+              type="file"
+              id="foto_rif_fiscal"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                setFiadorData(prev => ({ ...prev, foto_rif_fiscal: file }));
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className={`border-3 border-dashed rounded-2xl p-6 text-center transition-all duration-300 ${
+              fiadorData.foto_rif_fiscal 
+                ? "border-green-400 bg-green-50" 
+                : "border-blue-300 bg-white hover:border-blue-500 hover:bg-blue-50"
+            }`}>
+              {fiadorData.foto_rif_fiscal ? (
+                <>
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <TbCheck size={24} className="text-green-600" />
+                  </div>
+                  <p className="text-gray-800 font-semibold mb-1">
+                    {fiadorData.foto_rif_fiscal.name}
+                  </p>
+                  <p className="text-gray-600 text-sm">
+                    {(fiadorData.foto_rif_fiscal.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </>
+              ) : (
+                <>
+                  <TbCloudUpload size={40} className="text-blue-500 mb-3 mx-auto" />
+                  <p className="text-gray-800 font-semibold mb-1">
+                    Haz clic para subir RIF Fiscal
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Formatos: JPG, PNG, WEBP (máx. 10MB)
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Información adicional */}
+        <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200">
+          <p className="text-sm text-gray-600 font-medium mb-2 flex items-center">
+            <TbInfoCircle size={16} className="text-blue-500 mr-2" />
+            Información importante sobre el fiador:
+          </p>
+          <ul className="text-sm text-gray-500 space-y-1">
+            <li>• El fiador debe ser mayor de edad</li>
+            <li>• Debe tener ingresos comprobables</li>
+            <li>• Será contactado para verificación</li>
+            <li>• Debe presentar los documentos listados arriba</li>
+            <li>• Los campos marcados con * son obligatorios</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-gray-200"
+        >
+          <TbChevronLeft size={20} className="mr-2" />
+          Regresar
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!fiadorData.cedula_fiador || !fiadorData.nombre_completo_fiador || !fiadorData.telefono_fiador}
+          className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center shadow-lg shadow-blue-200"
+        >
+          Continuar
+          <TbChevronRight size={20} className="ml-2" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Componente Step 4 - Motivo de la solicitud
+const Step4Motivo = ({
   motivo,
   errors,
   loading,
@@ -1197,12 +1465,15 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
 // Componente FormularioSolicitud
 const FormularioSolicitud = ({ 
   requerimientos, 
+  requerimientosFiador,
   formData, 
   setFormData, 
   step, 
   setStep, 
   motivo, 
   setMotivo, 
+  fiadorData,
+  setFiadorData,
   errors, 
   setErrors, 
   loading, 
@@ -1215,29 +1486,23 @@ const FormularioSolicitud = ({
   onCancelar
 }) => {
   const handleBack = () => {
-    if (step === 2) {
-      setStep(1);
-    } else if (step === 3) {
-      setStep(2);
+    if (step > 1) {
+      setStep(step - 1);
     }
   };
 
   const handleNext = () => {
     if (validateForm()) {
-      if (step === 1) {
-        setStep(2);
-      } else if (step === 2) {
-        setStep(3);
-      }
+      setStep(step + 1);
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
+    
     if (step === 1) {
       if (formData.opt_requerimiento.length === 0) {
-        newErrors.opt_requerimiento =
-          "Debe seleccionar al menos un requerimiento.";
+        newErrors.opt_requerimiento = "Debe seleccionar al menos un requerimiento.";
       }
     } else if (step === 2) {
       if (!formData.archivo) {
@@ -1246,17 +1511,60 @@ const FormularioSolicitud = ({
         newErrors.archivo = "El archivo debe ser una imagen (JPG, PNG, WEBP, etc.).";
       }
       if (!formData.fecha_llevar) {
-        newErrors.fecha_llevar =
-          "Debe seleccionar la fecha para llevar los documentos.";
+        newErrors.fecha_llevar = "Debe seleccionar la fecha para llevar los documentos.";
       }
     } else if (step === 3) {
+      // Validaciones para el fiador
+      if (!fiadorData.cedula_fiador.trim()) {
+        newErrors.cedula_fiador = "La cédula del fiador es obligatoria.";
+      }
+      if (!fiadorData.nombre_completo_fiador.trim()) {
+        newErrors.nombre_completo_fiador = "El nombre completo del fiador es obligatorio.";
+      }
+      if (!fiadorData.telefono_fiador.trim()) {
+        newErrors.telefono_fiador = "El teléfono del fiador es obligatorio.";
+      }
+    } else if (step === 4) {
       if (!motivo.trim()) {
         newErrors.motivo = "El campo motivo no puede estar vacío.";
       }
     }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const getStepTitle = (step) => {
+    switch(step) {
+      case 1: return "Selecciona tus Requerimientos";
+      case 2: return "Adjunta tus Documentos";
+      case 3: return "Datos del Fiador";
+      case 4: return "Motivo de tu Solicitud";
+      default: return "";
+    }
+  };
+
+  const getStepDescription = (step) => {
+    switch(step) {
+      case 1: return "Elige los documentos que vas a presentar";
+      case 2: return "Sube tu archivo y programa tu cita";
+      case 3: return "Ingresa la información del fiador";
+      case 4: return "Describe el propósito de tu solicitud";
+      default: return "";
+    }
+  };
+
+  const getStepIcon = (step) => {
+    switch(step) {
+      case 1: return TbListCheck;
+      case 2: return TbCloudUpload;
+      case 3: return TbUser;
+      case 4: return TbEdit;
+      default: return TbListCheck;
+    }
+  };
+
+  const StepIcon = getStepIcon(step);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -1264,7 +1572,7 @@ const FormularioSolicitud = ({
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 mt-6 gap-6">
         <div className="flex items-center space-x-4">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-2xl shadow-lg">
-            <TbEdit size={24} className="text-white" />
+            <StepIcon size={24} className="text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-800">
@@ -1293,22 +1601,14 @@ const FormularioSolicitud = ({
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
             step === 1 ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-400"
           }`}>
-            <TbListCheck size={20} />
+            <StepIcon size={20} />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {step === 1
-                ? "Selecciona tus Requerimientos"
-                : step === 2
-                ? "Adjunta tus Documentos"
-                : "Motivo de tu Solicitud"}
+              {getStepTitle(step)}
             </h2>
             <p className="text-gray-600">
-              {step === 1
-                ? "Elige los documentos que vas a presentar"
-                : step === 2
-                ? "Sube tu archivo y programa tu cita"
-                : "Describe el propósito de tu solicitud"}
+              {getStepDescription(step)}
             </p>
           </div>
         </div>
@@ -1316,7 +1616,7 @@ const FormularioSolicitud = ({
         <form
           className="space-y-6"
           onSubmit={
-            step === 3
+            step === 4
               ? handleSubmit
               : (e) => {
                   e.preventDefault();
@@ -1348,7 +1648,19 @@ const FormularioSolicitud = ({
           )}
 
           {step === 3 && (
-            <Step3Motivo
+            <Step3Fiador
+              fiadorData={fiadorData}
+              errors={errors}
+              setFiadorData={setFiadorData}
+              setErrors={setErrors}
+              requerimientosFiador={requerimientosFiador}
+              handleBack={handleBack}
+              handleNext={handleNext}
+            />
+          )}
+
+          {step === 4 && (
+            <Step4Motivo
               motivo={motivo}
               errors={errors}
               loading={loading}
@@ -1372,6 +1684,7 @@ const RequireSolicit = ({ setUser }) => {
   const [menuOpen, setMenuOpen] = useState(true);
   const [user, setUserState] = useState(null);
   const [requerimientos, setRequerimientos] = useState([]);
+  const [requerimientosFiador, setRequerimientosFiador] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
   const [formData, setFormData] = useState({
@@ -1383,6 +1696,13 @@ const RequireSolicit = ({ setUser }) => {
   });
   const [step, setStep] = useState(1);
   const [motivo, setMotivo] = useState("");
+  const [fiadorData, setFiadorData] = useState({
+    cedula_fiador: "",
+    nombre_completo_fiador: "",
+    telefono_fiador: "",
+    correo_fiador: "",
+    foto_rif_fiscal: null,
+  });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [modalDetalles, setModalDetalles] = useState({ open: false, solicitud: null });
@@ -1428,29 +1748,64 @@ const RequireSolicit = ({ setUser }) => {
     fetchRequerimientos();
   }, []);
 
+  // Cargar requerimientos del fiador
   useEffect(() => {
-  const obtenerSolicitudes = async () => {
-    if (user?.cedula_usuario) {
+    const fetchRequerimientosFiador = async () => {
       try {
-        const datosExistentes = await getRequerimientoEmprendedor(user.cedula_usuario);
-        const solicitudesData = await getSolicitudPorCedula(user.cedula_usuario);
-        
-        console.log('📋 Datos existentes (requerimientos):', datosExistentes);
-        console.log('📋 Solicitudes data:', solicitudesData);
-        
-        let solicitudesCompletas = [];
-        
-        if (Array.isArray(solicitudesData)) {
-          solicitudesCompletas = solicitudesData.map(solicitud => {
-            // 🔥 CAMBIO: Buscar por id_req en lugar de id_contrato
-            const requerimientoCorrespondiente = datosExistentes.find(
-              item => item.id_req === solicitud.id_req // Cambiado a id_req
-            );
-            
-            console.log(`🔍 Buscando requerimiento para solicitud ${solicitud.id_contrato}:`, {
-              id_req_solicitud: solicitud.id_req,
-              requerimiento_encontrado: requerimientoCorrespondiente
+        console.log('🔄 Cargando requerimientos del fiador...');
+        const data = await getRequerimientosFiador();
+        console.log('📋 Requerimientos del fiador cargados:', data);
+        setRequerimientosFiador(data);
+      } catch (error) {
+        console.error("Error al obtener requerimientos del fiador:", error);
+      }
+    };
+    fetchRequerimientosFiador();
+  }, []);
+
+  useEffect(() => {
+    const obtenerSolicitudes = async () => {
+      if (user?.cedula_usuario) {
+        try {
+          const datosExistentes = await getRequerimientoEmprendedor(user.cedula_usuario);
+          const solicitudesData = await getSolicitudPorCedula(user.cedula_usuario);
+          
+          console.log('📋 Datos existentes (requerimientos):', datosExistentes);
+          console.log('📋 Solicitudes data:', solicitudesData);
+          
+          let solicitudesCompletas = [];
+          
+          if (Array.isArray(solicitudesData)) {
+            solicitudesCompletas = solicitudesData.map(solicitud => {
+              const requerimientoCorrespondiente = datosExistentes.find(
+                item => item.id_req === solicitud.id_req
+              );
+              
+              console.log(`🔍 Buscando requerimiento para solicitud ${solicitud.id_contrato}:`, {
+                id_req_solicitud: solicitud.id_req,
+                requerimiento_encontrado: requerimientoCorrespondiente
+              });
+              
+              let requerimientosSolicitud = [];
+              if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
+                try {
+                  requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
+                } catch (error) {
+                  console.error('Error parseando opt_requerimiento:', error);
+                  requerimientosSolicitud = [];
+                }
+              }
+              
+              return {
+                ...solicitud,
+                requerimientos: requerimientosSolicitud,
+                id_req: solicitud.id_req
+              };
             });
+          } else if (solicitudesData) {
+            const requerimientoCorrespondiente = datosExistentes.find(
+              item => item.id_req === solicitudesData.id_req
+            );
             
             let requerimientosSolicitud = [];
             if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
@@ -1462,44 +1817,22 @@ const RequireSolicit = ({ setUser }) => {
               }
             }
             
-            return {
-              ...solicitud,
+            solicitudesCompletas = [{
+              ...solicitudesData,
               requerimientos: requerimientosSolicitud,
-              id_req: solicitud.id_req // Asegurarnos de que tenga id_req
-            };
-          });
-        } else if (solicitudesData) {
-          // 🔥 CAMBIO: Buscar por id_req en lugar de id_contrato
-          const requerimientoCorrespondiente = datosExistentes.find(
-            item => item.id_req === solicitudesData.id_req // Cambiado a id_req
-          );
-          
-          let requerimientosSolicitud = [];
-          if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
-            try {
-              requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
-            } catch (error) {
-              console.error('Error parseando opt_requerimiento:', error);
-              requerimientosSolicitud = [];
-            }
+              id_req: solicitudesData.id_req
+            }];
           }
           
-          solicitudesCompletas = [{
-            ...solicitudesData,
-            requerimientos: requerimientosSolicitud,
-            id_req: solicitudesData.id_req
-          }];
+          console.log('🔄 Solicitudes completas procesadas:', solicitudesCompletas);
+          setSolicitudes(solicitudesCompletas);
+        } catch (error) {
+          console.error("Error obteniendo solicitudes:", error);
         }
-        
-        console.log('🔄 Solicitudes completas procesadas:', solicitudesCompletas);
-        setSolicitudes(solicitudesCompletas);
-      } catch (error) {
-        console.error("Error obteniendo solicitudes:", error);
       }
-    }
-  };
-  obtenerSolicitudes();
-}, [user]);
+    };
+    obtenerSolicitudes();
+  }, [user]);
 
   useEffect(() => {
     if (requerimientos.length > 0) {
@@ -1551,31 +1884,49 @@ const RequireSolicit = ({ setUser }) => {
     }
   };
 
-
   // Función para recargar los datos de las solicitudes
-// Función para recargar los datos de las solicitudes
-const recargarDatosSolicitudes = async () => {
-  if (user?.cedula_usuario) {
-    try {
-      const datosExistentes = await getRequerimientoEmprendedor(user.cedula_usuario);
-      const solicitudesData = await getSolicitudPorCedula(user.cedula_usuario);
-      
-      console.log('🔄 Recargando datos - Requerimientos:', datosExistentes);
-      console.log('🔄 Recargando datos - Solicitudes:', solicitudesData);
-      
-      let solicitudesCompletas = [];
-      
-      if (Array.isArray(solicitudesData)) {
-        solicitudesCompletas = solicitudesData.map(solicitud => {
-          // 🔥 CAMBIO: Buscar por id_req
-          const requerimientoCorrespondiente = datosExistentes.find(
-            item => item.id_req === solicitud.id_req
-          );
-          
-          console.log(`🔍 Recarga - Buscando requerimiento para solicitud ${solicitud.id_contrato}:`, {
-            id_req_solicitud: solicitud.id_req,
-            requerimiento_encontrado: requerimientoCorrespondiente
+  const recargarDatosSolicitudes = async () => {
+    if (user?.cedula_usuario) {
+      try {
+        const datosExistentes = await getRequerimientoEmprendedor(user.cedula_usuario);
+        const solicitudesData = await getSolicitudPorCedula(user.cedula_usuario);
+        
+        console.log('🔄 Recargando datos - Requerimientos:', datosExistentes);
+        console.log('🔄 Recargando datos - Solicitudes:', solicitudesData);
+        
+        let solicitudesCompletas = [];
+        
+        if (Array.isArray(solicitudesData)) {
+          solicitudesCompletas = solicitudesData.map(solicitud => {
+            const requerimientoCorrespondiente = datosExistentes.find(
+              item => item.id_req === solicitud.id_req
+            );
+            
+            console.log(`🔍 Recarga - Buscando requerimiento para solicitud ${solicitud.id_contrato}:`, {
+              id_req_solicitud: solicitud.id_req,
+              requerimiento_encontrado: requerimientoCorrespondiente
+            });
+            
+            let requerimientosSolicitud = [];
+            if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
+              try {
+                requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
+              } catch (error) {
+                console.error('Error parseando opt_requerimiento:', error);
+                requerimientosSolicitud = [];
+              }
+            }
+            
+            return {
+              ...solicitud,
+              requerimientos: requerimientosSolicitud,
+              id_req: solicitud.id_req
+            };
           });
+        } else if (solicitudesData) {
+          const requerimientoCorrespondiente = datosExistentes.find(
+            item => item.id_req === solicitudesData.id_req
+          );
           
           let requerimientosSolicitud = [];
           if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
@@ -1587,58 +1938,43 @@ const recargarDatosSolicitudes = async () => {
             }
           }
           
-          return {
-            ...solicitud,
+          solicitudesCompletas = [{
+            ...solicitudesData,
             requerimientos: requerimientosSolicitud,
-            id_req: solicitud.id_req
-          };
-        });
-      } else if (solicitudesData) {
-        // 🔥 CAMBIO: Buscar por id_req
-        const requerimientoCorrespondiente = datosExistentes.find(
-          item => item.id_req === solicitudesData.id_req
-        );
-        
-        let requerimientosSolicitud = [];
-        if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
-          try {
-            requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
-          } catch (error) {
-            console.error('Error parseando opt_requerimiento:', error);
-            requerimientosSolicitud = [];
-          }
+            id_req: solicitudesData.id_req
+          }];
         }
         
-        solicitudesCompletas = [{
-          ...solicitudesData,
-          requerimientos: requerimientosSolicitud,
-          id_req: solicitudesData.id_req
-        }];
+        console.log('✅ Solicitudes recargadas:', solicitudesCompletas);
+        setSolicitudes(solicitudesCompletas);
+      } catch (error) {
+        console.error("Error recargando datos:", error);
       }
-      
-      console.log('✅ Solicitudes recargadas:', solicitudesCompletas);
-      setSolicitudes(solicitudesCompletas);
-    } catch (error) {
-      console.error("Error recargando datos:", error);
     }
-  }
-};
+  };
 
-// Función para resetear el formulario
-const resetearFormulario = () => {
-  setMotivo("");
-  setFormData({
-    cedula_emprendedor: user?.cedula_usuario || "",
-    opt_requerimiento: [],
-    archivo: null,
-    fecha_llevar: "",
-    motivo: "",
-  });
-  setStep(1);
-  setErrors({});
-};
+  // Función para resetear el formulario
+  const resetearFormulario = () => {
+    setMotivo("");
+    setFormData({
+      cedula_emprendedor: user?.cedula_usuario || "",
+      opt_requerimiento: [],
+      archivo: null,
+      fecha_llevar: "",
+      motivo: "",
+    });
+    setFiadorData({
+      cedula_fiador: "",
+      nombre_completo_fiador: "",
+      telefono_fiador: "",
+      correo_fiador: "",
+      foto_rif_fiscal: null,
+    });
+    setStep(1);
+    setErrors({});
+  };
 
-  const enviarRequerimiento = async (e) => {
+const enviarRequerimiento = async (e) => {
   e.preventDefault();
   setLoading(true);
   try {
@@ -1654,19 +1990,35 @@ const resetearFormulario = () => {
     const requerimientoResponse = await createRequerimientoEmprendedor(requerimientoData);
     console.log('✅ Respuesta de requerimiento:', requerimientoResponse);
     
-    // Verificar que se creó correctamente y obtener el id_req
     if (!requerimientoResponse.id_req) {
       throw new Error('No se pudo obtener el id_req del requerimiento creado');
     }
     
     const id_req = requerimientoResponse.id_req;
 
-    // 2. LUEGO crear la solicitud con el id_req
+    // 2. CREAR EL FIADOR CON FORM DATA
+    const datosFiador = {
+      id_req: id_req,
+      cedula_emprendedor: formData.cedula_emprendedor,
+      cedula_fiador: fiadorData.cedula_fiador,
+      nombre_completo_fiador: fiadorData.nombre_completo_fiador,
+      telefono_fiador: fiadorData.telefono_fiador,
+      correo_fiador: fiadorData.correo_fiador || null,
+      verificacion_fiador: "Pendiente"
+    };
+
+    console.log('👤 Creando fiador:', datosFiador);
+    
+    // ✅ CORREGIDO: Enviar con FormData incluyendo el archivo
+    const fiadorResponse = await createFiador(datosFiador, fiadorData.foto_rif_fiscal);
+    console.log('✅ Respuesta del fiador:', fiadorResponse);
+
+    // 3. CREAR LA SOLICITUD con el id_req
     const datosSolicitud = {
       cedula_emprendedor: formData.cedula_emprendedor,
       motivo: formData.motivo,
       estatus: "Pendiente",
-      id_req: id_req, // 🔥 ESTA ES LA CLAVE - enviar el id_req
+      id_req: id_req,
       fecha_llevar: formData.fecha_llevar || null
     };
 
@@ -1675,19 +2027,19 @@ const resetearFormulario = () => {
     const solicitudResponse = await createSolicitud(datosSolicitud);
     console.log('✅ Respuesta de solicitud:', solicitudResponse);
 
-    // Verificar que la solicitud se creó correctamente
     if (!solicitudResponse.id_contrato) {
       throw new Error('No se pudo crear la solicitud');
     }
 
-    // 3. FINALMENTE subir el archivo con el id_req correcto
+    // 4. Subir el archivo principal del emprendedor
     if (formData.archivo) {
       const datosArchivo = {
         cedula_emprendedor: formData.cedula_emprendedor,
         fecha_llevar: formData.fecha_llevar,
-        id_req: id_req, // Usar el mismo id_req
+        id_req: id_req,
+        tipo_archivo: "documentos_emprendedor"
       };
-      console.log('📁 Subiendo archivo con id_req:', datosArchivo);
+      console.log('📁 Subiendo archivo principal');
       await subirArchivo(formData.archivo, datosArchivo);
     }
 
@@ -1699,7 +2051,7 @@ const resetearFormulario = () => {
 
     Swal.fire({
       title: "¡Éxito!",
-      text: "Solicitud enviada correctamente",
+      text: "Solicitud enviada correctamente con los datos del fiador",
       icon: "success",
       confirmButtonColor: "#0F3C5B",
       background: "#f8fafc",
@@ -1734,16 +2086,7 @@ const resetearFormulario = () => {
 
   const handleCancelarFormulario = () => {
     setMostrarFormulario(false);
-    setMotivo("");
-    setFormData({
-      cedula_emprendedor: user?.cedula_usuario || "",
-      opt_requerimiento: [],
-      archivo: null,
-      fecha_llevar: "",
-      motivo: "",
-    });
-    setStep(1);
-    setErrors({});
+    resetearFormulario();
   };
 
   const handleVerDetalles = (solicitud) => {
@@ -1773,12 +2116,15 @@ const resetearFormulario = () => {
           ) : (
             <FormularioSolicitud
               requerimientos={requerimientos}
+              requerimientosFiador={requerimientosFiador}
               formData={formData}
               setFormData={setFormData}
               step={step}
               setStep={setStep}
               motivo={motivo}
               setMotivo={setMotivo}
+              fiadorData={fiadorData}
+              setFiadorData={setFiadorData}
               errors={errors}
               setErrors={setErrors}
               loading={loading}

@@ -52,6 +52,11 @@ CREATE TABLE requerimientos (
     nombre_requerimiento VARCHAR (100)
 );
 
+CREATE TABLE requerimiento_fiador(
+  idR_fiador SERIAL PRIMARY KEY,
+  nombre_reqF VARCHAR (100)
+);
+
 
 ----------------------------------------------------------------------------------
 --  Emprendedor -------------------------------------------------------------------
@@ -76,6 +81,7 @@ CREATE TABLE requerimiento_archivo (
   FOREIGN KEY (id_req) REFERENCES requerimiento_emprendedor (id_req)
 );
 
+
 --TABLA DE SOLICITUD
 CREATE TABLE solicitud (
   id_contrato SERIAL PRIMARY KEY,
@@ -85,6 +91,19 @@ CREATE TABLE solicitud (
   estatus VARCHAR (20),
   motivo_rechazo TEXT,
   CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE,
+  FOREIGN KEY (id_req) REFERENCES requerimiento_emprendedor (id_req)
+);
+
+CREATE TABLE fiador (
+  id_fiador SERIAL PRIMARY KEY,
+  id_req INT NOT NULL,
+  cedula_emprendedor VARCHAR (20) NOT NULL,
+  cedula_fiador VARCHAR (20) NOT NULL,
+  nombre_completo_fiador VARCHAR (100),
+  telefono_fiador VARCHAR (20),
+  correo_fiador VARCHAR (100),
+  foto_rif_fiscal TEXT NOT NULL,
+  verificacion_fiador TEXT,
   FOREIGN KEY (id_req) REFERENCES requerimiento_emprendedor (id_req)
 );
 
@@ -204,6 +223,7 @@ CREATE TABLE bitacora (
     detalles JSONB
 );
 
+
 -- Índices para mejor performance
 CREATE INDEX idx_bitacora_cedula ON bitacora(cedula_usuario);
 CREATE INDEX idx_bitacora_fecha ON bitacora(fecha);
@@ -219,6 +239,23 @@ CREATE TABLE backup_history (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     database VARCHAR(100)
 );
+
+CREATE TABLE notificaciones (
+    id_notificacion SERIAL PRIMARY KEY,
+    id_req INTEGER REFERENCES requerimiento_emprendedor(id_req),
+    cedula_remitente VARCHAR(20) REFERENCES persona(cedula),
+    cedula_destinatario VARCHAR(20) REFERENCES persona(cedula),
+    tipo_notificacion VARCHAR(50) NOT NULL, -- 'nueva_solicitud', 'solicitud_aprobada', etc.
+    titulo VARCHAR(255) NOT NULL,
+    mensaje TEXT NOT NULL,
+    leida BOOLEAN DEFAULT FALSE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_leida TIMESTAMP NULL
+);
+
+-- Índices para mejor performance
+CREATE INDEX idx_notificaciones_destinatario ON notificaciones(cedula_destinatario, leida);
+CREATE INDEX idx_notificaciones_fecha ON notificaciones(fecha_creacion DESC);
 
 ----------------------------------------------------------------------------------
 --  Inserciones ----------------------------------------------------------------
@@ -236,6 +273,12 @@ INSERT INTO requerimientos (nombre_requerimiento) VALUES
 ('Fotos del emprendimiento'),
 ('RIF de emprendimiento'),
 ('Referencia bancaria');
+
+INSERT INTO requerimiento_fiador (nombre_reqF) VALUES
+('Copia de Cedula de Identidad'),
+('Rif Personal'),
+('Telefono'),
+('Correo Electronico');
 
 INSERT INTO clasificacion (sector, negocio) VALUES
 -- Sector Primario
@@ -332,7 +375,6 @@ INSERT INTO clasificacion (sector, negocio) VALUES
 
 
 
-
 ----------------------------------------------------------------------------------
 --  Datos del Administrador ------------------------------------------------------
 ----------------------------------------------------------------------------------
@@ -345,4 +387,4 @@ INSERT INTO usuario (cedula_usuario, usuario, clave, rol, estatus)
 VALUES ('31234567', 'CarlosMendoza', 'carlos2024', 'Administrador', 'Activo');
 
 INSERT INTO configuracion_contratos ( moneda, porcentaje_flat, porcentaje_interes, porcentaje_mora, numero_cuotas, cuotasgracias, frecuencia_pago, dias_personalizados) 
-VALUES ('USD', 5, 10, 2, 12, 2, 'Mensual', 0 );
+VALUES ('USD', 5, 10, 2, 12, 2, 'semanal', 0 );

@@ -6,7 +6,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import LoginAdmin from "./pages/Login-admin";
 import Dashboard from "./pages/Dashboard";
-import FormatoContrato from "./pages/FormatoContrato"
+import FormatoContrato from "./pages/FormatoContrato";
 //Emprededor
 import RegistroEmprendedor from "./pages/RegistroEmprendedor";
 import Requeri_solicit from "./pages/Requeri_solicit";
@@ -25,8 +25,6 @@ import Requerimientos from "./pages/Requerimientos";
 import Bitacora from './pages/Bitacora';
 import AdministracionCuota from './pages/AdministracionCuota';
 import Respaldo from './pages/Respaldo';
-
-
 
 // Importación de componentes adicionales
 import Header from './components/Header';

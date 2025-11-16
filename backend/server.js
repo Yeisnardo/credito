@@ -22,6 +22,8 @@ const clasificacionEmprendimientoEmprendedorAPI = require('./controllers/clasifi
 const configAPi = require('./controllers/configuracion_contratos');
 const RespaldoAPi = require('./routes/backupRoutes');
 const BitacoraAPi = require('./controllers/bitacora');
+const FiadorAPi = require('./controllers/fiador');
+const FiadoresAPi = require('./controllers/fiador_solicitud');
 
 const app = express();
 
@@ -57,6 +59,8 @@ app.use('/api/clasificacion', clasificacionEmprendimientoEmprendedorAPI);
 app.use('/api/configuracion', configAPi);
 app.use('/api/backup', RespaldoAPi);
 app.use('/api/bitacora', BitacoraAPi);
+app.use('/api/requerimientos-fiador', FiadorAPi);
+app.use('/api/fiadores', FiadoresAPi);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); 
 
@@ -91,4 +95,6 @@ app.listen(PORT, () => {
   console.log('   /api/configuracion');
   console.log('   /api/backup');
   console.log('   /api/bitacora');
+  console.log('   /api/requerimientos-fiador');
+  console.log('   /api/fiadores');
 });
