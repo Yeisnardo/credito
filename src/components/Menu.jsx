@@ -133,8 +133,8 @@ const Menu = ({ onClose }) => {
         subitems: [
           { path: "/Usuario", label: "Gestión de Usuarios" },
           { path: "/Emprendimiento", label: "Clasificación Emprendimiento" },
-          { path: "/Requerimientos", label: "Requerimientos" },
-          { path: "/FormatoContrato", label: "Configuracion de contrato" }
+          { path: "/Requerimientos", label: "Requerimientos del emprendedor y fiador" },
+          { path: "/FormatoContrato", label: "Parametrizacion del contrato" }
         ]
       }
     ]
@@ -276,23 +276,6 @@ const Menu = ({ onClose }) => {
         </div>
         <h2 className="text-xl font-bold text-gray-900">Sistema de Microcréditos</h2>
       </div>
-
-      {/* Información del usuario */}
-      {usuarioLogueado && (
-        <div className="p-4 border-b border-indigo-200 flex items-center">
-          <div className="bg-gray-900 rounded-full h-10 w-10 flex items-center justify-center mr-3">
-            <TbUser size={20} className="text-white" />
-          </div>
-          <div className="overflow-hidden">
-            <p className="font-medium truncate text-gray-800">
-              {usuarioLogueado.nombre_completo || "Usuario"}
-            </p>
-            <p className="text-blue-500 text-xs capitalize">
-              {usuarioLogueado.rol || "Rol"}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Navegación */}
       <div className="p-4">

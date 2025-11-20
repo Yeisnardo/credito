@@ -196,6 +196,10 @@ CREATE TABLE configuracion_contratos (
     cuotasgracias TEXT NOT NULL,
     frecuencia_pago TEXT NOT NULL ,
     dias_personalizados TEXT,
+    cedula_ifemi TEXT,
+    nombre_ifemi TEXT,
+    banco_ifemi TEXT,
+    numero_cuenta_ifemi TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -212,6 +216,10 @@ CREATE TABLE historial_configuracion_contratos (
     frecuencia_pago VARCHAR(20) NOT NULL,
     cuotasgracias TEXT NOT NULL,
     dias_personalizados INTEGER,
+    cedula_ifemi TEXT,
+    nombre_ifemi TEXT,
+    banco_ifemi TEXT,
+    numero_cuenta_ifemi TEXT,
     fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -55,6 +55,10 @@ router.post('/', async (req, res) => {
       cuotasgracias,
       frecuencia_pago,
       dias_personalizados,
+      cedula_ifemi,
+      nombre_ifemi,
+      banco_ifemi,
+      numero_cuenta_ifemi
     } = req.body;
 
     // 1. Insertar en configuracion_contratos
@@ -67,8 +71,12 @@ router.post('/', async (req, res) => {
         numero_cuotas,
         cuotasgracias,
         frecuencia_pago,
-        dias_personalizados
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        dias_personalizados,
+        cedula_ifemi,
+        nombre_ifemi,
+        banco_ifemi,
+        numero_cuenta_ifemi
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [
         moneda,
         porcentaje_flat,
@@ -78,6 +86,10 @@ router.post('/', async (req, res) => {
         cuotasgracias,
         frecuencia_pago,
         dias_personalizados,
+        cedula_ifemi,
+        nombre_ifemi,
+        banco_ifemi,
+        numero_cuenta_ifemi
       ]
     );
 
@@ -94,8 +106,12 @@ router.post('/', async (req, res) => {
         numero_cuotas,
         cuotasgracias,
         frecuencia_pago,
-        dias_personalizados
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        dias_personalizados,
+        cedula_ifemi,
+        nombre_ifemi,
+        banco_ifemi,
+        numero_cuenta_ifemi
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         nuevaConfiguracion.id,
         moneda,
@@ -105,7 +121,11 @@ router.post('/', async (req, res) => {
         parseInt(numero_cuotas) || 0,
         cuotasgracias ? parseInt(cuotasgracias) : 0,
         frecuencia_pago,
-        dias_personalizados ? parseInt(dias_personalizados) : null
+        dias_personalizados ? parseInt(dias_personalizados) : null,
+        cedula_ifemi,
+        nombre_ifemi,
+        banco_ifemi,
+        numero_cuenta_ifemi
       ]
     );
 
@@ -132,6 +152,10 @@ router.put('/:id', async (req, res) => {
       cuotasgracias,
       frecuencia_pago,
       dias_personalizados,
+      cedula_ifemi,
+      nombre_ifemi,
+      banco_ifemi,
+      numero_cuenta_ifemi
     } = req.body;
 
     // 1. Actualizar configuración
@@ -145,8 +169,12 @@ router.put('/:id', async (req, res) => {
         cuotasgracias = $6,
         frecuencia_pago = $7,
         dias_personalizados = $8,
+        cedula_ifemi = $9,
+        nombre_ifemi = $10,
+        banco_ifemi = $11,
+        numero_cuenta_ifemi = $12,
         fecha_actualizacion = CURRENT_TIMESTAMP
-       WHERE id = $9 RETURNING *`,
+       WHERE id = $13 RETURNING *`,
       [
         moneda,
         porcentaje_flat,
@@ -156,6 +184,10 @@ router.put('/:id', async (req, res) => {
         cuotasgracias,
         frecuencia_pago,
         dias_personalizados,
+        cedula_ifemi,
+        nombre_ifemi,
+        banco_ifemi,
+        numero_cuenta_ifemi,
         id,
       ]
     );
@@ -177,8 +209,12 @@ router.put('/:id', async (req, res) => {
         numero_cuotas,
         cuotasgracias,
         frecuencia_pago,
-        dias_personalizados
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        dias_personalizados,
+        cedula_ifemi,
+        nombre_ifemi,
+        banco_ifemi,
+        numero_cuenta_ifemi
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         id,
         moneda,
@@ -188,7 +224,11 @@ router.put('/:id', async (req, res) => {
         parseInt(numero_cuotas) || 0,
         cuotasgracias ? parseInt(cuotasgracias) : 0,
         frecuencia_pago,
-        dias_personalizados ? parseInt(dias_personalizados) : null
+        dias_personalizados ? parseInt(dias_personalizados) : null,
+        cedula_ifemi,
+        nombre_ifemi,
+        banco_ifemi,
+        numero_cuenta_ifemi
       ]
     );
 

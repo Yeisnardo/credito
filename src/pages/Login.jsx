@@ -44,6 +44,26 @@ const Login = ({ setUser }) => {
       setLoading(false);
       return;
     }
+    // Validación de longitud máxima
+  if (username.length > 25) {
+    Swal.fire({
+      icon: "error",
+      title: "Usuario muy largo",
+      text: "El usuario no puede exceder los 25 caracteres.",
+    });
+    setLoading(false);
+    return;
+  }
+
+  if (password.length > 30) {
+    Swal.fire({
+      icon: "error",
+      title: "Contraseña muy larga",
+      text: "La contraseña no puede exceder los 30 caracteres.",
+    });
+    setLoading(false);
+    return;
+  }
 
     try {
       const response = await axios.post(

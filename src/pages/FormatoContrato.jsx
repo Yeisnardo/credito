@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
-import apiConfiguracion from "../services/api_configuracion_contratos"; // API actualizada
+import apiConfiguracion from "../services/api_configuracion_contratos";
 
-// Importación CORREGIDA de Tabler Icons - solo los que DEFINITIVAMENTE existen
+// Importación de Tabler Icons
 import {
   TbSettings,
   TbArrowBack,
@@ -20,6 +20,10 @@ import {
   TbCalendarEvent,
   TbLoader,
   TbInfoCircle,
+  TbId,
+  TbUser,
+  TbBuildingBank,
+  TbCreditCard,
 } from 'react-icons/tb';
 
 const ConfiguracionContratos = () => {
@@ -36,7 +40,11 @@ const ConfiguracionContratos = () => {
     numero_cuotas: "",
     frecuencia_pago: "mensual",
     dias_personalizados: "",
-    cuotasgracias: ""
+    cuotasgracias: "",
+    cedula_ifemi: "",
+    nombre_ifemi: "",
+    banco_ifemi: "",
+    numero_cuenta_ifemi: ""
   });
   const [mensaje, setMensaje] = useState("");
   const [tipoMensaje, setTipoMensaje] = useState("");
@@ -62,7 +70,11 @@ const ConfiguracionContratos = () => {
             numero_cuotas: configActual.numero_cuotas || "",
             frecuencia_pago: configActual.frecuencia_pago || "mensual",
             dias_personalizados: configActual.dias_personalizados || "",
-            cuotasgracias: configActual.cuotasgracias || ""
+            cuotasgracias: configActual.cuotasgracias || "",
+            cedula_ifemi: configActual.cedula_ifemi || "",
+            nombre_ifemi: configActual.nombre_ifemi || "",
+            banco_ifemi: configActual.banco_ifemi || "",
+            numero_cuenta_ifemi: configActual.numero_cuenta_ifemi || ""
           });
         }
 
@@ -320,158 +332,233 @@ const ConfiguracionContratos = () => {
                 )}
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Moneda */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbSettings className="mr-1" size={16} /> Moneda
-                    </label>
-                    <select
-                      name="moneda"
-                      value={configuracion.moneda}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      required
-                    >
-                      <option value="DOP">Peso Dominicano (DOP)</option>
-                      <option value="USD">Dólar Estadounidense (USD)</option>
-                      <option value="EUR">Euro (EUR)</option>
-                    </select>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Sección Parámetros Financieros */}
+                <div>
+                  <h3 className="text-md font-semibold text-gray-700 mb-4 pb-2 border-b">Parámetros Financieros</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Moneda */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbSettings className="mr-1" size={16} /> Moneda
+                      </label>
+                      <select
+                        name="moneda"
+                        value={configuracion.moneda}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        required
+                      >
+                        <option value="USD">Dólar Estadounidense (USD)</option>
+                        <option value="EUR">Euro (EUR)</option>
+                      </select>
+                    </div>
+
+                    {/* Número de Cuotas */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbCalendar className="mr-1" size={16} /> Número de Cuotas
+                      </label>
+                      <input
+                        type="number"
+                        name="numero_cuotas"
+                        value={configuracion.numero_cuotas}
+                        onChange={handleChange}
+                        min="1"
+                        max="60"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="Ej: 12"
+                        required
+                      />
+                    </div>
                   </div>
 
-                  {/* Número de Cuotas */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbCalendar className="mr-1" size={16} /> Número de Cuotas
-                    </label>
-                    <input
-                      type="number"
-                      name="numero_cuotas"
-                      value={configuracion.numero_cuotas}
-                      onChange={handleChange}
-                      min="1"
-                      max="60"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      placeholder="Ej: 12"
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    {/* Porcentaje Flat */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbTrendingUp className="mr-1" size={16} /> Flat (%)
+                      </label>
+                      <input
+                        type="number"
+                        name="porcentaje_flat"
+                        value={configuracion.porcentaje_flat}
+                        onChange={handleChange}
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    {/* Porcentaje Interés */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbChartLine className="mr-1" size={16} /> Interés (%)
+                      </label>
+                      <input
+                        type="number"
+                        name="porcentaje_interes"
+                        value={configuracion.porcentaje_interes}
+                        onChange={handleChange}
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    {/* Porcentaje Mora */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbClock className="mr-1" size={16} /> Mora (%)
+                      </label>
+                      <input
+                        type="number"
+                        name="porcentaje_mora"
+                        value={configuracion.porcentaje_mora}
+                        onChange={handleChange}
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Porcentaje Flat */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbTrendingUp className="mr-1" size={16} /> Flat (%)
-                    </label>
-                    <input
-                      type="number"
-                      name="porcentaje_flat"
-                      value={configuracion.porcentaje_flat}
-                      onChange={handleChange}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      placeholder="0.00"
-                    />
+                {/* Sección Configuración de Pagos */}
+                <div>
+                  <h3 className="text-md font-semibold text-gray-700 mb-4 pb-2 border-b">Configuración de Pagos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Frecuencia de pago */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbRefresh className="mr-1" size={16} /> Frecuencia de Pago
+                      </label>
+                      <select
+                        name="frecuencia_pago"
+                        value={configuracion.frecuencia_pago}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      >
+                        <option value="diario">Diario</option>
+                        <option value="semanal">Semanal</option>
+                        <option value="quincenal">Quincenal</option>
+                        <option value="mensual">Mensual</option>
+                        <option value="personalizado">Personalizado</option>
+                      </select>
+                    </div>
+
+                    {/* Cuotas de Gracia */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbGift className="mr-1" size={16} /> Cuotas de Gracia
+                      </label>
+                      <input
+                        type="number"
+                        name="cuotasgracias"
+                        value={configuracion.cuotasgracias}
+                        onChange={handleChange}
+                        min="0"
+                        max={configuracion.numero_cuotas || 0}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
 
-                  {/* Porcentaje Interés */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbChartLine className="mr-1" size={16} /> Interés (%)
-                    </label>
-                    <input
-                      type="number"
-                      name="porcentaje_interes"
-                      value={configuracion.porcentaje_interes}
-                      onChange={handleChange}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  {/* Porcentaje Mora */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbClock className="mr-1" size={16} /> Mora (%)
-                    </label>
-                    <input
-                      type="number"
-                      name="porcentaje_mora"
-                      value={configuracion.porcentaje_mora}
-                      onChange={handleChange}
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      placeholder="0.00"
-                    />
-                  </div>
+                  {/* Días personalizados */}
+                  {configuracion.frecuencia_pago === "personalizado" && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbCalendarEvent className="mr-1" size={16} /> Días entre Pagos
+                      </label>
+                      <input
+                        type="number"
+                        name="dias_personalizados"
+                        value={configuracion.dias_personalizados}
+                        onChange={handleChange}
+                        min="1"
+                        max="90"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="Ej: 30"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Frecuencia de pago */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbRefresh className="mr-1" size={16} /> Frecuencia de Pago
-                    </label>
-                    <select
-                      name="frecuencia_pago"
-                      value={configuracion.frecuencia_pago}
-                      onChange={handleChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    >
-                      <option value="diario">Diario</option>
-                      <option value="semanal">Semanal</option>
-                      <option value="quincenal">Quincenal</option>
-                      <option value="mensual">Mensual</option>
-                      <option value="personalizado">Personalizado</option>
-                    </select>
+                {/* Sección Información IFEMI */}
+                <div>
+                  <h3 className="text-md font-semibold text-gray-700 mb-4 pb-2 border-b">Información IFEMI</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Cédula IFEMI */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbId className="mr-1" size={16} /> Cédula/RNC IFEMI
+                      </label>
+                      <input
+                        type="text"
+                        name="cedula_ifemi"
+                        value={configuracion.cedula_ifemi}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="Ej: 123456789"
+                      />
+                    </div>
+
+                    {/* Nombre IFEMI */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbUser className="mr-1" size={16} /> Nombre IFEMI
+                      </label>
+                      <input
+                        type="text"
+                        name="nombre_ifemi"
+                        value={configuracion.nombre_ifemi}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="Ej: IFEMI S.R.L."
+                      />
+                    </div>
                   </div>
 
-                  {/* Cuotas de Gracia */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbGift className="mr-1" size={16} /> Cuotas de Gracia
-                    </label>
-                    <input
-                      type="number"
-                      name="cuotasgracias"
-                      value={configuracion.cuotasgracias}
-                      onChange={handleChange}
-                      min="0"
-                      max={configuracion.numero_cuotas || 0}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      placeholder="0"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {/* Banco IFEMI */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbBuildingBank className="mr-1" size={16} /> Banco IFEMI
+                      </label>
+                      <input
+                        type="text"
+                        name="banco_ifemi"
+                        value={configuracion.banco_ifemi}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="Ej: Banco Popular"
+                      />
+                    </div>
+
+                    {/* Número de Cuenta IFEMI */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                        <TbCreditCard className="mr-1" size={16} /> Número de Cuenta IFEMI
+                      </label>
+                      <input
+                        type="text"
+                        name="numero_cuenta_ifemi"
+                        value={configuracion.numero_cuenta_ifemi}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="Ej: 1234567890123456"
+                      />
+                    </div>
                   </div>
                 </div>
-
-                {/* Días personalizados */}
-                {configuracion.frecuencia_pago === "personalizado" && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                      <TbCalendarEvent className="mr-1" size={16} /> Días entre Pagos
-                    </label>
-                    <input
-                      type="number"
-                      name="dias_personalizados"
-                      value={configuracion.dias_personalizados}
-                      onChange={handleChange}
-                      min="1"
-                      max="90"
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                      placeholder="Ej: 30"
-                      required
-                    />
-                  </div>
-                )}
 
                 {/* Botón guardar */}
                 <button
@@ -513,6 +600,27 @@ const ConfiguracionContratos = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Información IFEMI */}
+              {(configuracion.cedula_ifemi || configuracion.nombre_ifemi || configuracion.banco_ifemi || configuracion.numero_cuenta_ifemi) && (
+                <div className="p-4 bg-indigo-50 rounded-lg mb-6">
+                  <h3 className="font-semibold text-indigo-700 mb-3">Información IFEMI</h3>
+                  <div className="grid grid-cols-1 gap-2 text-sm">
+                    {configuracion.cedula_ifemi && (
+                      <div><span className="font-medium">Cédula/RNC:</span> {configuracion.cedula_ifemi}</div>
+                    )}
+                    {configuracion.nombre_ifemi && (
+                      <div><span className="font-medium">Nombre:</span> {configuracion.nombre_ifemi}</div>
+                    )}
+                    {configuracion.banco_ifemi && (
+                      <div><span className="font-medium">Banco:</span> {configuracion.banco_ifemi}</div>
+                    )}
+                    {configuracion.numero_cuenta_ifemi && (
+                      <div><span className="font-medium">Cuenta:</span> {configuracion.numero_cuenta_ifemi}</div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Calendario de Cuotas */}
               <div className="mb-6">
@@ -564,6 +672,7 @@ const ConfiguracionContratos = () => {
                   <li>• Esta configuración se aplica a nuevos contratos</li>
                   <li>• Los contratos existentes no se modifican</li>
                   <li>• Las cuotas de gracia solo pagan intereses</li>
+                  <li>• La información IFEMI aparecerá en los contratos</li>
                 </ul>
               </div>
             </div>

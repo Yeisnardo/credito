@@ -50,111 +50,122 @@ import {
   TbUser,
   TbId,
   TbPhone,
-  TbMail
+  TbMail,
+  TbChevronLeft as TbPrev,
+  TbChevronRight as TbNext
 } from "react-icons/tb";
 
-// Componente Modal mejorado para visualización de imagen
-const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
+// Componente DetallesSolicitud mejorado
+const DetallesSolicitud = ({ solicitud, requerimientos, onClose, onRecargar }) => {
   const [imagenArchivo, setImagenArchivo] = useState(null);
   const [cargandoImagen, setCargandoImagen] = useState(false);
   const [errorImagen, setErrorImagen] = useState(null);
-  const [modalImagen, setModalImagen] = useState({ open: false, imagenUrl: null });
+  const [imagenIndex, setImagenIndex] = useState(0);
+  const [archivos, setArchivos] = useState([]);
+  const [mostrarModalImagen, setMostrarModalImagen] = useState(false);
+  const [datosFiador, setDatosFiador] = useState(null);
+  const [cargandoFiador, setCargandoFiador] = useState(false);
 
+  // Cargar datos del fiador
   useEffect(() => {
-    if (isOpen && solicitud?.cedula_emprendedor) {
-      cargarImagenSolicitud();
-    } else {
-      setImagenArchivo(null);
-      setErrorImagen(null);
-    }
-  }, [isOpen, solicitud]);
+    const cargarDatosFiador = async () => {
+      if (solicitud?.id_req) {
+        setCargandoFiador(true);
+        try {
+          const fiador = await getFiadorPorIdReq(solicitud.id_req);
+          setDatosFiador(fiador);
+        } catch (error) {
+          console.error('Error cargando datos del fiador:', error);
+          setDatosFiador(null);
+        } finally {
+          setCargandoFiador(false);
+        }
+      }
+    };
+    cargarDatosFiador();
+  }, [solicitud]);
 
-  const cargarImagenSolicitud = async () => {
-    if (!solicitud?.cedula_emprendedor || !solicitud?.id_req) {
-      setErrorImagen("No hay información completa de la solicitud");
-      return;
+  // Cargar imágenes
+  useEffect(() => {
+    if (solicitud?.cedula_emprendedor && solicitud?.id_req) {
+      cargarImagenesSolicitud();
     }
-    
+  }, [solicitud]);
+
+  const cargarImagenesSolicitud = async () => {
     setCargandoImagen(true);
     setErrorImagen(null);
-    setImagenArchivo(null);
     
     try {
-      console.log('🔍 Buscando imagen para:', {
-        cedula: solicitud.cedula_emprendedor,
-        id_req: solicitud.id_req,
-        id_contrato: solicitud.id_contrato
-      });
+      let archivosEncontrados = [];
       
-      let archivos = [];
-      
+      // Intentar buscar por id_req primero
       try {
-        archivos = await apiArchivo.getArchivosByReq(solicitud.id_req);
-        console.log('📁 Archivos por id_req:', archivos);
+        archivosEncontrados = await apiArchivo.getArchivosByReq(solicitud.id_req);
       } catch (error) {
-        console.log('⚠️ No se encontraron archivos por id_req, buscando por cédula...');
-        archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
-        console.log('📁 Archivos por cédula:', archivos);
+        // Fallback: buscar por cédula
+        archivosEncontrados = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
       }
-      
-      if (archivos && archivos.length > 0) {
-        let archivo = archivos.find(a => a.id_req === solicitud.id_req);
-        
-        if (!archivo) {
-          archivo = archivos[0];
-          console.log('⚠️ Usando archivo más reciente en lugar del específico');
-        }
-        
-        console.log('🎯 Archivo seleccionado:', archivo);
-        
-        let urlImagen = null;
-        
-        if (archivo.url) {
-          urlImagen = archivo.url;
-        } else if (archivo.archivo) {
-          urlImagen = apiArchivo.obtenerUrlImagen 
-            ? apiArchivo.obtenerUrlImagen(archivo.archivo)
-            : `http://localhost:5000/uploads/${archivo.archivo}`;
-        }
-        
-        if (urlImagen) {
-          console.log('🖼️ URL de imagen construida:', urlImagen);
-          
-          try {
-            const response = await fetch(urlImagen, { method: 'HEAD' });
-            if (response.ok) {
-              setImagenArchivo(urlImagen);
-              setCargandoImagen(false);
-            } else {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-          } catch (fetchError) {
-            console.error('❌ Error al verificar imagen:', fetchError);
-            throw new Error('La imagen no es accesible desde el servidor');
-          }
-        } else {
-          throw new Error("No se pudo generar la URL de la imagen");
+
+      if (archivosEncontrados && archivosEncontrados.length > 0) {
+        setArchivos(archivosEncontrados);
+        if (archivosEncontrados[0].url) {
+          setImagenArchivo(archivosEncontrados[0].url);
         }
       } else {
-        throw new Error("No se encontraron archivos para esta solicitud");
+        setErrorImagen("No se encontraron archivos para esta solicitud");
       }
-      
     } catch (error) {
-      console.error("❌ Error al cargar la imagen:", error);
-      setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
+      console.error("Error al cargar las imágenes:", error);
+      setErrorImagen("Error al cargar los documentos");
+    } finally {
       setCargandoImagen(false);
     }
   };
 
-  const abrirModalImagen = (imagenUrl) => {
-    setModalImagen({ open: true, imagenUrl });
+  const siguienteImagen = () => {
+    if (archivos.length > 0) {
+      const nuevoIndex = (imagenIndex + 1) % archivos.length;
+      setImagenIndex(nuevoIndex);
+      setImagenArchivo(archivos[nuevoIndex].url);
+    }
   };
 
-  const cerrarModalImagen = () => {
-    setModalImagen({ open: false, imagenUrl: null });
+  const anteriorImagen = () => {
+    if (archivos.length > 0) {
+      const nuevoIndex = (imagenIndex - 1 + archivos.length) % archivos.length;
+      setImagenIndex(nuevoIndex);
+      setImagenArchivo(archivos[nuevoIndex].url);
+    }
   };
 
-  if (!isOpen) return null;
+  const seleccionarImagen = (index) => {
+    setImagenIndex(index);
+    setImagenArchivo(archivos[index].url);
+  };
+
+  const descargarImagen = async () => {
+    if (imagenArchivo) {
+      try {
+        const link = document.createElement('a');
+        link.href = imagenArchivo;
+        link.download = `documento-${solicitud.id_contrato}-${imagenIndex + 1}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error('Error al descargar:', error);
+        Swal.fire({
+          title: "Error",
+          text: "No se pudo descargar el documento",
+          icon: "error",
+          confirmButtonColor: "#dc2626"
+        });
+      }
+    }
+  };
+
+  if (!solicitud) return null;
 
   const requerimientosSolicitud = solicitud.requerimientos || [];
   const nombresRequerimientos = requerimientosSolicitud.map(reqId => {
@@ -193,255 +204,371 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
 
   return (
     <>
-      {/* Modal principal de detalles */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-        <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl transform animate-scale-in">
-          {/* Header del modal */}
-          <div className="relative bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-2xl font-bold mb-1">
-                  Detalles completos de tu solicitud
-                </h2>
-              </div>
-              <button
-                onClick={onClose}
-                className="text-white/80 hover:text-white text-2xl transition-all hover:scale-110 bg-white/10 p-1 rounded-lg"
-              >
-                <TbX size={24} />
-              </button>
-            </div>
-            <div className="absolute -bottom-4 left-6">
-              <span className={`${estadoConfig.badge} text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2`}>
-                <EstadoIcon size={16} />
-                {solicitud.estatus || "Pendiente"}
-              </span>
-            </div>
-          </div>
-
-          {/* Contenido del modal */}
-          <div className="p-6 space-y-6 mt-4 overflow-y-auto max-h-[70vh]">
-            {/* Información básica */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <TbCalendar size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Fecha de creación</p>
-                    <p className="font-semibold text-gray-800">
-                      {new Date(solicitud.fecha_creacion).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-lg">
-                    <TbFile size={20} className="text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Documentos</p>
-                    <p className="font-semibold text-gray-800">
-                      {nombresRequerimientos.length} adjuntos
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {solicitud.fecha_llevar && (
-                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                      <TbCalendarEvent size={20} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-blue-600">Próxima cita</p>
-                      <p className="font-semibold text-blue-800">
-                        {new Date(solicitud.fecha_llevar).toLocaleDateString('es-ES')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sección de imagen del documento */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <div className="flex items-center gap-2 mb-4">
-                <TbPhoto size={20} className="text-gray-600" />
-                <h3 className="font-semibold text-gray-800">Imagen del Documento</h3>
-                {imagenArchivo && (
-                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">
-                    <TbCheck size={12} /> Disponible
-                  </span>
-                )}
-                {errorImagen && (
-                  <span className="bg-rose-100 text-rose-700 text-xs px-2 py-1 rounded-full ml-2">
-                    <TbAlertCircle size={12} /> Error
-                  </span>
-                )}
-              </div>
-              
-              {cargandoImagen ? (
-                <div className="flex justify-center items-center py-12 flex-col">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-3"></div>
-                  <span className="text-gray-600">Cargando imagen...</span>
-                  <span className="text-gray-400 text-sm mt-1">Cédula: {solicitud.cedula_emprendedor}</span>
-                </div>
-              ) : errorImagen ? (
-                <div className="text-center text-gray-500 py-8 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                  <TbAlertCircle size={32} className="mb-2 text-amber-500 mx-auto" />
-                  <p className="text-lg font-medium mb-2">No se pudo cargar la imagen</p>
-                  <p className="text-sm text-gray-400 mb-4">{errorImagen}</p>
-                  <button 
-                    onClick={cargarImagenSolicitud}
-                    className="mt-3 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 mx-auto"
-                  >
-                    <TbRefresh size={16} />
-                    Reintentar
-                  </button>
-                </div>
-              ) : imagenArchivo ? (
-                <div className="space-y-4">
-                  <div className="bg-white rounded-lg border border-gray-300 p-4 flex justify-center cursor-pointer group relative overflow-hidden"
-                    onClick={() => abrirModalImagen(imagenArchivo)}>
-                    <div className="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-                    <img 
-                      src={imagenArchivo} 
-                      alt="Documento adjunto" 
-                      className="max-w-full h-auto max-h-96 object-contain rounded-lg transition-transform duration-300 group-hover:scale-105"
-                      onError={(e) => {
-                        console.error("Error cargando imagen en img tag");
-                        setErrorImagen("La imagen está corrupta o no es accesible");
-                        setImagenArchivo(null);
-                      }}
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="bg-black/50 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                        <TbZoomIn size={20} />
-                        <span>Haz clic para ampliar</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-center gap-3 flex-wrap">
-                    <button
-                      onClick={() => abrirModalImagen(imagenArchivo)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
-                    >
-                      <TbZoomIn size={16} />
-                      Ver imagen completa
-                    </button>
-                    <a 
-                      href={imagenArchivo} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
-                    >
-                      <TbDownload size={16} />
-                      Descargar imagen
-                    </a>
-                    <button 
-                      onClick={cargarImagenSolicitud}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2"
-                    >
-                      <TbRefresh size={16} />
-                      Recargar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-gray-500 py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                  <TbPhoto size={32} className="mb-3 opacity-50 mx-auto" />
-                  <p className="text-lg font-medium mb-2">No hay imagen disponible</p>
-                  <p className="text-sm">Esta solicitud no tiene documentos adjuntos</p>
-                </div>
-              )}
-            </div>
-
-            {/* Motivo */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-              <div className="flex items-center gap-2 mb-3">
-                <TbEdit size={20} className="text-gray-600" />
-                <h3 className="font-semibold text-gray-800">Motivo de la solicitud</h3>
-              </div>
-              <p className="text-gray-700 leading-relaxed bg-white p-4 rounded-lg border">
-                {solicitud.motivo || "No se especificó motivo"}
-              </p>
-            </div>
-
-          </div>
-
-          {/* Footer del modal */}
-          <div className="flex justify-end p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+      {/* Modal para imagen ampliada */}
+      {mostrarModalImagen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+          <div className="relative max-w-4xl max-h-full">
             <button
-              onClick={onClose}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-8 rounded-xl transition-all transform hover:scale-105 shadow-lg"
+              onClick={() => setMostrarModalImagen(false)}
+              className="absolute -top-12 right-0 text-white text-2xl hover:text-gray-300 transition-colors"
             >
-              Cerrar Detalles
+              <TbX size={32} />
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal para visualización de imagen en pantalla completa */}
-      {modalImagen.open && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-fade-in">
-          <div className="relative max-w-7xl max-h-[95vh] w-full h-full flex items-center justify-center">
-            {/* Botón cerrar */}
-            <button
-              onClick={cerrarModalImagen}
-              className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl transition-all hover:scale-110 bg-black/50 p-2 rounded-lg z-10"
-            >
-              <TbX size={24} />
-            </button>
-
-            {/* Controles de imagen */}
-            <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-4 py-2 rounded-lg flex items-center gap-4 z-10">
+            <img 
+              src={imagenArchivo} 
+              alt={`Documento ${imagenIndex + 1}`}
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
               <button
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = modalImagen.imagenUrl;
-                  link.download = `documento-solicitud-${solicitud.id_contrato}.jpg`;
-                  link.click();
-                }}
-                className="hover:text-blue-300 transition-colors flex items-center gap-2"
+                onClick={descargarImagen}
+                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2"
               >
                 <TbDownload size={16} />
                 Descargar
               </button>
               <button
-                onClick={cerrarModalImagen}
-                className="hover:text-red-300 transition-colors flex items-center gap-2"
+                onClick={() => setMostrarModalImagen(false)}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2"
               >
                 <TbX size={16} />
-                Salir de pantalla completa
+                Cerrar
               </button>
-            </div>
-
-            {/* Imagen */}
-            <div className="w-full h-full flex items-center justify-center p-8">
-              <img 
-                src={modalImagen.imagenUrl} 
-                alt="Documento en pantalla completa" 
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                onClick={cerrarModalImagen}
-              />
-            </div>
-
-            {/* Información de la imagen */}
-            <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm z-10">
-              Solicitud #{solicitud.id_contrato} • {new Date(solicitud.fecha_creacion).toLocaleDateString()}
             </div>
           </div>
         </div>
       )}
+
+      {/* Detalles de la solicitud */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 mb-8 animate-fade-in">
+        {/* Header */}
+        <div className="relative bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white rounded-t-2xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">
+                Detalles de la solicitud #{solicitud.id_contrato}
+              </h2>
+              <p className="text-blue-100">
+                Información completa de la solicitud - {archivos.length} documento(s)
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onRecargar}
+                className="text-white/80 hover:text-white p-2 rounded-lg bg-white/10 transition-all hover:scale-110"
+                title="Recargar datos"
+              >
+                <TbRefresh size={20} />
+              </button>
+              <button
+                onClick={onClose}
+                className="text-white/80 hover:text-white p-2 rounded-lg bg-white/10 transition-all hover:scale-110"
+              >
+                <TbX size={24} />
+              </button>
+            </div>
+          </div>
+          <div className="absolute -bottom-4 left-6">
+            <span className={`${estadoConfig.badge} text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2`}>
+              <EstadoIcon size={16} />
+              {solicitud.estatus || "Pendiente"}
+            </span>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="p-6 space-y-6">
+          {/* Información básica en grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <TbCalendar size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Fecha de creación</p>
+                  <p className="font-semibold text-gray-800">
+                    {new Date(solicitud.fecha_creacion).toLocaleDateString('es-ES')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-100 p-2 rounded-lg">
+                  <TbFile size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Documentos</p>
+                  <p className="font-semibold text-gray-800">
+                    {nombresRequerimientos.length} adjuntos
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {solicitud.fecha_llevar && (
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2 rounded-lg">
+                    <TbCalendarEvent size={20} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-600">Próxima cita</p>
+                    <p className="font-semibold text-blue-800">
+                      {new Date(solicitud.fecha_llevar).toLocaleDateString('es-ES')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-100 p-2 rounded-lg">
+                  <TbId size={20} className="text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">ID Requerimiento</p>
+                  <p className="font-semibold text-gray-800">
+                    {solicitud.id_req || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección de documentos */}
+          <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TbPhoto size={20} className="text-gray-600" />
+                <h3 className="font-semibold text-gray-800">Documentos Adjuntos</h3>
+                {archivos.length > 0 && (
+                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full ml-2">
+                    {archivos.length} archivo(s)
+                  </span>
+                )}
+              </div>
+              {archivos.length > 0 && (
+                <div className="text-sm text-gray-600">
+                  {imagenIndex + 1} / {archivos.length}
+                </div>
+              )}
+            </div>
+            
+            {cargandoImagen ? (
+              <div className="flex justify-center items-center py-12 flex-col">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-3"></div>
+                <span className="text-gray-600">Cargando documentos...</span>
+              </div>
+            ) : errorImagen ? (
+              <div className="text-center text-gray-500 py-8 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                <TbAlertCircle size={32} className="mb-2 text-amber-500 mx-auto" />
+                <p className="text-lg font-medium mb-2">No se pudieron cargar los documentos</p>
+                <p className="text-sm text-gray-400 mb-4">{errorImagen}</p>
+                <button 
+                  onClick={cargarImagenesSolicitud}
+                  className="mt-3 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg transition-all flex items-center gap-2 mx-auto"
+                >
+                  <TbRefresh size={16} />
+                  Reintentar
+                </button>
+              </div>
+            ) : archivos.length > 0 ? (
+              <div className="space-y-4">
+                {/* Vista principal del documento */}
+                <div className="relative bg-white rounded-lg border border-gray-300 p-4">
+                  {archivos.length > 1 && (
+                    <>
+                      <button
+                        onClick={anteriorImagen}
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all z-10"
+                      >
+                        <TbPrev size={20} />
+                      </button>
+                      <button
+                        onClick={siguienteImagen}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all z-10"
+                      >
+                        <TbNext size={20} />
+                      </button>
+                    </>
+                  )}
+                  
+                  <div 
+                    className="flex justify-center cursor-pointer"
+                    onClick={() => setMostrarModalImagen(true)}
+                  >
+                    <img 
+                      src={imagenArchivo} 
+                      alt={`Documento ${imagenIndex + 1}`}
+                      className="max-w-full h-auto max-h-96 object-contain rounded-lg hover:shadow-lg transition-shadow"
+                    />
+                  </div>
+                  
+                  {/* Indicadores */}
+                  {archivos.length > 1 && (
+                    <div className="flex justify-center mt-4 space-x-2">
+                      {archivos.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => seleccionarImagen(index)}
+                          className={`w-3 h-3 rounded-full transition-all ${
+                            index === imagenIndex 
+                              ? "bg-blue-600 scale-125" 
+                              : "bg-gray-300 hover:bg-gray-400"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Controles de acción */}
+                <div className="flex justify-center gap-3 flex-wrap">
+                  <button 
+                    onClick={descargarImagen}
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
+                  >
+                    <TbDownload size={16} />
+                    Descargar actual
+                  </button>
+                  <button 
+                    onClick={() => setMostrarModalImagen(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
+                  >
+                    <TbZoomIn size={16} />
+                    Ver en grande
+                  </button>
+                  <button 
+                    onClick={cargarImagenesSolicitud}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-6 rounded-lg transition-all flex items-center gap-2"
+                  >
+                    <TbRefresh size={16} />
+                    Recargar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                <TbPhoto size={32} className="mb-3 opacity-50 mx-auto" />
+                <p className="text-lg font-medium mb-2">No hay documentos disponibles</p>
+                <p className="text-sm">Esta solicitud no tiene documentos adjuntos</p>
+              </div>
+            )}
+          </div>
+
+          {/* Información del fiador */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
+            <div className="flex items-center gap-2 mb-4">
+              <TbUser size={20} className="text-blue-600" />
+              <h3 className="font-semibold text-gray-800">Información del Fiador</h3>
+              {cargandoFiador && (
+                <TbLoader size={16} className="animate-spin text-blue-500" />
+              )}
+            </div>
+            
+            {cargandoFiador ? (
+              <div className="flex justify-center items-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Cargando información del fiador...</span>
+              </div>
+            ) : datosFiador ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Cédula</p>
+                  <p className="font-semibold text-gray-800">{datosFiador.cedula_fiador}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Nombre Completo</p>
+                  <p className="font-semibold text-gray-800">{datosFiador.nombre_completo_fiador}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Teléfono</p>
+                  <p className="font-semibold text-gray-800">{datosFiador.telefono_fiador}</p>
+                </div>
+                {datosFiador.correo_fiador && (
+                  <div>
+                    <p className="text-sm text-gray-600">Correo Electrónico</p>
+                    <p className="font-semibold text-gray-800">{datosFiador.correo_fiador}</p>
+                  </div>
+                )}
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-600">Estado de Verificación</p>
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    datosFiador.verificacion_fiador === "Aprobado" 
+                      ? "bg-emerald-100 text-emerald-800"
+                      : datosFiador.verificacion_fiador === "Rechazado"
+                      ? "bg-rose-100 text-rose-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}>
+                    {datosFiador.verificacion_fiador === "Aprobado" && <TbCheck size={14} className="mr-1" />}
+                    {datosFiador.verificacion_fiador === "Rechazado" && <TbX size={14} className="mr-1" />}
+                    {datosFiador.verificacion_fiador || "Pendiente"}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-4">
+                <TbInfoCircle size={32} className="mx-auto mb-2 text-gray-400" />
+                <p>No se encontró información del fiador</p>
+              </div>
+            )}
+          </div>
+
+          {/* Motivo de la solicitud */}
+          <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+            <div className="flex items-center gap-2 mb-3">
+              <TbEdit size={20} className="text-gray-600" />
+              <h3 className="font-semibold text-gray-800">Motivo de la solicitud</h3>
+            </div>
+            <p className="text-gray-700 leading-relaxed bg-white p-4 rounded-lg border">
+              {solicitud.motivo || "No se especificó motivo"}
+            </p>
+          </div>
+
+          {/* Documentos requeridos */}
+          <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+            <div className="flex items-center gap-2 mb-3">
+              <TbFolder size={20} className="text-gray-600" />
+              <h3 className="font-semibold text-gray-800">Documentos Presentados</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {nombresRequerimientos.map((nombre, idx) => (
+                <div key={idx} className="flex items-center text-gray-700 text-sm bg-white rounded-lg px-3 py-2 border border-gray-200">
+                  <TbCheck size={16} className="text-green-500 mr-2" />
+                  <span>{nombre}</span>
+                </div>
+              ))}
+              {nombresRequerimientos.length === 0 && (
+                <div className="text-gray-400 text-sm bg-white rounded-lg px-3 py-2 text-center col-span-2">
+                  No se especificaron documentos
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Información adicional */}
+          <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-5 border border-gray-200">
+            <div className="flex items-center gap-2 mb-3">
+              <TbInfoCircle size={20} className="text-blue-600" />
+              <h3 className="font-semibold text-gray-800">Información Adicional</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+              <div>
+                <p><strong>Cédula del Emprendedor:</strong> {solicitud.cedula_emprendedor}</p>
+                <p><strong>Fecha de Creación:</strong> {new Date(solicitud.fecha_creacion).toLocaleString('es-ES')}</p>
+              </div>
+              <div>
+                <p><strong>ID de Contrato:</strong> {solicitud.id_contrato}</p>
+                <p><strong>ID de Requerimiento:</strong> {solicitud.id_req || "N/A"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 };
@@ -498,6 +625,7 @@ const subirArchivo = async (archivo, datosAdicionales) => {
 };
 
 // Componente Step 1 - Selección de requerimientos
+// Componente Step1Requerimientos - Actualiza la función handleInputChange
 const Step1Requerimientos = ({
   requerimientos,
   formData,
@@ -555,14 +683,16 @@ const Step1Requerimientos = ({
               : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-50"
           }`}
           onClick={() => {
-            const event = {
-              target: {
-                type: "checkbox",
-                value: req.id_requerimientos,
-                checked: !formData.opt_requerimiento.includes(req.id_requerimientos)
-              }
-            };
-            handleInputChange(event);
+            // Manejar el click directamente en el div
+            const isSelected = formData.opt_requerimiento.includes(req.id_requerimientos);
+            const newSelection = isSelected
+              ? formData.opt_requerimiento.filter(id => id !== req.id_requerimientos)
+              : [...formData.opt_requerimiento, req.id_requerimientos];
+            
+            setFormData(prev => ({
+              ...prev,
+              opt_requerimiento: newSelection
+            }));
           }}
         >
           <label className="flex items-center cursor-pointer w-full">
@@ -572,7 +702,18 @@ const Step1Requerimientos = ({
                 name="opt_requerimiento"
                 value={req.id_requerimientos}
                 checked={formData.opt_requerimiento.includes(req.id_requerimientos)}
-                onChange={handleInputChange}
+                onChange={(e) => {
+                  // Manejar el cambio del checkbox directamente
+                  const { value, checked } = e.target;
+                  const newSelection = checked
+                    ? [...formData.opt_requerimiento, value]
+                    : formData.opt_requerimiento.filter(id => id !== value);
+                  
+                  setFormData(prev => ({
+                    ...prev,
+                    opt_requerimiento: newSelection
+                  }));
+                }}
                 className="sr-only"
               />
               <div
@@ -622,7 +763,6 @@ const Step1Requerimientos = ({
     </div>
   </div>
 );
-
 // Componente Step 2 - Subida de documentos
 const Step2Documentos = ({
   formData,
@@ -799,7 +939,7 @@ const Step2Documentos = ({
   </div>
 );
 
-// Componente Step 3 - Registro del Fiador (ACTUALIZADO con lista de requerimientos)
+// Componente Step 3 - Registro del Fiador
 const Step3Fiador = ({
   fiadorData,
   errors,
@@ -825,7 +965,7 @@ const Step3Fiador = ({
         </p>
       </div>
 
-      {/* SECCIÓN: Requerimientos del Fiador - MEJORADA */}
+      {/* SECCIÓN: Requerimientos del Fiador */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
         <label className="block mb-4 text-gray-800 font-semibold text-lg">
           <TbListCheck size={20} className="text-blue-600 mr-2 inline" />
@@ -850,7 +990,7 @@ const Step3Fiador = ({
                     </span>
                   </div>
                   <span className="text-gray-800 text-sm flex-1">
-                    {req.nombre_requerimiento_fiador || `Requerimiento ${index + 1}`}
+                    {req.nombre_reqf || `Requerimiento ${index + 1}`}
                   </span>
                   <TbInfoCircle size={16} className="text-gray-400 ml-2" />
                 </div>
@@ -1162,7 +1302,7 @@ const Step4Motivo = ({
   </div>
 );
 
-// Componente SolicitudCard con indicador de imagen
+// Componente SolicitudCard
 const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
   const [tieneImagen, setTieneImagen] = useState(false);
   const [verificandoImagen, setVerificandoImagen] = useState(false);
@@ -1335,13 +1475,21 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
   );
 };
 
-// Componente ListaSolicitudes
-const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVerDetalles }) => {
+// Componente ListaSolicitudes mejorado
+const ListaSolicitudes = ({ 
+  solicitudes, 
+  requerimientos, 
+  onNuevaSolicitud, 
+  onVerDetalles, 
+  solicitudSeleccionada,
+  onRecargarDatos 
+}) => {
   const stats = {
     total: solicitudes.length,
     aprobadas: solicitudes.filter(s => s.estatus === "Aprobada").length,
     pendientes: solicitudes.filter(s => s.estatus === "Pendiente" || !s.estatus).length,
-    revision: solicitudes.filter(s => s.estatus === "En revisión").length
+    revision: solicitudes.filter(s => s.estatus === "En revisión").length,
+    rechazadas: solicitudes.filter(s => s.estatus === "Rechazado").length
   };
 
   return (
@@ -1362,17 +1510,26 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
               </p>
             </div>
           </div>
-          <button
-            onClick={onNuevaSolicitud}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-blue-200 whitespace-nowrap"
-          >
-            <TbPlus size={20} className="mr-2" />
-            Nueva Solicitud
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onRecargarDatos}
+              className="bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-gray-200"
+              title="Recargar listado"
+            >
+              <TbRefresh size={20} />
+            </button>
+            <button
+              onClick={onNuevaSolicitud}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 flex items-center shadow-lg shadow-blue-200 whitespace-nowrap"
+            >
+              <TbPlus size={20} className="mr-2" />
+              Nueva Solicitud
+            </button>
+          </div>
         </div>
 
-        {/* Estadísticas */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Estadísticas mejoradas */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
@@ -1420,8 +1577,30 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">Rechazadas</p>
+                <p className="text-2xl font-bold text-rose-600">{stats.rechazadas}</p>
+              </div>
+              <div className="bg-rose-100 p-2 rounded-lg">
+                <TbX size={20} className="text-rose-600" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Mostrar detalles si hay una solicitud seleccionada */}
+      {solicitudSeleccionada && (
+        <DetallesSolicitud
+          solicitud={solicitudSeleccionada}
+          requerimientos={requerimientos}
+          onClose={() => onVerDetalles(null)}
+          onRecargar={onRecargarDatos}
+        />
+      )}
 
       {/* Grid de solicitudes */}
       {solicitudes.length > 0 ? (
@@ -1569,8 +1748,8 @@ const FormularioSolicitud = ({
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header del formulario */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 mt-6 gap-6">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 mt-8 gap-6">
+        <div className="flex items-center space-x-4 mt-6">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-2xl shadow-lg">
             <StepIcon size={24} className="text-white" />
           </div>
@@ -1675,7 +1854,7 @@ const FormularioSolicitud = ({
   );
 };
 
-// Componente principal
+// Componente principal mejorado
 const RequireSolicit = ({ setUser }) => {
   const navigate = useNavigate();
 
@@ -1705,7 +1884,7 @@ const RequireSolicit = ({ setUser }) => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [modalDetalles, setModalDetalles] = useState({ open: false, solicitud: null });
+  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState(null);
 
   // Efectos
   useEffect(() => {
@@ -1856,24 +2035,25 @@ const RequireSolicit = ({ setUser }) => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { value, type, checked } = e.target;
-    const valNum = Number(value);
+  // En el componente RequireSolicit, reemplaza la función handleInputChange:
+const handleInputChange = (e) => {
+  const { value, type, checked } = e.target;
+  
+  if (type === "checkbox" && e.target.name === "opt_requerimiento") {
     setFormData((prev) => {
-      let newOpt;
-      if (type === "checkbox") {
-        newOpt = checked
-          ? [...prev.opt_requerimiento, valNum]
-          : prev.opt_requerimiento.filter((id) => id !== valNum);
-      } else {
-        newOpt = prev.opt_requerimiento;
-      }
+      const newOpt = checked
+        ? [...prev.opt_requerimiento, value]
+        : prev.opt_requerimiento.filter((id) => id !== value);
+      
+      // Limpiar error si hay selecciones
       if (newOpt.length > 0 && errors.opt_requerimiento) {
         setErrors((prevErrors) => ({ ...prevErrors, opt_requerimiento: "" }));
       }
+      
       return { ...prev, opt_requerimiento: newOpt };
     });
-  };
+  }
+};
 
   const handleMotivoChange = (e) => {
     const value = e.target.value;
@@ -1947,10 +2127,13 @@ const RequireSolicit = ({ setUser }) => {
         
         console.log('✅ Solicitudes recargadas:', solicitudesCompletas);
         setSolicitudes(solicitudesCompletas);
+        return true;
       } catch (error) {
         console.error("Error recargando datos:", error);
+        return false;
       }
     }
+    return false;
   };
 
   // Función para resetear el formulario
@@ -1974,114 +2157,136 @@ const RequireSolicit = ({ setUser }) => {
     setErrors({});
   };
 
-const enviarRequerimiento = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    // 1. PRIMERO crear el requerimiento_emprendedor para obtener id_req
-    const requerimientoData = {
-      cedula_emprendedor: formData.cedula_emprendedor,
-      opt_requerimiento: JSON.stringify(formData.opt_requerimiento),
-      verificacion: "Pendiente"
-    };
-
-    console.log('📤 Creando requerimiento emprendedor:', requerimientoData);
-    
-    const requerimientoResponse = await createRequerimientoEmprendedor(requerimientoData);
-    console.log('✅ Respuesta de requerimiento:', requerimientoResponse);
-    
-    if (!requerimientoResponse.id_req) {
-      throw new Error('No se pudo obtener el id_req del requerimiento creado');
+  // Función para recargar datos completos
+  const recargarDatosCompletos = async () => {
+    const success = await recargarDatosSolicitudes();
+    if (success) {
+      Swal.fire({
+        title: "¡Datos actualizados!",
+        text: "La información se ha actualizado correctamente",
+        icon: "success",
+        confirmButtonColor: "#0F3C5B",
+        timer: 1500
+      });
+    } else {
+      Swal.fire({
+        title: "Error",
+        text: "No se pudieron actualizar los datos",
+        icon: "error",
+        confirmButtonColor: "#dc2626"
+      });
     }
-    
-    const id_req = requerimientoResponse.id_req;
+  };
 
-    // 2. CREAR EL FIADOR CON FORM DATA
-    const datosFiador = {
-      id_req: id_req,
-      cedula_emprendedor: formData.cedula_emprendedor,
-      cedula_fiador: fiadorData.cedula_fiador,
-      nombre_completo_fiador: fiadorData.nombre_completo_fiador,
-      telefono_fiador: fiadorData.telefono_fiador,
-      correo_fiador: fiadorData.correo_fiador || null,
-      verificacion_fiador: "Pendiente"
-    };
-
-    console.log('👤 Creando fiador:', datosFiador);
-    
-    // ✅ CORREGIDO: Enviar con FormData incluyendo el archivo
-    const fiadorResponse = await createFiador(datosFiador, fiadorData.foto_rif_fiscal);
-    console.log('✅ Respuesta del fiador:', fiadorResponse);
-
-    // 3. CREAR LA SOLICITUD con el id_req
-    const datosSolicitud = {
-      cedula_emprendedor: formData.cedula_emprendedor,
-      motivo: formData.motivo,
-      estatus: "Pendiente",
-      id_req: id_req,
-      fecha_llevar: formData.fecha_llevar || null
-    };
-
-    console.log('📤 Enviando solicitud con id_req:', datosSolicitud);
-    
-    const solicitudResponse = await createSolicitud(datosSolicitud);
-    console.log('✅ Respuesta de solicitud:', solicitudResponse);
-
-    if (!solicitudResponse.id_contrato) {
-      throw new Error('No se pudo crear la solicitud');
-    }
-
-    // 4. Subir el archivo principal del emprendedor
-    if (formData.archivo) {
-      const datosArchivo = {
+  const enviarRequerimiento = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // 1. PRIMERO crear el requerimiento_emprendedor para obtener id_req
+      const requerimientoData = {
         cedula_emprendedor: formData.cedula_emprendedor,
-        fecha_llevar: formData.fecha_llevar,
-        id_req: id_req,
-        tipo_archivo: "documentos_emprendedor"
+        opt_requerimiento: JSON.stringify(formData.opt_requerimiento),
+        verificacion: "Pendiente"
       };
-      console.log('📁 Subiendo archivo principal');
-      await subirArchivo(formData.archivo, datosArchivo);
+
+      console.log('📤 Creando requerimiento emprendedor:', requerimientoData);
+      
+      const requerimientoResponse = await createRequerimientoEmprendedor(requerimientoData);
+      console.log('✅ Respuesta de requerimiento:', requerimientoResponse);
+      
+      if (!requerimientoResponse.id_req) {
+        throw new Error('No se pudo obtener el id_req del requerimiento creado');
+      }
+      
+      const id_req = requerimientoResponse.id_req;
+
+      // 2. CREAR EL FIADOR CON FORM DATA
+      const datosFiador = {
+        id_req: id_req,
+        cedula_emprendedor: formData.cedula_emprendedor,
+        cedula_fiador: fiadorData.cedula_fiador,
+        nombre_completo_fiador: fiadorData.nombre_completo_fiador,
+        telefono_fiador: fiadorData.telefono_fiador,
+        correo_fiador: fiadorData.correo_fiador || null,
+        verificacion_fiador: "Pendiente"
+      };
+
+      console.log('👤 Creando fiador:', datosFiador);
+      
+      // ✅ CORREGIDO: Enviar con FormData incluyendo el archivo
+      const fiadorResponse = await createFiador(datosFiador, fiadorData.foto_rif_fiscal);
+      console.log('✅ Respuesta del fiador:', fiadorResponse);
+
+      // 3. CREAR LA SOLICITUD con el id_req
+      const datosSolicitud = {
+        cedula_emprendedor: formData.cedula_emprendedor,
+        motivo: formData.motivo,
+        estatus: "Pendiente",
+        id_req: id_req,
+        fecha_llevar: formData.fecha_llevar || null
+      };
+
+      console.log('📤 Enviando solicitud con id_req:', datosSolicitud);
+      
+      const solicitudResponse = await createSolicitud(datosSolicitud);
+      console.log('✅ Respuesta de solicitud:', solicitudResponse);
+
+      if (!solicitudResponse.id_contrato) {
+        throw new Error('No se pudo crear la solicitud');
+      }
+
+      // 4. Subir el archivo principal del emprendedor
+      if (formData.archivo) {
+        const datosArchivo = {
+          cedula_emprendedor: formData.cedula_emprendedor,
+          fecha_llevar: formData.fecha_llevar,
+          id_req: id_req,
+          tipo_archivo: "documentos_emprendedor"
+        };
+        console.log('📁 Subiendo archivo principal');
+        await subirArchivo(formData.archivo, datosArchivo);
+      }
+
+      // Recargar datos para mostrar la nueva solicitud
+      await recargarDatosSolicitudes();
+
+      setMostrarFormulario(false);
+      resetearFormulario();
+
+      Swal.fire({
+        title: "¡Éxito!",
+        text: "Solicitud enviada correctamente con los datos del fiador",
+        icon: "success",
+        confirmButtonColor: "#0F3C5B",
+        background: "#f8fafc",
+        customClass: {
+          popup: "rounded-2xl shadow-2xl",
+          title: "text-xl font-bold",
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error al enviar:", error);
+      console.error("📋 Detalles del error:", error.response?.data);
+      
+      Swal.fire({
+        title: "¡Error!",
+        text: error.response?.data?.message || error.message || "Hubo un error al enviar la solicitud",
+        icon: "error",
+        confirmButtonColor: "#dc2626",
+        background: "#f8fafc",
+        customClass: {
+          popup: "rounded-2xl shadow-2xl",
+          title: "text-xl font-bold",
+        },
+      });
+    } finally {
+      setLoading(false);
     }
-
-    // Recargar datos para mostrar la nueva solicitud
-    await recargarDatosSolicitudes();
-
-    setMostrarFormulario(false);
-    resetearFormulario();
-
-    Swal.fire({
-      title: "¡Éxito!",
-      text: "Solicitud enviada correctamente con los datos del fiador",
-      icon: "success",
-      confirmButtonColor: "#0F3C5B",
-      background: "#f8fafc",
-      customClass: {
-        popup: "rounded-2xl shadow-2xl",
-        title: "text-xl font-bold",
-      },
-    });
-  } catch (error) {
-    console.error("❌ Error al enviar:", error);
-    console.error("📋 Detalles del error:", error.response?.data);
-    
-    Swal.fire({
-      title: "¡Error!",
-      text: error.response?.data?.message || error.message || "Hubo un error al enviar la solicitud",
-      icon: "error",
-      confirmButtonColor: "#dc2626",
-      background: "#f8fafc",
-      customClass: {
-        popup: "rounded-2xl shadow-2xl",
-        title: "text-xl font-bold",
-      },
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleNuevaSolicitud = () => {
     setMostrarFormulario(true);
+    setSolicitudSeleccionada(null);
   };
 
   const handleCancelarFormulario = () => {
@@ -2090,7 +2295,7 @@ const enviarRequerimiento = async (e) => {
   };
 
   const handleVerDetalles = (solicitud) => {
-    setModalDetalles({ open: true, solicitud });
+    setSolicitudSeleccionada(solicitud);
   };
 
   return (
@@ -2112,6 +2317,8 @@ const enviarRequerimiento = async (e) => {
               requerimientos={requerimientos}
               onNuevaSolicitud={handleNuevaSolicitud}
               onVerDetalles={handleVerDetalles}
+              solicitudSeleccionada={solicitudSeleccionada}
+              onRecargarDatos={recargarDatosCompletos}
             />
           ) : (
             <FormularioSolicitud
@@ -2138,14 +2345,6 @@ const enviarRequerimiento = async (e) => {
             />
           )}
         </main>
-        
-        {/* Modal de detalles */}
-        <ModalDetalles
-          solicitud={modalDetalles.solicitud}
-          requerimientos={requerimientos}
-          isOpen={modalDetalles.open}
-          onClose={() => setModalDetalles({ open: false, solicitud: null })}
-        />
         
         {/* Pie de página mejorado */}
         <footer className="mt-auto p-6 bg-white border-t border-gray-200">
