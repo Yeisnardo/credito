@@ -69,7 +69,7 @@ const useLogout = () => {
       if (tipoUsuario === 'Emprendedor') {
         navigate('/Login', { replace: true });
       } else if (['Administrador', 'Credito1', 'Credito2'].includes(tipoUsuario)) {
-        navigate('/Login-admin', { replace: true });
+        navigate('/LoginAdmin', { replace: true });
       } else {
         // 🚫 USUARIO NO VÁLIDO - SOLO MENSAJE, NO REDIRECCIÓN
         Swal.fire({
