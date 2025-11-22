@@ -171,7 +171,7 @@ function App() {
                     <div className="h-px bg-gray-200 mx-3 my-1"></div>
 
                     <Link
-                      to="/login-admin"
+                      to="/loginAdmin"
                       target="_blank"
                       onClick={closeDropdown}
                       className="flex items-center space-x-3 p-3 rounded-xl hover:bg-indigo-50 transition-all duration-200 group"

@@ -60,7 +60,7 @@ export const generarMetodosPago = (user, contrato) => {
   doc.setTextColor(71, 85, 105);
   
   if (user) {
-    doc.text(`Nombre: ${user.nombre_completo || 'No disponible'}`, margin, yPosition);
+    doc.text(`Nombre: ${user.nombre_apellido || 'No disponible'}`, margin, yPosition);
     yPosition += 6;
     doc.text(`Cédula: ${user.cedula || 'No disponible'}`, margin, yPosition);
     yPosition += 6;
