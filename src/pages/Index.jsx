@@ -152,7 +152,6 @@ function App() {
                   <div className="p-2">
                     <Link
                       to="/login"
-                      target="_blank"
                       onClick={closeDropdown}
                       className="flex items-center space-x-3 p-3 rounded-xl hover:bg-indigo-50 transition-all duration-200 group"
                     >
@@ -172,7 +171,6 @@ function App() {
 
                     <Link
                       to="/loginAdmin"
-                      target="_blank"
                       onClick={closeDropdown}
                       className="flex items-center space-x-3 p-3 rounded-xl hover:bg-indigo-50 transition-all duration-200 group"
                     >
