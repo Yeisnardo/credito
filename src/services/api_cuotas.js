@@ -139,6 +139,17 @@ export const getCuotasPagadas = async (cedula_emprendedor) => {
   }
 };
 
+// Nueva API para obtener datos de persona
+export const getPersonaPorCedula = async (cedula) => {
+  try {
+    const response = await api.get(`/api/cuotas/persona/${cedula}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo datos de persona:', error);
+    throw error;
+  }
+};
+
 export default {
   // Emprendedor
   getContratoPorCedula,
@@ -161,5 +172,6 @@ export default {
   
   // Adicionales
   registrarCuota,
-  getCuotasPagadas
+  getCuotasPagadas,
+  getPersonaPorCedula
 };

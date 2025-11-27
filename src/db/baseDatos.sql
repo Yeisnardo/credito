@@ -154,6 +154,7 @@ CREATE TABLE contrato (
   fecha_desde DATE,
   fecha_hasta DATE,
   estatus VARCHAR(20),
+  estado_contrato VARCHAR (20) DEFAULT 'Activo',
   FOREIGN KEY (cedula_emprendedor) REFERENCES n_contrato (cedula_emprendedor)
 );
 
@@ -175,16 +176,16 @@ CREATE TABLE cuota (
   monto VARCHAR(255) NOT NULL,
   monto_ves VARCHAR(255) NOT NULL,
   fecha_pagada TEXT,
-  estado_cuota VARCHAR(50) NOT NULL, -- Ejemplo: 'Pendiente', 'Pagado'
+  estado_cuota VARCHAR(50) NOT NULL,
   dias_mora_cuota INT DEFAULT 0,
   interes_acumulado VARCHAR(255),
   monto_morosidad TEXT,
   cuota_gracia TEXT,
-  confirmacionIFEMI VARCHAR(255), -- Puede ser un código o estado de confirmación
-  comprobante TEXT, -- Ruta o nombre del archivo almacenado
+  tipo_cuota VARCHAR(20) DEFAULT 'obligatoria', -- NUEVO CAMPO
+  confirmacionIFEMI VARCHAR(255),
+  comprobante TEXT,
   FOREIGN KEY (id_cuota_c) REFERENCES contrato (id_contrato)
 );
-
 
 CREATE TABLE configuracion_contratos (
     id SERIAL PRIMARY KEY,

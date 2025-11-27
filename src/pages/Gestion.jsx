@@ -83,6 +83,71 @@ const Gestion = ({ user, setUser }) => {
   const [rates, setRates] = useState({ euro: null, dolar: null });
   const [configuracion, setConfiguracion] = useState(null);
 
+  // Función para calcular fechas CORREGIDA
+  const calcularFechas = (fechaInicioStr) => {
+    const fechaInicio = new Date(fechaInicioStr);
+    const fechaInicioConGracia = new Date(fechaInicioStr);
+    const fechaHasta = new Date(fechaInicioStr);
+    
+    const numeroCuotas = parseFloat(configuracion?.numero_cuotas) || 18;
+    const cuotasGracia = parseFloat(configuracion?.cuotasgracias) || 2;
+    const frecuencia = configuracion?.frecuencia_pago || "Semanal";
+
+    // Calcular fecha de inicio CON gracia (cuando realmente empiezan los pagos)
+    if (cuotasGracia > 0) {
+      fechaInicioConGracia.setDate(fechaInicioConGracia.getDate() + cuotasGracia);
+    }
+
+    // Calcular fecha final basada en la frecuencia de pago
+    switch (frecuencia) {
+      case "diario":
+        fechaHasta.setDate(fechaHasta.getDate() + cuotasGracia + numeroCuotas);
+        break;
+      
+      case "semanal":
+        fechaHasta.setDate(fechaHasta.getDate() + cuotasGracia + (numeroCuotas * 7));
+        break;
+      
+      case "quincenal":
+        fechaHasta.setDate(fechaHasta.getDate() + cuotasGracia + (numeroCuotas * 15));
+        break;
+      
+      case "mensual":
+        fechaHasta.setMonth(fechaHasta.getMonth() + numeroCuotas);
+        fechaHasta.setDate(fechaHasta.getDate() + cuotasGracia);
+        break;
+      
+      case "Personalizado":
+        // Para frecuencia personalizada, usar días personalizados si están definidos
+        const diasPersonalizados = parseInt(formData.dias_personalizados) || 7;
+        fechaHasta.setDate(fechaHasta.getDate() + cuotasGracia + (numeroCuotas * diasPersonalizados));
+        break;
+      
+      default:
+        // Por defecto semanal
+        fechaHasta.setDate(fechaHasta.getDate() + cuotasGracia + (numeroCuotas * 7));
+    }
+
+    const formatDate = (date) => date.toISOString().split('T')[0];
+
+    return {
+      desde: formatDate(fechaInicioConGracia), // Fecha cuando empiezan los pagos (después de gracia)
+      hasta: formatDate(fechaHasta),           // Fecha final del contrato
+    };
+  };
+
+  // Función para actualizar fechas cuando cambia la fecha desde
+  const actualizarFechas = (nuevaFechaDesde) => {
+    if (nuevaFechaDesde && configuracion) {
+      const { desde, hasta } = calcularFechas(nuevaFechaDesde);
+      setFormData((prev) => ({
+        ...prev,
+        fecha_desde: desde,
+        fecha_hasta: hasta,
+      }));
+    }
+  };
+
   // Cargar configuración al montar
   useEffect(() => {
     const fetchConfiguracion = async () => {
@@ -226,6 +291,7 @@ const Gestion = ({ user, setUser }) => {
 
         setFormData((prev) => ({
           ...prev,
+          cincoflat: flatAmount,
           diezinteres: interesAmount,
           monto_devolver: montoDevolver,
           monto_semanal: montoSemanal,
@@ -240,59 +306,46 @@ const Gestion = ({ user, setUser }) => {
     }
   }, [formData.monto_aprob_euro, configuracion]);
 
-  // Función para calcular fechas (CORREGIDA para incluir período de gracia)
-  const calcularFechas = (fechaInicioStr) => {
-  const fechaInicio = new Date(fechaInicioStr);
-  const fechaInicioConGracia = new Date(fechaInicioStr); // Crear una copia para la fecha con gracia
-  const fechahasta = new Date(fechaInicioStr); // Empezar desde la fecha original
-  
-  const numeroCuotas = parseFloat(configuracion?.numero_cuotas) || 18;
-  const cuotasGracia = parseFloat(configuracion?.cuotasgracias) || "2";
-  const frecuencia = configuracion?.frecuencia_pago || "Semanal";
+  // Modificar el useEffect que maneja la fecha_desde
+  useEffect(() => {
+    if (configuracion && formData.fecha_desde) {
+      const { hasta } = calcularFechas(formData.fecha_desde);
+      setFormData((prev) => ({
+        ...prev,
+        fecha_hasta: hasta,
+      }));
+    }
+  }, [formData.fecha_desde, configuracion]);
 
-  // APLICAR PERÍODO DE GRACIA a la fecha de inicio (solo para mostrar)
-  if (cuotasGracia > 0) {
-    fechaInicioConGracia.setDate(fechaInicioConGracia.getDate() + cuotasGracia);
-  }
+  // Inicialización corregida - SOLO cuando no hay fecha
+  useEffect(() => {
+    if (configuracion && !formData.fecha_desde) {
+      const hoy = new Date().toISOString().split('T')[0];
+      const { desde, hasta } = calcularFechas(hoy);
+      setFormData((prev) => ({
+        ...prev,
+        fecha_desde: desde,
+        fecha_hasta: hasta,
+      }));
+    }
+  }, [configuracion]);
 
-  // Calcular fecha final DESDE LA FECHA ORIGINAL (incluyendo el período de gracia en el cálculo total)
-  const totalDias = cuotasGracia + ( // Sumar días de gracia
-    frecuencia === "diario" ? numeroCuotas * 1 :
-    frecuencia === "semanal" ? numeroCuotas * 7 :
-    frecuencia === "quincenal" ? numeroCuotas * 15 :
-    frecuencia === "mensual" ? 0 : // Para mensual se usa setMonth
-    numeroCuotas * 7 // Por defecto semanal
-  );
-
-  if (frecuencia === "mensual") {
-    fechahasta.setMonth(fechahasta.getMonth() + numeroCuotas);
-    // También agregar los días de gracia para mensual
-    fechahasta.setDate(fechahasta.getDate() + cuotasGracia);
-  } else {
-    fechahasta.setDate(fechahasta.getDate() + totalDias);
-  }
-
-  const formatDate = (date) => date.toISOString().split('T')[0];
-
-  return {
-    desde: formatDate(fechaInicioConGracia), // Fecha de inicio CON gracia
-    hasta: formatDate(fechahasta), // Fecha final que incluye gracia + cuotas
-  };
-};
-
-  // Inicializar la fecha desde con la fecha actual y aplicar gracia
-  // SOLO para inicialización - ejecutar una vez cuando se carga la configuración
-useEffect(() => {
-  if (configuracion && !formData.fecha_desde) {
-    const hoy = new Date();
-    const { desde, hasta } = calcularFechas(hoy.toISOString().split('T')[0]);
-    setFormData((prev) => ({
-      ...prev,
-      fecha_desde: desde,
-      fecha_hasta: hasta,
-    }));
-  }
-}, [configuracion]); // Solo depende de configuracion
+  // También recalcular cuando cambie la configuración
+  useEffect(() => {
+    if (configuracion && formData.fecha_desde) {
+      const { hasta } = calcularFechas(formData.fecha_desde);
+      setFormData((prev) => ({
+        ...prev,
+        fecha_hasta: hasta,
+        // Actualizar también los valores de configuración
+        cuotas: configuracion.numero_cuotas || "No definida",
+        gracia: configuracion.cuotasgracias || "No definida",
+        interes: configuracion.porcentaje_interes || "No definida",
+        morosidad: configuracion.porcentaje_mora || "No definida",
+        frecuencia_pago_contrato: configuracion.frecuencia_pago || "Semanal",
+      }));
+    }
+  }, [configuracion]);
 
   const handleVerComprobante = (url) => {
     setComprobanteModal(url);
@@ -522,10 +575,16 @@ useEffect(() => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Si cambia la fecha desde, recalcular la fecha hasta
+    if (name === "fecha_desde") {
+      actualizarFechas(value);
+    }
   };
 
   const handleDepositoChange = (e) => {

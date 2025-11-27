@@ -36,7 +36,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Ruta para insertar en la tabla 'contrato' (ACTUALIZADA CON monto_bs_neto y monto_restado)
+// Ruta para insertar en la tabla 'contrato' (ACTUALIZADA CON estado_contrato)
 router.post('/contrato', async (req, res) => {
   try {
     let {
@@ -45,7 +45,7 @@ router.post('/contrato', async (req, res) => {
       monto_aprob_euro,
       monto_bs,
       monto_bs_neto,
-      monto_restado, // CAMBIO: cincoflat por monto_restado
+      monto_restado,
       diezinteres,
       monto_devolver,
       monto_semanal,
@@ -101,9 +101,10 @@ router.post('/contrato', async (req, res) => {
         dias_personalizados,
         fecha_desde,
         fecha_hasta,
-        estatus
+        estatus,
+        estado_contrato
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
       ) RETURNING *`,
       [
         id_contrato,
@@ -112,7 +113,7 @@ router.post('/contrato', async (req, res) => {
         monto_aprob_euro,
         monto_bs,
         monto_bs_neto,
-        monto_restado, // CAMBIO: cincoflat por monto_restado
+        monto_restado,
         diezinteres,
         monto_devolver,
         monto_semanal,
@@ -125,7 +126,8 @@ router.post('/contrato', async (req, res) => {
         dias_personalizados,
         fecha_desde,
         fecha_hasta,
-        estatus
+        estatus,
+        'Activo' // NUEVO: estado_contrato siempre será 'Activo' por defecto
       ]
     );
 
@@ -191,7 +193,7 @@ router.post('/:id_contrato', async (req, res) => {
   }
 });
 
-// Ruta para actualizar un contrato (ACTUALIZADA CON monto_restado)
+// Ruta para actualizar un contrato (ACTUALIZADA CON estado_contrato)
 router.put('/:id_contrato', async (req, res) => {
   const { id_contrato } = req.params;
   
@@ -199,8 +201,8 @@ router.put('/:id_contrato', async (req, res) => {
     let {
       monto_aprob_euro,
       monto_bs,
-      monto_bs_neto, // NUEVO: agregar monto_bs_neto
-      monto_restado, // CAMBIO: cincoflat por monto_restado
+      monto_bs_neto,
+      monto_restado,
       diezinteres,
       monto_devolver,
       monto_semanal,
@@ -213,7 +215,8 @@ router.put('/:id_contrato', async (req, res) => {
       dias_personalizados,
       fecha_desde,
       fecha_hasta,
-      estatus
+      estatus,
+      estado_contrato // NUEVO: incluir estado_contrato en la actualización
     } = req.body;
 
     // Validar y limpiar campos
@@ -223,12 +226,22 @@ router.put('/:id_contrato', async (req, res) => {
       ? dias_personalizados.trim() 
       : null;
 
+    // Si no se proporciona estado_contrato, mantener el valor actual o usar 'Activo'
+    if (!estado_contrato) {
+      // Obtener el estado actual del contrato
+      const contratoActual = await query(
+        'SELECT estado_contrato FROM contrato WHERE id_contrato = $1',
+        [id_contrato]
+      );
+      estado_contrato = contratoActual.rows[0]?.estado_contrato || 'Activo';
+    }
+
     const resultado = await query(
       `UPDATE contrato SET 
         monto_aprob_euro = $1,
         monto_bs = $2,
-        monto_bs_neto = $3, // NUEVO: agregar monto_bs_neto
-        monto_restado = $4, // CAMBIO: cincoflat por monto_restado
+        monto_bs_neto = $3,
+        monto_restado = $4,
         diezinteres = $5,
         monto_devolver = $6,
         monto_semanal = $7,
@@ -241,14 +254,15 @@ router.put('/:id_contrato', async (req, res) => {
         dias_personalizados = $14,
         fecha_desde = $15,
         fecha_hasta = $16,
-        estatus = $17
-      WHERE id_contrato = $18
+        estatus = $17,
+        estado_contrato = $18
+      WHERE id_contrato = $19
       RETURNING *`,
       [
         monto_aprob_euro,
         monto_bs,
-        monto_bs_neto, // NUEVO: agregar monto_bs_neto
-        monto_restado, // CAMBIO: cincoflat por monto_restado
+        monto_bs_neto,
+        monto_restado,
         diezinteres,
         monto_devolver,
         monto_semanal,
@@ -262,6 +276,7 @@ router.put('/:id_contrato', async (req, res) => {
         fecha_desde,
         fecha_hasta,
         estatus,
+        estado_contrato, // NUEVO: incluir estado_contrato
         id_contrato
       ]
     );
@@ -276,6 +291,40 @@ router.put('/:id_contrato', async (req, res) => {
     });
   } catch (error) {
     console.error('Error al actualizar el contrato:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Ruta específica para cambiar el estado del contrato
+router.patch('/:id_contrato/estado', async (req, res) => {
+  const { id_contrato } = req.params;
+  const { estado_contrato } = req.body;
+
+  try {
+    // Validar que el estado sea uno de los permitidos
+    const estadosPermitidos = ['Activo', 'Inactivo', 'Finalizado', 'Cancelado', 'Suspendido'];
+    if (!estadosPermitidos.includes(estado_contrato)) {
+      return res.status(400).json({ 
+        error: 'Estado no válido', 
+        estados_permitidos: estadosPermitidos 
+      });
+    }
+
+    const resultado = await query(
+      `UPDATE contrato SET estado_contrato = $1 WHERE id_contrato = $2 RETURNING *`,
+      [estado_contrato, id_contrato]
+    );
+
+    if (resultado.rows.length === 0) {
+      return res.status(404).json({ error: 'Contrato no encontrado' });
+    }
+
+    res.status(200).json({
+      message: `Estado del contrato actualizado a: ${estado_contrato}`,
+      contrato: resultado.rows[0]
+    });
+  } catch (error) {
+    console.error('Error al actualizar el estado del contrato:', error);
     res.status(500).json({ error: error.message });
   }
 });

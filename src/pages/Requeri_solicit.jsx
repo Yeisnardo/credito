@@ -1125,7 +1125,7 @@ const Step3Fiador = ({
         <div className="mt-6">
           <label className="block mb-4 text-gray-800 font-semibold text-lg">
             <TbFile size={18} className="text-blue-600 mr-2 inline" />
-            RIF Fiscal del Fiador (Opcional)
+            Adjuntar los documentos obligatorios
           </label>
           <div className="relative">
             <input

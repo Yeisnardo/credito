@@ -23,7 +23,8 @@ import {
   TbFileText,
   TbCreditCard,
   TbArrowBack,
-  TbLoader
+  TbLoader,
+  TbGift
 } from 'react-icons/tb';
 
 // Componente para visualizar el comprobante
@@ -202,87 +203,154 @@ const StatsCards = ({ stats }) => (
 );
 
 // Componente de Lista de Contratos
-const ContratosList = ({ contratos, loading, onVerCuotas, onGenerarReporte, onRefresh }) => (
-  <section className="bg-white rounded-xl shadow-sm p-6">
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-lg font-semibold text-gray-800">
-        Contratos Activos {loading && <span className="text-sm text-gray-500">(Cargando...)</span>}
-      </h2>
-      <div className="flex space-x-3">
-        <button 
-          className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors"
-          onClick={onRefresh}
-          disabled={loading}
-        >
-          <TbRefresh className="mr-2" size={16} />
-          {loading ? 'Actualizando...' : 'Actualizar'}
-        </button>
-      </div>
-    </div>
+const ContratosList = ({ contratos, loading, onVerCuotas, onGenerarReporte, onRefresh }) => {
+  const [depositos, setDepositos] = useState([]);
+  const [contratosFiltrados, setContratosFiltrados] = useState([]);
 
-    <div className="space-y-4">
-      {contratos.length === 0 ? (
-        <div className="text-center py-8">
-          <TbFile size={48} className="text-gray-400 mb-4 mx-auto" />
-          <p className="text-gray-600">No hay contratos activos</p>
+  // Cargar depósitos al montar el componente
+  useEffect(() => {
+    const cargarDepositos = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/deposito');
+        if (response.ok) {
+          const depositosData = await response.json();
+          setDepositos(depositosData);
+        }
+      } catch (error) {
+        console.error('Error cargando depósitos:', error);
+      }
+    };
+
+    cargarDepositos();
+  }, []);
+
+  // Filtrar contratos cuando cambien los contratos o depósitos
+  useEffect(() => {
+    if (contratos.length > 0 && depositos.length > 0) {
+      // Filtrar contratos que tengan al menos un depósito con estado "Recibido"
+      const contratosConDepositoRecibido = contratos.filter(contrato => {
+        // Buscar depósitos para este contrato (por cédula del emprendedor)
+        const depositosContrato = depositos.filter(deposito => 
+          deposito.cedula_emprendedor === contrato.cedula_emprendedor
+        );
+        
+        // Verificar si hay al menos un depósito con estado "Recibido"
+        return depositosContrato.some(deposito => deposito.estado === 'Recibido');
+      });
+
+      setContratosFiltrados(contratosConDepositoRecibido);
+    } else {
+      setContratosFiltrados([]);
+    }
+  }, [contratos, depositos]);
+
+  return (
+    <section className="bg-white rounded-xl shadow-sm p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-lg font-semibold text-gray-800">
+          Contratos con Depósito Recibido {loading && <span className="text-sm text-gray-500">(Cargando...)</span>}
+        </h2>
+        <div className="flex space-x-3">
+          <button 
+            className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center hover:bg-gray-50 transition-colors"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            <TbRefresh className="mr-2" size={16} />
+            {loading ? 'Actualizando...' : 'Actualizar'}
+          </button>
         </div>
-      ) : (
-        contratos.map(contrato => (
-          <div key={contrato.id_contrato} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <h3 className="font-semibold text-gray-800">
-                    {contrato.cedula_emprendedor} - {contrato.numero_contrato}
-                  </h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    contrato.estatus === 'aceptado' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {contrato.estatus}
-                  </span>
+      </div>
+
+      <div className="space-y-4">
+        {contratosFiltrados.length === 0 ? (
+          <div className="text-center py-8">
+            <TbFile size={48} className="text-gray-400 mb-4 mx-auto" />
+            <p className="text-gray-600">No hay contratos con depósito recibido</p>
+            <p className="text-gray-500 text-sm mt-2">
+              Solo se muestran contratos que tienen al menos un depósito con estado "Recibido"
+            </p>
+          </div>
+        ) : (
+          contratosFiltrados.map(contrato => (
+            <div key={contrato.id_contrato} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h3 className="font-semibold text-gray-800">
+                      {contrato.nombre_completo} - {contrato.numero_contrato}
+                    </h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      contrato.estatus === 'aceptado' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {contrato.estatus}
+                    </span>
+                    {/* Indicador de depósito recibido */}
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Depósito Recibido
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <TbCalendar className="mr-2" size={16} />
+                      Desde: {new Date(contrato.fecha_desde).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center">
+                      <TbCurrencyDollar className="mr-2" size={16} />
+                      Monto: ${contrato.monto_devolver}
+                    </div>
+                    <div className="flex items-center">
+                      <TbCalendar className="mr-2" size={16} />
+                      Hasta: {new Date(contrato.fecha_hasta).toLocaleDateString()}
+                    </div>
+                  </div>
+                  {/* Información del depósito */}
+                  <div className="mt-2">
+                    {(() => {
+                      const depositosContrato = depositos.filter(deposito => 
+                        deposito.cedula_emprendedor === contrato.cedula_emprendedor && deposito.estado === 'Recibido'
+                      );
+                      return (
+                        <div className="text-xs text-gray-500">
+                          Depósitos recibidos: {depositosContrato.length}
+                          {depositosContrato.length > 0 && (
+                            <span className="ml-2 text-green-600">
+                              ✓ Verificado
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <TbCalendar className="mr-2" size={16} />
-                    Desde: {new Date(contrato.fecha_desde).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center">
-                    <TbCurrencyDollar className="mr-2" size={16} />
-                    Monto: ${contrato.monto_devolver}
-                  </div>
-                  <div className="flex items-center">
-                    <TbCalendar className="mr-2" size={16} />
-                    Hasta: {new Date(contrato.fecha_hasta).toLocaleDateString()}
-                  </div>
+                
+                <div className="flex space-x-2 mt-4 md:mt-0">
+                  <button 
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors text-sm"
+                    onClick={() => onVerCuotas(contrato.id_contrato)}
+                    disabled={loading}
+                  >
+                    <TbEye className="mr-1" size={14} />
+                    Ver Cuotas
+                  </button>
+                  <button 
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700 transition-colors text-sm"
+                    onClick={() => onGenerarReporte(contrato.id_contrato)}
+                  >
+                    <TbChartBar className="mr-1" size={14} />
+                    Reporte
+                  </button>
                 </div>
-              </div>
-              
-              <div className="flex space-x-2 mt-4 md:mt-0">
-                <button 
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-indigo-700 transition-colors text-sm"
-                  onClick={() => onVerCuotas(contrato.id_contrato)}
-                  disabled={loading}
-                >
-                  <TbEye className="mr-1" size={14} />
-                  Ver Cuotas
-                </button>
-                <button 
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-green-700 transition-colors text-sm"
-                  onClick={() => onGenerarReporte(contrato.id_contrato)}
-                >
-                  <TbChartBar className="mr-1" size={14} />
-                  Reporte
-                </button>
               </div>
             </div>
-          </div>
-        ))
-      )}
-    </div>
-  </section>
-);
+          ))
+        )}
+      </div>
+    </section>
+  );
+};
 
 // Componente para mostrar el estado del cronómetro
 const EstadoCronometro = ({ cuota }) => {
@@ -390,7 +458,45 @@ const generarNombreCuota = (numeroCuota, frecuencia) => {
   }
 };
 
-// Componente de Tabla de Cuotas
+// FUNCIÓN CORREGIDA para extraer número de cuota
+const extraerNumeroCuota = (textoCuota) => {
+  if (!textoCuota) return 1;
+  
+  // Manejar diferentes formatos: "Semana 1", "Mes 1", "Día 1", etc.
+  const match = textoCuota.match(/(\d+)$/); // Busca números al final
+  if (match) {
+    return parseInt(match[1]);
+  }
+  
+  // Si no encuentra número al final, buscar cualquier número
+  const anyMatch = textoCuota.match(/(\d+)/);
+  return anyMatch ? parseInt(anyMatch[1]) : 1;
+};
+
+// FUNCIÓN PARA DETERMINAR TIPO DE CUOTA
+const determinarTipoCuota = (cuota, contratoSeleccionado) => {
+  // Prioridad 1: Usar el campo tipo_cuota si existe
+  if (cuota.tipo_cuota) {
+    return cuota.tipo_cuota;
+  }
+  
+  // Prioridad 2: Usar el campo cuota_gracia si existe
+  if (cuota.cuota_gracia !== undefined && cuota.cuota_gracia !== null) {
+    return cuota.cuota_gracia ? 'gracia' : 'obligatoria';
+  }
+  
+  // Prioridad 3: Determinar por número de cuota (lógica existente)
+  if (!contratoSeleccionado) return 'obligatoria';
+  
+  const numeroCuota = extraerNumeroCuota(cuota.semana);
+  const totalCuotas = contratoSeleccionado.cuotas || 0;
+  const cuotasGracia = contratoSeleccionado.gracia || 0;
+  const cuotasObligatorias = totalCuotas - cuotasGracia;
+  
+  return numeroCuota > cuotasObligatorias ? 'gracia' : 'obligatoria';
+};
+
+// Componente de Tabla de Cuotas CORREGIDO
 const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago, contratoSeleccionado }) => {
   const [comprobanteVisible, setComprobanteVisible] = useState(null);
 
@@ -402,15 +508,19 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
     setComprobanteVisible(null);
   };
 
-  const extraerNumeroCuota = (textoSemana) => {
-    if (!textoSemana) return 0;
-    const match = textoSemana.match(/Semana\s*(\d+)/i);
-    return match ? parseInt(match[1]) : 0;
-  };
-
   const cuotasOrdenadas = [...cuotasContrato].sort((a, b) => {
     const numA = extraerNumeroCuota(a.semana);
     const numB = extraerNumeroCuota(b.semana);
+    
+    // Determinar tipo de cuota
+    const tipoA = determinarTipoCuota(a, contratoSeleccionado);
+    const tipoB = determinarTipoCuota(b, contratoSeleccionado);
+    
+    // Si una es gracia y la otra no, las de gracia van después
+    if (tipoA === 'gracia' && tipoB !== 'gracia') return 1;
+    if (tipoA !== 'gracia' && tipoB === 'gracia') return -1;
+    
+    // Si son del mismo tipo, ordenar por número
     return numA - numB;
   });
 
@@ -441,6 +551,10 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
       year: 'numeric'
     });
   };
+
+  // Estadísticas de tipos de cuota
+  const cuotasObligatorias = cuotasOrdenadas.filter(c => determinarTipoCuota(c, contratoSeleccionado) === 'obligatoria');
+  const cuotasGracia = cuotasOrdenadas.filter(c => determinarTipoCuota(c, contratoSeleccionado) === 'gracia');
 
   return (
     <div>
@@ -478,59 +592,138 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Monto</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Fecha Pago</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Comprobante</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Tipo</th>
                   <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {cuotasPorConfirmar.map(cuota => (
-                  <tr key={cuota.id_cuota} className="border-b border-blue-100 hover:bg-blue-100">
-                    <td className="py-3 px-4 text-sm text-blue-800">{cuota.semana}</td>
-                    <td className="py-3 px-4 text-sm text-blue-800">${cuota.monto}</td>
-                    <td className="py-3 px-4 text-sm text-blue-800">
-                      {cuota.fecha_pagada ? formatearFecha(cuota.fecha_pagada) : '-'}
-                    </td>
-                    <td className="py-3 px-4">
-                      <BotonVerComprobante 
-                        comprobantePath={cuota.comprobante}
-                        onVerComprobante={verComprobante}
-                      />
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex space-x-2">
-                        <button
-                          className="bg-green-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-green-700 transition-colors text-sm"
-                          onClick={() => onConfirmarPago(cuota.id_cuota)}
-                          disabled={loading}
-                        >
-                          <TbCheck className="mr-1" size={14} />
-                          Confirmar
-                        </button>
-                        <button
-                          className="bg-red-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-red-700 transition-colors text-sm"
-                          onClick={() => onRechazarPago(cuota.id_cuota)}
-                          disabled={loading}
-                        >
-                          <TbX className="mr-1" size={14} />
-                          Rechazar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {cuotasPorConfirmar.map(cuota => {
+                  const tipoCuota = determinarTipoCuota(cuota, contratoSeleccionado);
+                  return (
+                    <tr key={cuota.id_cuota} className="border-b border-blue-100 hover:bg-blue-100">
+                      <td className="py-3 px-4 text-sm text-blue-800">{cuota.semana}</td>
+                      <td className="py-3 px-4 text-sm text-blue-800">${cuota.monto}</td>
+                      <td className="py-3 px-4 text-sm text-blue-800">
+                        {cuota.fecha_pagada ? formatearFecha(cuota.fecha_pagada) : '-'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <BotonVerComprobante 
+                          comprobantePath={cuota.comprobante}
+                          onVerComprobante={verComprobante}
+                        />
+                      </td>
+                      <td className="py-3 px-4">
+                        {tipoCuota === 'gracia' ? (
+                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                            gracia
+                          </span>
+                        ) : (
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            obligatoria
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex space-x-2">
+                          <button
+                            className="bg-green-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-green-700 transition-colors text-sm"
+                            onClick={() => onConfirmarPago(cuota.id_cuota)}
+                            disabled={loading}
+                          >
+                            <TbCheck className="mr-1" size={14} />
+                            Confirmar
+                          </button>
+                          <button
+                            className="bg-red-600 text-white px-3 py-1 rounded-lg flex items-center hover:bg-red-700 transition-colors text-sm"
+                            onClick={() => onRechazarPago(cuota.id_cuota)}
+                            disabled={loading}
+                          >
+                            <TbX className="mr-1" size={14} />
+                            Rechazar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
+      {/* SECCIÓN DE ESTADÍSTICAS DE TIPOS DE CUOTA */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-100 p-2 rounded-full">
+              <TbChartBar size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-blue-800">Distribución de Cuotas</h3>
+              <p className="text-blue-600 text-sm">
+                Resumen por tipo de cuota
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg p-4 border-l-4 border-blue-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-gray-600">Total Cuotas</p>
+                <p className="text-2xl font-bold text-blue-600">{cuotasOrdenadas.length}</p>
+              </div>
+              <TbFileText size={24} className="text-blue-500" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border-l-4 border-green-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-gray-600">Obligatorias</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {cuotasObligatorias.length}
+                </p>
+                <p className="text-xs text-gray-500">
+                  ${cuotasObligatorias.reduce((sum, c) => sum + parseFloat(c.monto || 0), 0).toFixed(2)}
+                </p>
+              </div>
+              <TbCurrencyDollar size={24} className="text-green-500" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border-l-4 border-purple-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-gray-600">De Gracia</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {cuotasGracia.length}
+                </p>
+                <p className="text-xs text-gray-500">
+                  ${cuotasGracia.reduce((sum, c) => sum + parseFloat(c.monto || 0), 0).toFixed(2)}
+                </p>
+              </div>
+              <TbGift size={24} className="text-purple-500" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold text-gray-800">
             Todas las Cuotas {loading && <span className="text-sm text-gray-500">(Cargando...)</span>}
           </h3>
-          {contratoSeleccionado?.morosidad && (
-            <div className="text-sm text-orange-600 font-medium">
-              Tasa de mora: {contratoSeleccionado.morosidad}% diario
+          {contratoSeleccionado && (
+            <div className="text-sm text-gray-600">
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">
+                Obligatorias: {contratoSeleccionado.cuotas - (contratoSeleccionado.gracia || 0)}
+              </span>
+              <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                Gracia: {contratoSeleccionado.gracia || 0}
+              </span>
             </div>
           )}
         </div>
@@ -539,28 +732,26 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Semana</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600"># Cuota</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tipo</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Período</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Monto</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Estado</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Confirmación</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Fecha Pago</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Comprobante</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Días Mora</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Interés Mora</th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tipo</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {cuotasOrdenadas.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="text-center py-8 text-gray-600">
+                  <td colSpan="8" className="text-center py-8 text-gray-600">
                     No hay cuotas registradas para este contrato
                   </td>
                 </tr>
               ) : (
                 cuotasOrdenadas.map(cuota => {
+                  const numeroCuota = extraerNumeroCuota(cuota.semana);
+                  const tipoCuota = determinarTipoCuota(cuota, contratoSeleccionado);
                   const diasMora = calcularDiasMora(cuota.fecha_hasta);
                   const interesMora = calcularInteresMora(cuota.monto, diasMora);
                   
@@ -569,28 +760,40 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                       key={cuota.id_cuota} 
                       className={`
                         border-b border-gray-100 hover:bg-gray-50
+                        ${tipoCuota === 'gracia' ? 'bg-purple-50' : ''}
                         ${cuota.confirmacionifemi === 'Confirmado' ? 'bg-green-50' : ''}
                         ${cuota.confirmacionifemi === 'Rechazado' ? 'bg-red-50' : ''}
-                        ${cuota.confirmacionifemi === 'A Recibido' ? 'bg-blue-50' : ''}
-                        ${diasMora > 0 && cuota.estado_cuota === 'Pendiente' ? 'bg-red-50' : ''}
                       `}
                     >
                       <td className="py-3 px-4">
-                        <div className="text-sm text-gray-800 font-semibold">{cuota.semana}</div>
+                        <div className="text-sm font-semibold text-gray-800">{numeroCuota}</div>
                         <div className="text-xs text-gray-500">ID: {cuota.id_cuota}</div>
+                      </td>
+                      
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          tipoCuota === 'gracia' 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {tipoCuota === 'gracia' ? 'De Gracia' : 'Obligatoria'}
+                        </span>
+                        {tipoCuota === 'gracia' && (
+                          <div className="text-xs text-purple-500 mt-1">
+                            ⚡ Monto variable según pagos obligatorios
+                          </div>
+                        )}
                       </td>
                       
                       <td className="py-3 px-4">
                         <div className="text-xs">
                           <div className="flex items-center text-green-600 mb-1">
                             <TbCalendar size={12} className="mr-1" />
-                            <span className="font-medium">Desde:</span>
-                            <span className="ml-1">{formatearFecha(cuota.fecha_desde)}</span>
+                            <span>Desde: {formatearFecha(cuota.fecha_desde)}</span>
                           </div>
                           <div className="flex items-center text-red-600">
                             <TbCalendar size={12} className="mr-1" />
-                            <span className="font-medium">Hasta:</span>
-                            <span className="ml-1">{formatearFecha(cuota.fecha_hasta)}</span>
+                            <span>Hasta: {formatearFecha(cuota.fecha_hasta)}</span>
                           </div>
                           <div className="mt-1">
                             <EstadoCronometro cuota={cuota} />
@@ -598,8 +801,15 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         </div>
                       </td>
                       
-                      <td className="py-3 px-4 text-sm text-gray-800 font-semibold">
-                        ${cuota.monto}
+                      <td className="py-3 px-4">
+                        <div className={`text-sm font-semibold ${
+                          tipoCuota === 'gracia' ? 'text-purple-600' : 'text-gray-800'
+                        }`}>
+                          ${cuota.monto}
+                        </div>
+                        {tipoCuota === 'gracia' && (
+                          <div className="text-xs text-purple-500">Sin costo</div>
+                        )}
                       </td>
                       
                       <td className="py-3 px-4">
@@ -629,65 +839,6 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                         </span>
                       </td>
                       
-                      <td className="py-3 px-4 text-sm text-gray-800">
-                        {cuota.fecha_pagada ? (
-                          <div className="text-green-600 font-medium">
-                            {formatearFecha(cuota.fecha_pagada)}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4">
-                        <BotonVerComprobante 
-                          comprobantePath={cuota.comprobante}
-                          onVerComprobante={verComprobante}
-                        />
-                      </td>
-                      
-                      <td className="py-3 px-4">
-                        {diasMora > 0 ? (
-                          <div className="text-center">
-                            <span className="text-red-600 font-semibold text-sm">{diasMora}</span>
-                            <div className="text-xs text-red-500">días</div>
-                          </div>
-                        ) : (
-                          <div className="text-center">
-                            <span className="text-green-600 font-semibold text-sm">0</span>
-                            <div className="text-xs text-green-500">días</div>
-                          </div>
-                        )}
-                      </td>
-                      
-                      <td className="py-3 px-4">
-                        {interesMora > 0 ? (
-                          <div className="text-center">
-                            <span className="text-red-600 font-semibold text-sm">${interesMora.toFixed(2)}</span>
-                            <div className="text-xs text-red-500">
-                              {diasMora}d × {contratoSeleccionado?.morosidad}%
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center">
-                            <span className="text-green-600 font-semibold text-sm">$0.00</span>
-                            <div className="text-xs text-green-500">sin mora</div>
-                          </div>
-                        )}
-                      </td>
-
-                      <td className="py-3 px-4">
-  {cuota.cuota_gracia ? (
-    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-      Gracia
-    </span>
-  ) : (
-    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
-      Normal
-    </span>
-  )}
-</td>
-                      
                       <td className="py-3 px-4">
                         {cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido' && (
                           <div className="flex flex-col space-y-2">
@@ -697,7 +848,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                               disabled={loading}
                             >
                               <TbCheck className="mr-1" size={14} />
-                              Confirmar Pago
+                              Confirmar
                             </button>
                             <button
                               className="bg-red-600 text-white px-3 py-2 rounded-lg flex items-center justify-center hover:bg-red-700 transition-colors text-sm w-full"
@@ -705,7 +856,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                               disabled={loading}
                             >
                               <TbX className="mr-1" size={14} />
-                              Rechazar Pago
+                              Rechazar
                             </button>
                           </div>
                         )}
@@ -718,7 +869,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                               disabled={loading}
                             >
                               <TbCheck className="mr-1" size={14} />
-                              Confirmar Pago
+                              Confirmar
                             </button>
                             <span className="text-blue-600 text-xs text-center">
                               Esperando confirmación
@@ -850,12 +1001,6 @@ const AdminDashboard = ({ setUser }) => {
     if (!user) fetchUserData();
   }, [setUser, user]);
 
-  const extraerNumeroCuota = (textoCuota) => {
-    if (!textoCuota) return 1;
-    const match = textoCuota.match(/(\d+)/);
-    return match ? parseInt(match[1]) : 1;
-  };
-
   const calcularFechasCuotas = (contratoData, cuotasData) => {
     if (!contratoData) return cuotasData;
 
@@ -891,6 +1036,7 @@ const AdminDashboard = ({ setUser }) => {
 
     return cuotasConFechas;
   };
+  
 
   const cargarCuotasContrato = async (id_contrato) => {
     try {
@@ -953,14 +1099,25 @@ const AdminDashboard = ({ setUser }) => {
       
       const resultado = await apiCuotas.confirmarPagoIFEMI(id_cuota);
       
-      const cuotasActualizadas = cuotasContrato.map(cuota => 
-        cuota.id_cuota === id_cuota 
-          ? { ...cuota, confirmacionifemi: 'Confirmado' }
-          : cuota
-      );
+      // Actualizar la interfaz
+      const cuotasActualizadas = cuotasContrato.map(cuota => {
+        if (cuota.id_cuota === id_cuota) {
+          return { ...cuota, confirmacionifemi: 'Confirmado' };
+        }
+        return cuota;
+      });
       
       setCuotasContrato(cuotasActualizadas);
-      alert('✅ Pago confirmado exitosamente');
+      
+      // Mostrar mensaje informativo si se recalculó
+      if (resultado.recalculado) {
+        alert('✅ Pago confirmado exitosamente\n\n📊 Las cuotas de gracia se han recalculado automáticamente con el nuevo saldo pendiente.');
+      } else {
+        alert('✅ Pago confirmado exitosamente');
+      }
+      
+      // Recargar las cuotas para ver los cambios
+      await cargarCuotasContrato(contratoSeleccionado.id_contrato);
       
     } catch (error) {
       console.error('Error confirmando pago:', error);
@@ -988,6 +1145,7 @@ const AdminDashboard = ({ setUser }) => {
       
       const resultado = await apiCuotas.rechazarPagoIFEMI(id_cuota, motivo);
       
+      // Actualizar la interfaz
       const cuotasActualizadas = cuotasContrato.map(cuota => 
         cuota.id_cuota === id_cuota 
           ? { 
@@ -1000,7 +1158,16 @@ const AdminDashboard = ({ setUser }) => {
       );
       
       setCuotasContrato(cuotasActualizadas);
-      alert('✅ Pago rechazado exitosamente');
+      
+      // Mostrar mensaje informativo si se recalculó
+      if (resultado.recalculado) {
+        alert('✅ Pago rechazado exitosamente\n\n📊 Las cuotas de gracia se han recalculado automáticamente.');
+      } else {
+        alert('✅ Pago rechazado exitosamente');
+      }
+      
+      // Recargar las cuotas para ver los cambios
+      await cargarCuotasContrato(contratoSeleccionado.id_contrato);
       
     } catch (error) {
       console.error('Error rechazando pago:', error);
@@ -1011,52 +1178,78 @@ const AdminDashboard = ({ setUser }) => {
   };
 
   const recalcularCuotas = async () => {
-  if (!contratoSeleccionado) return;
+    if (!contratoSeleccionado) return;
 
-  try {
-    setLoading(true);
-    
-    const confirmar = window.confirm(
-      `¿Está seguro de recalcular las cuotas pendientes?\n\n` +
-      `Configuración del contrato:\n` +
-      `• Total de cuotas: ${contratoSeleccionado.cuotas}\n` +
-      `• Cuotas de gracia: ${contratoSeleccionado.gracia || 0}\n` +
-      `• Cuotas ya pagadas: ${cuotasContrato.filter(c => c.estado_cuota === 'Pagado').length}\n` +
-      `• Cuotas de gracia usadas: ${cuotasContrato.filter(c => c.cuota_gracia && c.estado_cuota === 'Pagado').length}\n\n` +
-      `Esta acción eliminará todas las cuotas pendientes y las recreará considerando las cuotas de gracia disponibles.`
-    );
+    try {
+      setLoading(true);
+      
+      const cuotasObligatoriasTotal = contratoSeleccionado.cuotas - (contratoSeleccionado.gracia || 0);
+      const cuotasGraciaTotal = contratoSeleccionado.gracia || 0;
+      
+      const confirmar = window.confirm(
+        `¿Está seguro de recalcular las cuotas pendientes?\n\n` +
+        `Configuración del contrato:\n` +
+        `• Total de cuotas: ${contratoSeleccionado.cuotas}\n` +
+        `• Cuotas obligatorias: ${cuotasObligatoriasTotal}\n` +
+        `• Cuotas de gracia: ${cuotasGraciaTotal}\n` +
+        `• Cuotas ya pagadas: ${cuotasContrato.filter(c => c.estado_cuota === 'Pagado').length}\n\n` +
+        `NUEVA LÓGICA: Cada tipo divide la deuda completa por separado\n` +
+        `• Las ${cuotasObligatoriasTotal} cuotas obligatorias dividen la deuda entre ellas\n` +
+        `• Las ${cuotasGraciaTotal} cuotas de gracia también dividen la deuda entre ellas\n` +
+        `• Ambos tipos pueden tener montos diferentes`
+      );
 
-    if (!confirmar) {
+      if (!confirmar) {
+        setLoading(false);
+        return;
+      }
+
+      const resultado = await apiCuotas.recalcularCuotasPendientes(
+        contratoSeleccionado.id_contrato
+      );
+
+      // Mostrar resumen con la nueva lógica
+      if (resultado.resumen) {
+        let mensaje = `✅ ${resultado.message}\n\nResumen del recálculo:\n`;
+
+        if (resultado.resumen.cuotas_obligatorias_generadas > 0) {
+          mensaje += `• Cuotas obligatorias: ${resultado.resumen.cuotas_obligatorias_generadas} de $${resultado.resumen.monto_cuota_obligatoria} cada una\n`;
+        }
+        
+        if (resultado.resumen.cuotas_gracia_generadas > 0) {
+          mensaje += `• Cuotas de gracia: ${resultado.resumen.cuotas_gracia_generadas} de $${resultado.resumen.monto_cuota_gracia} cada una\n`;
+        }
+        
+        mensaje += `• Total nuevas cuotas: ${resultado.resumen.nuevas_cuotas_pendientes}\n`;
+        mensaje += `• Saldo pendiente: $${resultado.resumen.saldo_pendiente}\n\n`;
+        
+        mensaje += `📊 Distribución aplicada:\n`;
+        mensaje += `${resultado.resumen.distribucion_obligatorias}\n`;
+        mensaje += `${resultado.resumen.distribucion_gracia}\n\n`;
+        
+        if (resultado.resumen.ejemplo_calculo_obligatorias) {
+          mensaje += `🧮 ${resultado.resumen.ejemplo_calculo_obligatorias}\n`;
+        }
+        if (resultado.resumen.ejemplo_calculo_gracia) {
+          mensaje += `🧮 ${resultado.resumen.ejemplo_calculo_gracia}\n`;
+        }
+        
+        mensaje += `\n💡 Lógica: ${resultado.resumen.logica_aplicada}`;
+
+        alert(mensaje);
+      } else {
+        alert('✅ ' + resultado.message);
+      }
+      
+      await cargarCuotasContrato(contratoSeleccionado.id_contrato);
+      
+    } catch (error) {
+      console.error('Error recalculando cuotas:', error);
+      alert('❌ Error al recalcular: ' + error.message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const resultado = await apiCuotas.recalcularCuotasPendientes(
-      contratoSeleccionado.id_contrato
-    );
-
-    // Mostrar resumen detallado
-    if (resultado.resumen) {
-      alert(`✅ ${resultado.message}\n\n` +
-        `Resumen del recálculo:\n` +
-        `• Cuotas con gracia aplicadas: ${resultado.resumen.cuotas_con_gracia}\n` +
-        `• Cuotas normales: ${resultado.resumen.cuotas_normales}\n` +
-        `• Monto por cuota normal: $${resultado.resumen.monto_cuota_normal}\n` +
-        `• Total nuevas cuotas: ${resultado.resumen.nuevas_cuotas_pendientes}\n` +
-        `• Saldo pendiente: $${resultado.resumen.saldo_pendiente}`);
-    } else {
-      alert('✅ ' + resultado.message);
-    }
-    
-    await cargarCuotasContrato(contratoSeleccionado.id_contrato);
-    
-  } catch (error) {
-    console.error('Error recalculando cuotas:', error);
-    alert('❌ Error al recalcular: ' + error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const fueRecalculado = (idContrato) => {
     return contratosRecalculados.has(idContrato);
@@ -1179,7 +1372,7 @@ const AdminDashboard = ({ setUser }) => {
           
           <main className="flex-1 p-6 bg-gray-50">
             <HeaderSection
-              title={`Cuotas de ${contratoSeleccionado.cedula_emprendedor}`}
+              title={`Cuotas de ${contratoSeleccionado.nombre_completo}`}
               subtitle={`Contrato: ${contratoSeleccionado.numero_contrato}`}
               showBackButton={true}
             >
@@ -1189,14 +1382,14 @@ const AdminDashboard = ({ setUser }) => {
                   Exportar
                 </button>
                 
-                  <button 
-                    className="bg-amber-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-amber-600 transition-colors"
-                    onClick={recalcularCuotas}
-                    disabled={loading}
-                  >
-                    <TbRefresh className="mr-2" size={16} />
-                    {loading ? 'Procesando...' : 'Generar cuotas'}
-                  </button>
+                <button 
+                  className="bg-amber-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-amber-600 transition-colors"
+                  onClick={recalcularCuotas}
+                  disabled={loading}
+                >
+                  <TbRefresh className="mr-2" size={16} />
+                  {loading ? 'Procesando...' : 'Generar cuotas'}
+                </button>
               </div>
             </HeaderSection>
 
