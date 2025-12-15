@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { TbUser, TbLock, TbLogin, TbAlertCircle } from "react-icons/tb";
 import miImagen from "../assets/image/logo_ifemi.jpg";
 
-const Login = ({ setUser }) => {
+const LoginAdmin = ({ setUser }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,8 +56,10 @@ const Login = ({ setUser }) => {
 
       const user = response.data.user;
 
-      // 🔒 CONDICIÓN: Verificar que sea un emprendedor
-      if (user.rol !== "Emprendedor") {
+      // 🔒 CONDICIÓN: Verificar que sea Administrador, Credito1 o Credito2
+      const usuariosPermitidos = ["administrador", "credito1", "credito2"];
+      
+      if (!usuariosPermitidos.includes(user.rol?.toLowerCase())) {
         Swal.fire({
           icon: "error",
           title: "Acceso restringido",
@@ -66,8 +68,9 @@ const Login = ({ setUser }) => {
               <div class="text-red-500 text-6xl mb-4">
                 <i class="fas fa-user-lock"></i>
               </div>
-              <p class="text-lg mb-2">Solo los emprendedores pueden acceder a esta plataforma.</p>
-              <p class="text-sm text-gray-600">Si eres administrativo, utiliza el sistema correspondiente.</p>
+              <p class="text-lg mb-2">Acceso exclusivo para personal autorizado.</p>
+              <p class="text-sm text-gray-600">Solo pueden ingresar: Administrador, Credito1 y Credito2.</p>
+              <p class="text-xs text-gray-500 mt-2">Tipo de usuario detectado: <strong>${user.rol || 'No definido'}</strong></p>
             </div>
           `,
           confirmButtonColor: "#dc2626",
@@ -96,9 +99,16 @@ const Login = ({ setUser }) => {
 
       if (setUser) setUser(user);
 
+      // Mensaje personalizado según el tipo de usuario
+      const mensajesBienvenida = {
+        "administrador": "¡Bienvenido Administrador!",
+        "credito1": "¡Bienvenido Usuario de Crédito 1!",
+        "credito2": "¡Bienvenido Usuario de Crédito 2!"
+      };
+
       Swal.fire({
         icon: "success",
-        title: "¡Bienvenido Emprendedor!",
+        title: mensajesBienvenida[user.rol.toLowerCase()] || "¡Bienvenido!",
         text: response.data.message || "Inicio de sesión exitoso",
         timer: 1500,
         showConfirmButton: false,
@@ -117,15 +127,11 @@ const Login = ({ setUser }) => {
     }
   };
 
-  const handleRegisterRedirect = () => {
-    navigate("/RegistroEmprendedor");
-  };
-
-  const handleAdminRedirect = () => {
+  const handleEmprendedorRedirect = () => {
     Swal.fire({
       icon: "info",
-      title: "Acceso administrativo",
-      text: "Los usuarios administrativos deben utilizar el sistema correspondiente.",
+      title: "Acceso para emprendedores",
+      text: "Los emprendedores deben utilizar el sistema correspondiente.",
       confirmButtonText: "Entendido"
     });
   };
@@ -161,11 +167,11 @@ const Login = ({ setUser }) => {
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="mb-8 text-4xl font-serif text-center text-gray-800 tracking-wide"
+            className="mb-6 text-4xl font-serif text-center text-gray-800 tracking-wide"
           >
-            Inicio de sesión
+            Acceso Administrativo
           </motion.h2>
-          
+
           {/* Información de acceso */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -175,9 +181,14 @@ const Login = ({ setUser }) => {
           >
             <div className="flex items-start">
               <TbAlertCircle className="text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-              <p className="text-sm text-blue-700">
-                <strong>Acceso exclusivo para emprendedores</strong>
-              </p>
+              <div>
+                <p className="text-sm text-blue-700 font-semibold mb-1">
+                  Acceso exclusivo para personal autorizado
+                </p>
+                <p className="text-xs text-blue-600">
+                  Usuarios permitidos: <strong>Administrador, Credito1, Credito2</strong>
+                </p>
+              </div>
             </div>
           </motion.div>
 
@@ -241,45 +252,45 @@ const Login = ({ setUser }) => {
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Verificando...</span>
+                  <span>Verificando acceso...</span>
                 </>
               ) : (
                 <>
                   <TbLogin size={20} />
-                  <span>Ingresar</span>
+                  <span>Ingresar al Sistema</span>
                 </>
               )}
             </motion.button>
           </form>
 
-          {/* Enlace para registrarse */}
-          <p className="mt-6 text-center text-sm text-gray-600">
-            ¿No tienes cuenta?{" "}
-            <button
-              onClick={handleRegisterRedirect}
-              disabled={loading}
-              className="text-blue-600 hover:underline font-medium focus:outline-none disabled:opacity-50"
-            >
-              Regístrate aquí
-            </button>
-          </p>
-
-          {/* Información administrativa */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
+          {/* Información para emprendedores */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
             <p className="text-xs text-center text-gray-500">
-              ¿Eres usuario administrativo?{" "}
+              ¿Eres emprendedor?{" "}
               <button
-                onClick={handleAdminRedirect}
+                onClick={handleEmprendedorRedirect}
                 className="text-gray-600 hover:text-gray-800 underline font-medium"
               >
-                Contacta al administrador
+                Accede al sistema de emprendedores
               </button>
             </p>
           </div>
+
+          {/* Información de seguridad */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1 }}
+            className="mt-4 p-3 bg-gray-100 rounded-lg border border-gray-200"
+          >
+            <p className="text-xs text-gray-600 text-center">
+              <strong>Sistema administrativo IFE</strong> - Acceso restringido
+            </p>
+          </motion.div>
         </div>
       </motion.main>
     </div>
   );
 };
 
-export default Login;
+export default LoginAdmin;

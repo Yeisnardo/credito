@@ -62,26 +62,30 @@ CREATE TABLE requerimiento_emprendedor (
   id_req SERIAL PRIMARY KEY,
   cedula_emprendedor VARCHAR(20) NOT NULL,
   opt_requerimiento TEXT,
-  vereficacion TEXT,
+  verificacion TEXT,
   CONSTRAINT fk_emprendedor FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula),
   CONSTRAINT fk_requerimiento FOREIGN KEY (id_req) REFERENCES requerimientos(id_requerimientos)
 );
 
 CREATE TABLE requerimiento_archivo (
   id_archivo SERIAL PRIMARY KEY,
+  id_req INT,
   cedula_emprendedor VARCHAR(20) NOT NULL,
   archivo TEXT,
-  fecha_llevar DATE
+  fecha_llevar DATE,
+  FOREIGN KEY (id_req) REFERENCES requerimiento_emprendedor (id_req)
 );
 
 --TABLA DE SOLICITUD
 CREATE TABLE solicitud (
   id_contrato SERIAL PRIMARY KEY,
+  id_req INT,
   cedula_emprendedor VARCHAR(20) ,
   motivo VARCHAR (1000) NOT NULL,
   estatus VARCHAR (20),
   motivo_rechazo TEXT,
-  CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE
+  CONSTRAINT fk_solicitud_persona FOREIGN KEY (cedula_emprendedor) REFERENCES persona(cedula) ON DELETE CASCADE,
+  FOREIGN KEY (id_req) REFERENCES requerimiento_emprendedor (id_req)
 );
 
 -- Cuenta Bancaria
@@ -146,14 +150,17 @@ CREATE TABLE cuota (
   id_cuota INT PRIMARY KEY,
   id_cuota_c INT NOT NULL, 
   cedula_emprendedor VARCHAR(20) NOT NULL,
+  fecha_desde TEXT,
+  fecha_hasta TEXT,
   semana VARCHAR(255) NOT NULL,
   monto VARCHAR(255) NOT NULL,
   monto_ves VARCHAR(255) NOT NULL,
-  fecha_pagada TEXT NOT NULL,
+  fecha_pagada TEXT,
   estado_cuota VARCHAR(50) NOT NULL, -- Ejemplo: 'Pendiente', 'Pagado'
   dias_mora_cuota INT DEFAULT 0,
   interes_acumulado VARCHAR(255),
   monto_morosidad TEXT,
+  cuota_gracia TEXT,
   confirmacionIFEMI VARCHAR(255), -- Puede ser un código o estado de confirmación
   comprobante TEXT, -- Ruta o nombre del archivo almacenado
   FOREIGN KEY (id_cuota_c) REFERENCES contrato (id_contrato)

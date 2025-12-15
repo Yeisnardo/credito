@@ -6,7 +6,7 @@ import Menu from "../components/Menu";
 import apiCuotas from "../services/api_cuotas";
 import { generarReciboPagoProfesional, generarResumenUsuario } from '../pdf/reciboPago';
 
-// Importar Tabler Icons - CORREGIDOS
+// Importar Tabler Icons
 import {
   TbHome,
   TbClock,
@@ -26,21 +26,21 @@ import {
   TbTrendingDown,
   TbMinus,
   TbFile,
-  TbConfetti, // Reemplaza TbParty
+  TbConfetti,
   TbTransfer,
   TbCalendarPlus,
   TbCalendarMinus,
   TbCopyright,
   TbUser,
-  TbCurrencyDollar, // Reemplaza TbDollar
+  TbCurrencyDollar,
   TbId,
   TbCoin,
-  TbReceipt2, // Reemplaza TbReceipt
+  TbReceipt2,
   TbArrowRight,
   TbChevronRight,
-  TbCurrencyBitcoin, // Alternativa para moneda
-  TbStar, // Para estados destacados
-  TbAlertTriangle // Para advertencias
+  TbCurrencyBitcoin,
+  TbStar,
+  TbAlertTriangle
 } from 'react-icons/tb';
 
 const EmprendedorDashboard = ({ setUser }) => {
@@ -66,7 +66,7 @@ const EmprendedorDashboard = ({ setUser }) => {
   });
 
   // =============================================
-  // FUNCIONES DE ORDENAMIENTO - CORREGIDAS
+  // FUNCIONES DE ORDENAMIENTO
   // =============================================
 
   const extraerNumeroCuota = (textoSemana) => {
@@ -128,35 +128,14 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // FUNCIONES PRINCIPALES
+  // SISTEMA DE CRONÓMETROS - CÁLCULO DE TIEMPOS - CORREGIDO
   // =============================================
 
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
-
-  const handleViewPdf = () => {
-    const doc = generarResumenUsuario(user, stats);
-    const pdfBlob = doc.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    window.open(pdfUrl);
-  };
-
-  const recargarDatos = () => {
-    if (user?.cedula) {
-      cargarDatosEmprendedor(user.cedula);
-    }
-  };
-
-  // =============================================
-  // SISTEMA DE CRONÓMETROS - CÁLCULO DE TIEMPOS
-  // =============================================
-
-  const calcularDiasRestantes = () => {
+  const calcularDiasRestantes = (cuotas = cuotasPendientes) => {
     const ahora = new Date();
     const nuevosDiasRestantes = {};
     
-    cuotasPendientes.forEach((cuota) => {
+    cuotas.forEach((cuota) => {
       if (cuota.fecha_hasta) {
         const fechaHasta = new Date(cuota.fecha_hasta);
         const diffTime = fechaHasta - ahora;
@@ -166,13 +145,14 @@ const EmprendedorDashboard = ({ setUser }) => {
     });
     
     setDiasRestantes(nuevosDiasRestantes);
+    return nuevosDiasRestantes;
   };
 
-  const calcularDiasMorosidad = () => {
+  const calcularDiasMorosidad = (cuotas = cuotasPendientes) => {
     const ahora = new Date();
     const nuevosDiasMorosidad = {};
     
-    cuotasPendientes.forEach((cuota) => {
+    cuotas.forEach((cuota) => {
       if (cuota.fecha_hasta) {
         const fechaHasta = new Date(cuota.fecha_hasta);
         
@@ -187,10 +167,11 @@ const EmprendedorDashboard = ({ setUser }) => {
     });
     
     setDiasMorosidad(nuevosDiasMorosidad);
+    return nuevosDiasMorosidad;
   };
 
   // =============================================
-  // CÁLCULO DE INTERESES DE MOROSIDAD - USANDO CONTRATO
+  // CÁLCULO DE INTERESES DE MOROSIDAD - MEJORADO
   // =============================================
 
   const calcularInteresMorosidad = (diasMora, montoOriginal) => {
@@ -219,6 +200,27 @@ const EmprendedorDashboard = ({ setUser }) => {
       return "No configurado";
     }
     return `${contrato.morosidad}% diario`;
+  };
+
+  // =============================================
+  // FUNCIONES PRINCIPALES
+  // =============================================
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
+  const handleViewPdf = () => {
+    const doc = generarResumenUsuario(user, stats);
+    const pdfBlob = doc.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl);
+  };
+
+  const recargarDatos = () => {
+    if (user?.cedula) {
+      cargarDatosEmprendedor(user.cedula);
+    }
   };
 
   // =============================================
@@ -316,7 +318,7 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // CARGA DE DATOS DEL EMPRENDEDOR - CORREGIDA
+  // CARGA DE DATOS DEL EMPRENDEDOR - MEJORADA
   // =============================================
 
   const cargarDatosEmprendedor = async (cedula) => {
@@ -368,7 +370,12 @@ const EmprendedorDashboard = ({ setUser }) => {
       const cuotasOrdenadas = ordenarCuotasNumericamente(cuotasConFechas);
       
       setCuotasPendientes(cuotasOrdenadas);
-      calcularEstadisticas(cuotasOrdenadas, historialOrdenado, contratoData);
+      
+      // CALCULAR MOROSIDAD INMEDIATAMENTE DESPUÉS DE CARGAR CUOTAS
+      const nuevosDiasMorosidad = calcularDiasMorosidad(cuotasOrdenadas);
+      const nuevosDiasRestantes = calcularDiasRestantes(cuotasOrdenadas);
+      
+      calcularEstadisticas(cuotasOrdenadas, historialOrdenado, contratoData, nuevosDiasMorosidad);
       
     } catch (error) {
       console.error('Error cargando datos del emprendedor:', error);
@@ -410,7 +417,11 @@ const EmprendedorDashboard = ({ setUser }) => {
     return diasMora > 0;
   };
 
-  const calcularEstadisticas = (pendientes, historial, contratoData) => {
+  // =============================================
+  // CÁLCULO DE ESTADÍSTICAS - MEJORADO
+  // =============================================
+
+  const calcularEstadisticas = (pendientes, historial, contratoData, diasMorosidadData = diasMorosidad) => {
     const totalPagado = historial.reduce((sum, pago) => {
       return sum + parseFloat(pago.monto || 0);
     }, 0);
@@ -419,10 +430,12 @@ const EmprendedorDashboard = ({ setUser }) => {
       return sum + parseFloat(cuota.monto || 0);
     }, 0);
 
+    // CALCULAR MORA TOTAL CON LOS DIAS DE MOROSIDAD ACTUALES
     const totalMora = pendientes.reduce((sum, cuota) => {
-      if (estaEnMora(cuota)) {
-        const diasMora = diasMorosidad[cuota.id_cuota] || 0;
-        return sum + calcularInteresMorosidad(diasMora, cuota.monto);
+      const diasMora = diasMorosidadData[cuota.id_cuota] || 0;
+      if (diasMora > 0) {
+        const interes = calcularInteresMorosidad(diasMora, cuota.monto);
+        return sum + interes;
       }
       return sum;
     }, 0);
@@ -436,6 +449,13 @@ const EmprendedorDashboard = ({ setUser }) => {
       proximasCuotas: pendientes.length,
       progreso: Math.round(progreso),
       totalMora
+    });
+
+    console.log('📊 Estadísticas calculadas:', {
+      totalPagado,
+      totalPendiente,
+      totalMora,
+      diasMorosidadData
     });
   };
 
@@ -589,7 +609,7 @@ const EmprendedorDashboard = ({ setUser }) => {
   };
 
   // =============================================
-  // COMPONENTES VISUALES MEJORADOS
+  // COMPONENTES VISUALES (MANTENIDOS IGUAL)
   // =============================================
 
   const LayoutContainer = ({ children, title, subtitle, actionButton }) => (
@@ -708,12 +728,12 @@ const EmprendedorDashboard = ({ setUser }) => {
         trend="neutral"
       />
       <StatsCard
-        titulo="Progreso"
-        valor={`${stats.progreso}%`}
-        subtitulo="Del total"
-        color="purple"
-        icono={<TbTrendingUp size={24} className="text-purple-600" />}
-        trend="positive"
+        titulo="Interés Mora"
+        valor={`$${stats.totalMora.toFixed(2)}`}
+        subtitulo="Acumulado"
+        color="red"
+        icono={<TbAlertCircle size={24} className="text-red-600" />}
+        trend="warning"
       />
     </div>
   );
@@ -1290,7 +1310,7 @@ const EmprendedorDashboard = ({ setUser }) => {
   );
 
   // =============================================
-  // EFFECTS
+  // EFFECTS MEJORADOS
   // =============================================
 
   useEffect(() => {
@@ -1299,13 +1319,15 @@ const EmprendedorDashboard = ({ setUser }) => {
 
   useEffect(() => {
     if (cuotasPendientes.length > 0) {
+      // Calcular inmediatamente al cargar cuotas
       calcularDiasRestantes();
       calcularDiasMorosidad();
       
+      // Actualizar cada hora
       const interval = setInterval(() => {
         calcularDiasRestantes();
         calcularDiasMorosidad();
-      }, 1000 * 60 * 60);
+      }, 1000 * 60 * 60); // Cada hora
       
       return () => clearInterval(interval);
     }

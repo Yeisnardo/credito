@@ -17,7 +17,7 @@ import {
 } from "../services/api_solicitud";
 import apiArchivo from "../services/api_archivo";
 
-// Importar Tabler Icons - ADDED MISSING IMPORTS
+// Importar Tabler Icons
 import {
   TbX,
   TbCheck,
@@ -43,9 +43,8 @@ import {
   TbDownload,
   TbInfoCircle,
   TbAlertCircle,
-  TbPhoto, // ADDED THIS IMPORT
-  TbEdit as TbEditAlt, // ALIAS FOR TbEdit since TbEditAlt doesn't exist
-  TbCircleCheck // ADDED FOR APPROVED STATUS
+  TbPhoto,
+  TbCircleCheck
 } from "react-icons/tb";
 
 // Componente Modal mejorado para visualización de imagen
@@ -65,76 +64,90 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
   }, [isOpen, solicitud]);
 
   const cargarImagenSolicitud = async () => {
-    if (!solicitud?.cedula_emprendedor) {
-      setErrorImagen("No hay información completa de la solicitud");
-      return;
+  if (!solicitud?.cedula_emprendedor || !solicitud?.id_req) {
+    setErrorImagen("No hay información completa de la solicitud");
+    return;
+  }
+  
+  setCargandoImagen(true);
+  setErrorImagen(null);
+  setImagenArchivo(null);
+  
+  try {
+    console.log('🔍 Buscando imagen para:', {
+      cedula: solicitud.cedula_emprendedor,
+      id_req: solicitud.id_req,
+      id_contrato: solicitud.id_contrato
+    });
+    
+    // 🔥 CAMBIO: Buscar archivos por id_req en lugar de cédula
+    let archivos = [];
+    
+    // Primero intentar buscar por id_req específico
+    try {
+      archivos = await apiArchivo.getArchivosByReq(solicitud.id_req);
+      console.log('📁 Archivos por id_req:', archivos);
+    } catch (error) {
+      console.log('⚠️ No se encontraron archivos por id_req, buscando por cédula...');
+      // Fallback: buscar por cédula
+      archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
+      console.log('📁 Archivos por cédula:', archivos);
     }
     
-    setCargandoImagen(true);
-    setErrorImagen(null);
-    setImagenArchivo(null);
-    
-    try {
-      console.log('🔍 Buscando imagen para cédula:', solicitud.cedula_emprendedor);
-      console.log('📋 Información de solicitud:', solicitud);
+    if (archivos && archivos.length > 0) {
+      // Buscar archivo que coincida con el id_req de la solicitud
+      let archivo = archivos.find(a => a.id_req === solicitud.id_req);
       
-      const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(solicitud.cedula_emprendedor);
-      console.log('📁 Archivos obtenidos:', archivos);
-      
-      if (archivos && archivos.length > 0) {
-        // Buscar archivo que coincida con la solicitud actual
-        let archivo = archivos.find(a => a.id_req === solicitud.id_req);
-        
-        // Si no encuentra por id_req, tomar el más reciente
-        if (!archivo) {
-          archivo = archivos[0];
-          console.log('⚠️ Usando archivo más reciente en lugar del específico');
-        }
-        
-        console.log('🎯 Archivo seleccionado:', archivo);
-        
-        let urlImagen = null;
-        
-        // Priorizar la URL proporcionada por el backend
-        if (archivo.url) {
-          urlImagen = archivo.url;
-        } 
-        // Si tenemos el nombre del archivo, construir URL
-        else if (archivo.archivo) {
-          urlImagen = apiArchivo.obtenerUrlImagen 
-            ? apiArchivo.obtenerUrlImagen(archivo.archivo)
-            : `http://localhost:5000/uploads/${archivo.archivo}`;
-        }
-        
-        if (urlImagen) {
-          console.log('🖼️ URL de imagen construida:', urlImagen);
-          
-          // Verificar que la imagen sea accesible usando fetch
-          try {
-            const response = await fetch(urlImagen, { method: 'HEAD' });
-            if (response.ok) {
-              setImagenArchivo(urlImagen);
-              setCargandoImagen(false);
-            } else {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-          } catch (fetchError) {
-            console.error('❌ Error al verificar imagen:', fetchError);
-            throw new Error('La imagen no es accesible desde el servidor');
-          }
-        } else {
-          throw new Error("No se pudo generar la URL de la imagen");
-        }
-      } else {
-        throw new Error("No se encontraron archivos para esta solicitud");
+      // Si no encuentra por id_req, tomar el más reciente
+      if (!archivo) {
+        archivo = archivos[0];
+        console.log('⚠️ Usando archivo más reciente en lugar del específico');
       }
       
-    } catch (error) {
-      console.error("❌ Error al cargar la imagen:", error);
-      setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
-      setCargandoImagen(false);
+      console.log('🎯 Archivo seleccionado:', archivo);
+      
+      let urlImagen = null;
+      
+      // Priorizar la URL proporcionada por el backend
+      if (archivo.url) {
+        urlImagen = archivo.url;
+      } 
+      // Si tenemos el nombre del archivo, construir URL
+      else if (archivo.archivo) {
+        urlImagen = apiArchivo.obtenerUrlImagen 
+          ? apiArchivo.obtenerUrlImagen(archivo.archivo)
+          : `http://localhost:5000/uploads/${archivo.archivo}`;
+      }
+      
+      if (urlImagen) {
+        console.log('🖼️ URL de imagen construida:', urlImagen);
+        
+        // Verificar que la imagen sea accesible usando fetch
+        try {
+          const response = await fetch(urlImagen, { method: 'HEAD' });
+          if (response.ok) {
+            setImagenArchivo(urlImagen);
+            setCargandoImagen(false);
+          } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+        } catch (fetchError) {
+          console.error('❌ Error al verificar imagen:', fetchError);
+          throw new Error('La imagen no es accesible desde el servidor');
+        }
+      } else {
+        throw new Error("No se pudo generar la URL de la imagen");
+      }
+    } else {
+      throw new Error("No se encontraron archivos para esta solicitud");
     }
-  };
+    
+  } catch (error) {
+    console.error("❌ Error al cargar la imagen:", error);
+    setErrorImagen(`Error: ${error.message || "No se pudo cargar la imagen"}`);
+    setCargandoImagen(false);
+  }
+};
 
   const abrirModalImagen = (imagenUrl) => {
     setModalImagen({ open: true, imagenUrl });
@@ -398,7 +411,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
                 onClick={() => {
                   const link = document.createElement('a');
                   link.href = modalImagen.imagenUrl;
-                  link.download = `documento-solicitud-${solicitud.id_req}.jpg`;
+                  link.download = `documento-solicitud-${solicitud.id_contrato}.jpg`;
                   link.click();
                 }}
                 className="hover:text-blue-300 transition-colors flex items-center gap-2"
@@ -427,7 +440,7 @@ const ModalDetalles = ({ solicitud, requerimientos, isOpen, onClose }) => {
 
             {/* Información de la imagen */}
             <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm z-10">
-              Solicitud #{solicitud.id_req} • {new Date(solicitud.fecha_creacion).toLocaleDateString()}
+              Solicitud #{solicitud.id_contrato} • {new Date(solicitud.fecha_creacion).toLocaleDateString()}
             </div>
           </div>
         </div>
@@ -881,7 +894,7 @@ const Step3Motivo = ({
   </div>
 );
 
-// Componente SolicitudCard con indicador de imagen - FIXED ICON ISSUES
+// Componente SolicitudCard con indicador de imagen
 const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
   const [tieneImagen, setTieneImagen] = useState(false);
   const [verificandoImagen, setVerificandoImagen] = useState(false);
@@ -949,7 +962,7 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-bold text-gray-800 text-lg group-hover:text-blue-600 transition-colors">
-            Solicitud #{solicitud.id_req || "N/A"}
+            Solicitud #{solicitud.id_contrato || "N/A"}
           </h3>
           <p className="text-gray-500 text-sm flex items-center mt-1">
             <TbCalendar size={14} className="mr-1" />
@@ -1047,7 +1060,7 @@ const SolicitudCard = ({ solicitud, requerimientos, onVerDetalles }) => {
           Ver Detalles
         </button>
         <div className="text-gray-400 text-xs bg-gray-100 px-2 py-1 rounded-full">
-          ID: {solicitud.id_req || "N/A"}
+          ID: {solicitud.id_contrato || "N/A"}
         </div>
       </div>
     </div>
@@ -1147,7 +1160,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {solicitudes.map((solicitud, index) => (
             <SolicitudCard 
-              key={solicitud.id_req || index}
+              key={solicitud.id_contrato || index}
               solicitud={solicitud}
               requerimientos={requerimientos}
               onVerDetalles={onVerDetalles}
@@ -1181,7 +1194,7 @@ const ListaSolicitudes = ({ solicitudes, requerimientos, onNuevaSolicitud, onVer
   );
 };
 
-// Componente FormularioSolicitud - FIXED TbEditAlt ISSUE
+// Componente FormularioSolicitud
 const FormularioSolicitud = ({ 
   requerimientos, 
   formData, 
@@ -1416,47 +1429,77 @@ const RequireSolicit = ({ setUser }) => {
   }, []);
 
   useEffect(() => {
-    const obtenerSolicitudes = async () => {
-      if (user?.cedula_usuario) {
-        try {
-          const datosExistentes = await getRequerimientoEmprendedor(
-            user.cedula_usuario
+  const obtenerSolicitudes = async () => {
+    if (user?.cedula_usuario) {
+      try {
+        const datosExistentes = await getRequerimientoEmprendedor(user.cedula_usuario);
+        const solicitudesData = await getSolicitudPorCedula(user.cedula_usuario);
+        
+        console.log('📋 Datos existentes (requerimientos):', datosExistentes);
+        console.log('📋 Solicitudes data:', solicitudesData);
+        
+        let solicitudesCompletas = [];
+        
+        if (Array.isArray(solicitudesData)) {
+          solicitudesCompletas = solicitudesData.map(solicitud => {
+            // 🔥 CAMBIO: Buscar por id_req en lugar de id_contrato
+            const requerimientoCorrespondiente = datosExistentes.find(
+              item => item.id_req === solicitud.id_req // Cambiado a id_req
+            );
+            
+            console.log(`🔍 Buscando requerimiento para solicitud ${solicitud.id_contrato}:`, {
+              id_req_solicitud: solicitud.id_req,
+              requerimiento_encontrado: requerimientoCorrespondiente
+            });
+            
+            let requerimientosSolicitud = [];
+            if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
+              try {
+                requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
+              } catch (error) {
+                console.error('Error parseando opt_requerimiento:', error);
+                requerimientosSolicitud = [];
+              }
+            }
+            
+            return {
+              ...solicitud,
+              requerimientos: requerimientosSolicitud,
+              id_req: solicitud.id_req // Asegurarnos de que tenga id_req
+            };
+          });
+        } else if (solicitudesData) {
+          // 🔥 CAMBIO: Buscar por id_req en lugar de id_contrato
+          const requerimientoCorrespondiente = datosExistentes.find(
+            item => item.id_req === solicitudesData.id_req // Cambiado a id_req
           );
           
-          if (datosExistentes && Array.isArray(datosExistentes) && datosExistentes.length > 0) {
-            const solicitudesData = await getSolicitudPorCedula(user.cedula_usuario);
-            
-            if (Array.isArray(solicitudesData)) {
-              const solicitudesCompletas = solicitudesData.map(solicitud => {
-                const requerimientosSolicitud = datosExistentes
-                  .filter(item => item.id_req === solicitud.id_req)
-                  .map(item => item.id_requerimientos);
-                
-                return {
-                  ...solicitud,
-                  requerimientos: requerimientosSolicitud
-                };
-              });
-              
-              setSolicitudes(solicitudesCompletas);
-            } else if (solicitudesData) {
-              const requerimientosSolicitud = datosExistentes
-                .filter(item => item.id_req === solicitudesData.id_req)
-                .map(item => item.id_requerimientos);
-              
-              setSolicitudes([{
-                ...solicitudesData,
-                requerimientos: requerimientosSolicitud
-              }]);
+          let requerimientosSolicitud = [];
+          if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
+            try {
+              requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
+            } catch (error) {
+              console.error('Error parseando opt_requerimiento:', error);
+              requerimientosSolicitud = [];
             }
           }
-        } catch (error) {
-          console.error("Error obteniendo solicitudes:", error);
+          
+          solicitudesCompletas = [{
+            ...solicitudesData,
+            requerimientos: requerimientosSolicitud,
+            id_req: solicitudesData.id_req
+          }];
         }
+        
+        console.log('🔄 Solicitudes completas procesadas:', solicitudesCompletas);
+        setSolicitudes(solicitudesCompletas);
+      } catch (error) {
+        console.error("Error obteniendo solicitudes:", error);
       }
-    };
-    obtenerSolicitudes();
-  }, [user]);
+    }
+  };
+  obtenerSolicitudes();
+}, [user]);
 
   useEffect(() => {
     if (requerimientos.length > 0) {
@@ -1508,111 +1551,182 @@ const RequireSolicit = ({ setUser }) => {
     }
   };
 
-  const enviarRequerimiento = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+
+  // Función para recargar los datos de las solicitudes
+// Función para recargar los datos de las solicitudes
+const recargarDatosSolicitudes = async () => {
+  if (user?.cedula_usuario) {
     try {
-      const formDataSolicitud = new FormData();
-      formDataSolicitud.append(
-        "cedula_emprendedor",
-        formData.cedula_emprendedor
-      );
-      formDataSolicitud.append("motivo", formData.motivo);
-      formDataSolicitud.append("estatus", "Pendiente");
-      if (formData.fecha_llevar) {
-        formDataSolicitud.append("fecha_llevar", formData.fecha_llevar);
-      }
-      const solicitudResponse = await createSolicitud(formDataSolicitud);
-      const id_req = solicitudResponse.id_req;
-
-      if (formData.archivo) {
-        const datosArchivo = {
-          cedula_emprendedor: formData.cedula_emprendedor,
-          fecha_llevar: formData.fecha_llevar,
-          id_req: id_req,
-        };
-        await subirArchivo(formData.archivo, datosArchivo);
-      }
-
-      await createRequerimientoEmprendedor({
-        cedula_emprendedor: formData.cedula_emprendedor,
-        opt_requerimiento: formData.opt_requerimiento,
-        id_req: id_req
-      });
-
-      const datosCompletos = await getRequerimientoEmprendedor(
-        formData.cedula_emprendedor
-      );
-      const solicitudesCompletas = await getSolicitudPorCedula(
-        formData.cedula_emprendedor
-      );
-
-      let nuevasSolicitudes = [];
+      const datosExistentes = await getRequerimientoEmprendedor(user.cedula_usuario);
+      const solicitudesData = await getSolicitudPorCedula(user.cedula_usuario);
       
-      if (Array.isArray(solicitudesCompletas)) {
-        nuevasSolicitudes = solicitudesCompletas.map(solicitud => {
-          const requerimientosSolicitud = datosCompletos
-            .filter(item => item.id_req === solicitud.id_req)
-            .map(item => item.id_requerimientos);
+      console.log('🔄 Recargando datos - Requerimientos:', datosExistentes);
+      console.log('🔄 Recargando datos - Solicitudes:', solicitudesData);
+      
+      let solicitudesCompletas = [];
+      
+      if (Array.isArray(solicitudesData)) {
+        solicitudesCompletas = solicitudesData.map(solicitud => {
+          // 🔥 CAMBIO: Buscar por id_req
+          const requerimientoCorrespondiente = datosExistentes.find(
+            item => item.id_req === solicitud.id_req
+          );
+          
+          console.log(`🔍 Recarga - Buscando requerimiento para solicitud ${solicitud.id_contrato}:`, {
+            id_req_solicitud: solicitud.id_req,
+            requerimiento_encontrado: requerimientoCorrespondiente
+          });
+          
+          let requerimientosSolicitud = [];
+          if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
+            try {
+              requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
+            } catch (error) {
+              console.error('Error parseando opt_requerimiento:', error);
+              requerimientosSolicitud = [];
+            }
+          }
           
           return {
             ...solicitud,
-            requerimientos: requerimientosSolicitud
+            requerimientos: requerimientosSolicitud,
+            id_req: solicitud.id_req
           };
         });
-      } else if (solicitudesCompletas) {
-        const requerimientosSolicitud = datosCompletos
-          .filter(item => item.id_req === solicitudesCompletas.id_req)
-          .map(item => item.id_requerimientos);
+      } else if (solicitudesData) {
+        // 🔥 CAMBIO: Buscar por id_req
+        const requerimientoCorrespondiente = datosExistentes.find(
+          item => item.id_req === solicitudesData.id_req
+        );
         
-        nuevasSolicitudes = [{
-          ...solicitudesCompletas,
-          requerimientos: requerimientosSolicitud
+        let requerimientosSolicitud = [];
+        if (requerimientoCorrespondiente && requerimientoCorrespondiente.opt_requerimiento) {
+          try {
+            requerimientosSolicitud = JSON.parse(requerimientoCorrespondiente.opt_requerimiento) || [];
+          } catch (error) {
+            console.error('Error parseando opt_requerimiento:', error);
+            requerimientosSolicitud = [];
+          }
+        }
+        
+        solicitudesCompletas = [{
+          ...solicitudesData,
+          requerimientos: requerimientosSolicitud,
+          id_req: solicitudesData.id_req
         }];
       }
-
-      setSolicitudes(nuevasSolicitudes);
-      setMostrarFormulario(false);
-
-      setMotivo("");
-      setFormData({
-        cedula_emprendedor: user?.cedula_usuario || "",
-        opt_requerimiento: [],
-        archivo: null,
-        fecha_llevar: "",
-        motivo: "",
-      });
-      setStep(1);
-      setErrors({});
-
-      Swal.fire({
-        title: "¡Éxito!",
-        text: "Solicitud enviada correctamente",
-        icon: "success",
-        confirmButtonColor: "#0F3C5B",
-        background: "#f8fafc",
-        customClass: {
-          popup: "rounded-2xl shadow-2xl",
-          title: "text-xl font-bold",
-        },
-      });
+      
+      console.log('✅ Solicitudes recargadas:', solicitudesCompletas);
+      setSolicitudes(solicitudesCompletas);
     } catch (error) {
-      console.error("Error al enviar:", error);
-      Swal.fire({
-        title: "¡Error!",
-        text: "Hubo un error al enviar la solicitud",
-        icon: "error",
-        confirmButtonColor: "#dc2626",
-        background: "#f8fafc",
-        customClass: {
-          popup: "rounded-2xl shadow-2xl",
-          title: "text-xl font-bold",
-        },
-      });
-    } finally {
-      setLoading(false);
+      console.error("Error recargando datos:", error);
     }
-  };
+  }
+};
+
+// Función para resetear el formulario
+const resetearFormulario = () => {
+  setMotivo("");
+  setFormData({
+    cedula_emprendedor: user?.cedula_usuario || "",
+    opt_requerimiento: [],
+    archivo: null,
+    fecha_llevar: "",
+    motivo: "",
+  });
+  setStep(1);
+  setErrors({});
+};
+
+  const enviarRequerimiento = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    // 1. PRIMERO crear el requerimiento_emprendedor para obtener id_req
+    const requerimientoData = {
+      cedula_emprendedor: formData.cedula_emprendedor,
+      opt_requerimiento: JSON.stringify(formData.opt_requerimiento),
+      verificacion: "Pendiente"
+    };
+
+    console.log('📤 Creando requerimiento emprendedor:', requerimientoData);
+    
+    const requerimientoResponse = await createRequerimientoEmprendedor(requerimientoData);
+    console.log('✅ Respuesta de requerimiento:', requerimientoResponse);
+    
+    // Verificar que se creó correctamente y obtener el id_req
+    if (!requerimientoResponse.id_req) {
+      throw new Error('No se pudo obtener el id_req del requerimiento creado');
+    }
+    
+    const id_req = requerimientoResponse.id_req;
+
+    // 2. LUEGO crear la solicitud con el id_req
+    const datosSolicitud = {
+      cedula_emprendedor: formData.cedula_emprendedor,
+      motivo: formData.motivo,
+      estatus: "Pendiente",
+      id_req: id_req, // 🔥 ESTA ES LA CLAVE - enviar el id_req
+      fecha_llevar: formData.fecha_llevar || null
+    };
+
+    console.log('📤 Enviando solicitud con id_req:', datosSolicitud);
+    
+    const solicitudResponse = await createSolicitud(datosSolicitud);
+    console.log('✅ Respuesta de solicitud:', solicitudResponse);
+
+    // Verificar que la solicitud se creó correctamente
+    if (!solicitudResponse.id_contrato) {
+      throw new Error('No se pudo crear la solicitud');
+    }
+
+    // 3. FINALMENTE subir el archivo con el id_req correcto
+    if (formData.archivo) {
+      const datosArchivo = {
+        cedula_emprendedor: formData.cedula_emprendedor,
+        fecha_llevar: formData.fecha_llevar,
+        id_req: id_req, // Usar el mismo id_req
+      };
+      console.log('📁 Subiendo archivo con id_req:', datosArchivo);
+      await subirArchivo(formData.archivo, datosArchivo);
+    }
+
+    // Recargar datos para mostrar la nueva solicitud
+    await recargarDatosSolicitudes();
+
+    setMostrarFormulario(false);
+    resetearFormulario();
+
+    Swal.fire({
+      title: "¡Éxito!",
+      text: "Solicitud enviada correctamente",
+      icon: "success",
+      confirmButtonColor: "#0F3C5B",
+      background: "#f8fafc",
+      customClass: {
+        popup: "rounded-2xl shadow-2xl",
+        title: "text-xl font-bold",
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error al enviar:", error);
+    console.error("📋 Detalles del error:", error.response?.data);
+    
+    Swal.fire({
+      title: "¡Error!",
+      text: error.response?.data?.message || error.message || "Hubo un error al enviar la solicitud",
+      icon: "error",
+      confirmButtonColor: "#dc2626",
+      background: "#f8fafc",
+      customClass: {
+        popup: "rounded-2xl shadow-2xl",
+        title: "text-xl font-bold",
+      },
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleNuevaSolicitud = () => {
     setMostrarFormulario(true);

@@ -15,6 +15,7 @@ import {
   TbX,
   TbCheck,
   TbFolder,
+  TbFolderOpen,
   TbReceipt,
   TbPhoto,
   TbCircleCheck,
@@ -25,7 +26,7 @@ import {
   TbEye,
   TbBuildingBank,
   TbCoin,
-} from "react-icons/tb";;
+} from "react-icons/tb";
 
 const Gestion = ({ user, setUser }) => {
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ const Gestion = ({ user, setUser }) => {
   const [contratosAsignados, setContratosAsignados] = useState({});
   const [contratosGestionados, setContratosGestionados] = useState({});
   const [depositos, setDepositos] = useState([]);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [selectedEmpleadorId, setSelectedEmpleadorId] = React.useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEmpleadorId, setSelectedEmpleadorId] = useState("");
   const [comprobanteModal, setComprobanteModal] = useState(null);
   const [contratosAgrupados, setContratosAgrupados] = useState({});
   const [rates, setRates] = useState({ euro: null, dolar: null });
@@ -216,18 +217,11 @@ const Gestion = ({ user, setUser }) => {
 
       if (!isNaN(montoEuro)) {
         const flatAmount = ((montoEuro * porcentajeFlat) / 100).toFixed(2);
-        const interesAmount = ((montoEuro * porcentajeInteres) / 100).toFixed(
-          2
-        );
-        const montoDevolver = (montoEuro + parseFloat(interesAmount)).toFixed(
-          2
-        );
-        const montoSemanal = (parseFloat(montoDevolver) / numeroCuotas).toFixed(
-          2
-        );
+        const interesAmount = ((montoEuro * porcentajeInteres) / 100).toFixed(2);
+        const montoDevolver = (montoEuro + parseFloat(interesAmount)).toFixed(2);
+        const montoSemanal = (parseFloat(montoDevolver) / numeroCuotas).toFixed(2);
         const morosidadAmount = (
-          (montoEuro * porcentajeMorosidad) /
-          100
+          (montoEuro * porcentajeMorosidad) / 100
         ).toFixed(2);
 
         setFormData((prev) => ({
@@ -245,6 +239,60 @@ const Gestion = ({ user, setUser }) => {
       }
     }
   }, [formData.monto_aprob_euro, configuracion]);
+
+  // Función para calcular fechas (CORREGIDA para incluir período de gracia)
+  const calcularFechas = (fechaInicioStr) => {
+  const fechaInicio = new Date(fechaInicioStr);
+  const fechaInicioConGracia = new Date(fechaInicioStr); // Crear una copia para la fecha con gracia
+  const fechahasta = new Date(fechaInicioStr); // Empezar desde la fecha original
+  
+  const numeroCuotas = parseFloat(configuracion?.numero_cuotas) || 18;
+  const cuotasGracia = parseFloat(configuracion?.cuotasgracias) || "2";
+  const frecuencia = configuracion?.frecuencia_pago || "Semanal";
+
+  // APLICAR PERÍODO DE GRACIA a la fecha de inicio (solo para mostrar)
+  if (cuotasGracia > 0) {
+    fechaInicioConGracia.setDate(fechaInicioConGracia.getDate() + cuotasGracia);
+  }
+
+  // Calcular fecha final DESDE LA FECHA ORIGINAL (incluyendo el período de gracia en el cálculo total)
+  const totalDias = cuotasGracia + ( // Sumar días de gracia
+    frecuencia === "diario" ? numeroCuotas * 1 :
+    frecuencia === "semanal" ? numeroCuotas * 7 :
+    frecuencia === "quincenal" ? numeroCuotas * 15 :
+    frecuencia === "mensual" ? 0 : // Para mensual se usa setMonth
+    numeroCuotas * 7 // Por defecto semanal
+  );
+
+  if (frecuencia === "mensual") {
+    fechahasta.setMonth(fechahasta.getMonth() + numeroCuotas);
+    // También agregar los días de gracia para mensual
+    fechahasta.setDate(fechahasta.getDate() + cuotasGracia);
+  } else {
+    fechahasta.setDate(fechahasta.getDate() + totalDias);
+  }
+
+  const formatDate = (date) => date.toISOString().split('T')[0];
+
+  return {
+    desde: formatDate(fechaInicioConGracia), // Fecha de inicio CON gracia
+    hasta: formatDate(fechahasta), // Fecha final que incluye gracia + cuotas
+  };
+};
+
+  // Inicializar la fecha desde con la fecha actual y aplicar gracia
+  // SOLO para inicialización - ejecutar una vez cuando se carga la configuración
+useEffect(() => {
+  if (configuracion && !formData.fecha_desde) {
+    const hoy = new Date();
+    const { desde, hasta } = calcularFechas(hoy.toISOString().split('T')[0]);
+    setFormData((prev) => ({
+      ...prev,
+      fecha_desde: desde,
+      fecha_hasta: hasta,
+    }));
+  }
+}, [configuracion]); // Solo depende de configuracion
 
   const handleVerComprobante = (url) => {
     setComprobanteModal(url);
@@ -311,56 +359,6 @@ const Gestion = ({ user, setUser }) => {
       }));
     }
   };
-
-  // Función para calcular fechas
-  const calcularFechas = (fechaInicioStr) => {
-    const fechaInicio = new Date(fechaInicioStr);
-    const fechahasta = new Date(fechaInicio);
-    const numeroCuotas = parseFloat(configuracion?.numero_cuotas) || 18;
-    const frecuencia = configuracion?.frecuencia_pago || "Semanal";
-
-    // Calcular fecha final basado en la frecuencia y número de cuotas
-    if (frecuencia === "diario") {
-      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 1);
-    } else if (frecuencia === "semanal") {
-      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
-    } else if (frecuencia === "quincenal") {
-      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 15);
-    } else if (frecuencia === "mensual") {
-      fechahasta.setMonth(fechahasta.getMonth() + numeroCuotas);
-    } else {
-      // Por defecto semanal o para Personalizado (usaremos semanal como base)
-      fechahasta.setDate(fechahasta.getDate() + numeroCuotas * 7);
-    }
-
-    const formatDate = (date) => date.toISOString().split("T")[0];
-
-    return {
-      desde: formatDate(fechaInicio),
-      hasta: formatDate(fechahasta),
-    };
-  };
-
-  // Cuando la fechaDesde cambie, actualizar fecha_hasta
-  React.useEffect(() => {
-    if (formData.fecha_desde) {
-      const { desde, hasta } = calcularFechas(formData.fecha_desde);
-      setFormData((prev) => ({
-        ...prev,
-        fecha_hasta: hasta,
-      }));
-    }
-  }, [formData.fecha_desde, configuracion]);
-
-  // Inicializar la fecha desde con la fecha actual
-  React.useEffect(() => {
-    const hoy = new Date();
-    const formatDate = hoy.toISOString().split("T")[0];
-    setFormData((prev) => ({
-      ...prev,
-      fecha_desde: formatDate,
-    }));
-  }, []);
 
   // Función para manejar el cambio en el select de empleadores
   const handleEmpleadorChange = (e) => {
@@ -469,7 +467,6 @@ const Gestion = ({ user, setUser }) => {
         fecha_desde: emprendedor.fecha_desde || null,
         fecha_hasta: emprendedor.fecha_hasta || null,
         estatus: emprendedor.estatus || null,
-
         cedula_titular: emprendedor.cedula_titular || null,
         nombre_completo_cuenta: emprendedor.nombre_completo_cuenta || null,
         banco: emprendedor.banco || null,
@@ -489,9 +486,7 @@ const Gestion = ({ user, setUser }) => {
     } catch (error) {
       console.error("Error cargando emprendedores:", error);
       setLoading(false);
-      alert(
-        "Error al cargar los emprendedores. Por favor, intenta nuevamente."
-      );
+      alert("Error al cargar los emprendedores. Por favor, intenta nuevamente.");
     }
   };
 
@@ -708,7 +703,6 @@ const Gestion = ({ user, setUser }) => {
         fecha_desde: formData.fecha_desde,
         fecha_hasta: formData.fecha_hasta,
         estatus: formData.estatus,
-
         frecuencia_pago_contrato:
           configuracion?.frecuencia_pago === "Personalizado"
             ? "Personalizado"
@@ -1082,7 +1076,7 @@ const Gestion = ({ user, setUser }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50  mt-15">
+    <div className="flex min-h-screen bg-gray-50 mt-15">
       {menuOpen && <Menu />}
 
       <div
@@ -1453,7 +1447,6 @@ const Gestion = ({ user, setUser }) => {
                           </p>
                         </div>
 
-                        {/* Nuevos campos que toman valores de la configuración */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Monto de Cuota (€)
@@ -1518,8 +1511,7 @@ const Gestion = ({ user, setUser }) => {
                           />
                           <p className="text-xs text-gray-500 mt-1">
                             Configuración del sistema:{" "}
-                            {configuracion?.porcentaje_interes || "No definida"}
-                            %
+                            {configuracion?.porcentaje_interes || "No definida"}%
                           </p>
                         </div>
 
@@ -1860,7 +1852,7 @@ const Gestion = ({ user, setUser }) => {
 
                         {depositoData.sizeError && (
                           <div className="mt-2 p-2 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm">
-                            <TbErrorCircle className="align-middle mr-1" size={16} />
+                            <TbAlertCircle className="align-middle mr-1" size={16} />
                             {depositoData.sizeError}
                           </div>
                         )}

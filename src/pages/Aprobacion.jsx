@@ -12,24 +12,11 @@ import {
   TbRefresh,
   TbZoomIn,
   TbUser,
-  TbId,
   TbFileText,
   TbSearch,
-  TbFilter,
   TbCircleCheck,
   TbClock,
   TbAlertCircle,
-  TbChevronDown,
-  TbStar,
-  TbBuildingStore,
-  TbBuilding,
-  TbCreditCard,
-  TbEdit,
-  TbTrash,
-  TbPlus,
-  TbHome,
-  TbMenu,
-  TbLogout,
 } from "react-icons/tb";
 
 import "../assets/css/style.css";
@@ -39,7 +26,7 @@ import Menu from "../components/Menu";
 import { getRequerimientos } from "../services/api_requerimientos";
 import { getTodosRequerimientosEmprendedor } from "../services/api_requerimiento_emprendedor";
 import { updateRequerimientoEmprendedor } from "../services/api_requerimiento_emprendedor";
-import { updateSolicitud } from "../services/api_solicitud";
+import { updateSolicitudPorIdReq } from "../services/api_solicitud";
 import apiArchivo from "../services/api_archivo";
 
 // Componente Modal para visualizar imagen
@@ -93,7 +80,7 @@ const ModalImagen = ({ imagenUrl, isOpen, onClose }) => {
   );
 };
 
-// Componente para mostrar imagen del documento - MEJORADO
+// Componente para mostrar imagen del documento
 const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
   const [imagenArchivo, setImagenArchivo] = useState(null);
   const [cargandoImagen, setCargandoImagen] = useState(false);
@@ -111,21 +98,56 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
     setImagenArchivo(null);
     
     try {
-      console.log('🔍 Buscando imagen para cédula:', cedulaEmprendedor);
+      console.log('🔍 Buscando imagen para:', {
+        cedula: cedulaEmprendedor,
+        id_req: idReq
+      });
       
-      const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(cedulaEmprendedor);
-      console.log('📁 Archivos obtenidos:', archivos);
+      let archivos = [];
+      
+      // 🔥 PRIORIDAD: Buscar por id_req si está disponible
+      if (idReq) {
+        try {
+          console.log('🎯 Buscando archivos específicos por id_req:', idReq);
+          archivos = await apiArchivo.getArchivosByReq(idReq);
+          console.log('📁 Archivos obtenidos por id_req:', archivos);
+          
+          // Si no hay archivos por id_req, buscar por cédula
+          if (!archivos || archivos.length === 0) {
+            console.log('⚠️ No se encontraron archivos por id_req, buscando por cédula...');
+            archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(cedulaEmprendedor);
+            console.log('📁 Archivos obtenidos por cédula:', archivos);
+          }
+        } catch (error) {
+          console.error('❌ Error buscando por id_req:', error);
+          console.log('🔄 Fallback: buscando por cédula...');
+          // Fallback: buscar por cédula si hay error con id_req
+          archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(cedulaEmprendedor);
+          console.log('📁 Archivos obtenidos por cédula (fallback):', archivos);
+        }
+      } else {
+        // Si no hay id_req, buscar solo por cédula
+        console.log('🎯 Buscando archivos por cédula:', cedulaEmprendedor);
+        archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(cedulaEmprendedor);
+        console.log('📁 Archivos obtenidos por cédula:', archivos);
+      }
       
       if (archivos && archivos.length > 0) {
-        // Buscar archivo que coincida con el id_req si se proporciona
-        let archivo = idReq 
-          ? archivos.find(a => a.id_req === idReq) 
-          : archivos[0];
+        let archivo = null;
         
-        // Si no encuentra por id_req, tomar el más reciente
+        // Si tenemos id_req, buscar el archivo específico
+        if (idReq) {
+          archivo = archivos.find(a => a.id_req === idReq);
+          console.log('🔍 Buscando archivo con id_req específico:', {
+            id_req_buscado: idReq,
+            archivo_encontrado: archivo
+          });
+        }
+        
+        // Si no encuentra por id_req o no hay id_req, tomar el más reciente
         if (!archivo) {
           archivo = archivos[0];
-          console.log('⚠️ Usando archivo más reciente');
+          console.log('⚠️ Usando archivo más reciente:', archivo);
         }
         
         console.log('🎯 Archivo seleccionado:', archivo);
@@ -135,23 +157,31 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
         // Priorizar la URL proporcionada por el backend
         if (archivo.url) {
           urlImagen = archivo.url;
+          console.log('🖼️ Usando URL del backend:', urlImagen);
         } 
         // Si tenemos el nombre del archivo, construir URL
         else if (archivo.archivo) {
           urlImagen = apiArchivo.obtenerUrlImagen 
             ? apiArchivo.obtenerUrlImagen(archivo.archivo)
             : `http://localhost:5000/uploads/${archivo.archivo}`;
+          console.log('🖼️ URL construida desde nombre de archivo:', urlImagen);
         }
         
         if (urlImagen) {
-          console.log('🖼️ URL de imagen construida:', urlImagen);
+          console.log('🖼️ URL final de imagen:', urlImagen);
           
           // Verificar que la imagen sea accesible
-          const response = await fetch(urlImagen, { method: 'HEAD' });
-          if (response.ok) {
-            setImagenArchivo(urlImagen);
-          } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          try {
+            const response = await fetch(urlImagen, { method: 'HEAD' });
+            if (response.ok) {
+              console.log('✅ Imagen verificada correctamente');
+              setImagenArchivo(urlImagen);
+            } else {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+          } catch (fetchError) {
+            console.error('❌ Error al verificar imagen:', fetchError);
+            throw new Error('La imagen no es accesible desde el servidor');
           }
         } else {
           throw new Error("No se pudo generar la URL de la imagen");
@@ -189,25 +219,66 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
             <TbAlertCircle size={12} /> Error
           </span>
         )}
+        {idReq && (
+          <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full ml-2 flex items-center gap-1">
+            ID: {idReq}
+          </span>
+        )}
       </div>
       
       {cargandoImagen ? (
         <div className="flex justify-center items-center py-8 flex-col">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
           <span className="text-gray-600 text-sm">Cargando imagen...</span>
+          <span className="text-gray-400 text-xs mt-1">
+            {idReq ? `Buscando por ID: ${idReq}` : `Buscando por cédula: ${cedulaEmprendedor}`}
+          </span>
         </div>
       ) : errorImagen ? (
         <div className="text-center text-gray-500 py-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
           <TbAlertCircle size={24} className="mb-2 text-amber-500 mx-auto" />
           <p className="text-sm font-medium mb-1">No se pudo cargar la imagen</p>
-          <p className="text-xs text-gray-400 mb-3">{errorImagen}</p>
-          <button 
-            onClick={cargarImagen}
-            className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium py-1 px-3 rounded-lg transition-all flex items-center gap-1 mx-auto"
-          >
-            <TbRefresh size={12} />
-            Reintentar
-          </button>
+          <p className="text-xs text-gray-400 mb-3 max-w-xs mx-auto">{errorImagen}</p>
+          <div className="flex justify-center gap-2">
+            <button 
+              onClick={cargarImagen}
+              className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium py-1 px-3 rounded-lg transition-all flex items-center gap-1"
+            >
+              <TbRefresh size={12} />
+              Reintentar
+            </button>
+            {idReq && (
+              <button 
+                onClick={() => {
+                  // Forzar búsqueda solo por cédula
+                  const loadWithoutIdReq = async () => {
+                    setCargandoImagen(true);
+                    try {
+                      const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(cedulaEmprendedor);
+                      console.log('🔄 Búsqueda forzada por cédula:', archivos);
+                      if (archivos && archivos.length > 0) {
+                        const archivo = archivos[0];
+                        let urlImagen = archivo.url || `http://localhost:5000/uploads/${archivo.archivo}`;
+                        if (urlImagen) {
+                          setImagenArchivo(urlImagen);
+                          setErrorImagen(null);
+                        }
+                      }
+                    } catch (error) {
+                      setErrorImagen(`Error forzado: ${error.message}`);
+                    } finally {
+                      setCargandoImagen(false);
+                    }
+                  };
+                  loadWithoutIdReq();
+                }}
+                className="bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-medium py-1 px-3 rounded-lg transition-all flex items-center gap-1"
+              >
+                <TbRefresh size={12} />
+                Buscar solo por cédula
+              </button>
+            )}
+          </div>
         </div>
       ) : imagenArchivo ? (
         <div className="space-y-3">
@@ -250,7 +321,7 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
               onClick={() => {
                 const link = document.createElement('a');
                 link.href = imagenArchivo;
-                link.download = `documento-${cedulaEmprendedor}-${Date.now()}.jpg`;
+                link.download = `documento-${cedulaEmprendedor}-${idReq || 'sin-id'}-${Date.now()}.jpg`;
                 link.click();
               }}
               className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
@@ -258,13 +329,26 @@ const ImagenDocumento = ({ cedulaEmprendedor, idReq }) => {
               <TbDownload size={12} />
               Descargar
             </button>
+            <button
+              onClick={cargarImagen}
+              className="bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium py-2 px-3 rounded-lg transition-all flex items-center gap-1"
+            >
+              <TbRefresh size={12} />
+              Recargar
+            </button>
+          </div>
+          <div className="text-center text-xs text-gray-500 mt-2">
+            {idReq ? `ID de requerimiento: ${idReq}` : 'Sin ID específico'}
           </div>
         </div>
       ) : (
         <div className="text-center text-gray-500 py-6 bg-white rounded-lg border-2 border-dashed border-gray-300">
           <TbPhoto size={24} className="mb-2 opacity-50 mx-auto" />
           <p className="text-sm font-medium mb-1">No hay imagen disponible</p>
-          <p className="text-xs">No se encontraron documentos adjuntos</p>
+          <p className="text-xs mb-2">No se encontraron documentos adjuntos</p>
+          <div className="text-xs text-gray-400">
+            {idReq ? `Búsqueda: cédula ${cedulaEmprendedor} + ID ${idReq}` : `Cédula: ${cedulaEmprendedor}`}
+          </div>
         </div>
       )}
 
@@ -292,12 +376,23 @@ const fetchPersonasRegistradas = async () => {
 const fetchDetallesPersona = async (cedula) => {
   try {
     const data = await getTodosRequerimientosEmprendedor();
-    // Filtrar por cédula
-    return data.filter(item => item.cedula_emprendedor === cedula);
+    // Filtrar por cédula y eliminar duplicados por id_req
+    const filtrados = data.filter(item => item.cedula_emprendedor === cedula);
+    return eliminarDuplicados(filtrados, 'id_req');
   } catch (error) {
     console.error("Error cargando detalles:", error);
     return null;
   }
+};
+
+// Función para eliminar duplicados
+const eliminarDuplicados = (datos, clave = 'id_req') => {
+  const seen = new Set();
+  return datos.filter(item => {
+    const duplicate = seen.has(item[clave]);
+    seen.add(item[clave]);
+    return !duplicate;
+  });
 };
 
 const Aprobacion = () => {
@@ -329,17 +424,26 @@ const Aprobacion = () => {
     fetchRequerimientos();
   }, []);
 
-  // Carga de personas - CORREGIDO
+  // Carga de personas - VERSIÓN CORREGIDA
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
         const data = await fetchPersonasRegistradas();
-        // Usar 'vereficacion' de la base de datos
-        const personasConVerificados = data.map((p) => ({
+        console.log('📊 Datos crudos de API:', data);
+        console.log('🔢 Total registros antes de eliminar duplicados:', data.length);
+        
+        // Eliminar duplicados por id_req
+        const datosUnicos = eliminarDuplicados(data, 'id_req');
+        console.log('✅ Datos después de eliminar duplicados:', datosUnicos);
+        console.log('🔢 Registros únicos:', datosUnicos.length);
+        
+        // Usar 'verificacion' en lugar de 'vereficacion'
+        const personasConVerificados = datosUnicos.map((p) => ({
           ...p,
-          requerimientosVerificados: p.vereficacion || [],
+          requerimientosVerificados: p.verificacion || [],
         }));
+        
         setPersonasRegistradas(personasConVerificados);
       } catch (error) {
         console.error("Error loading data:", error);
@@ -359,10 +463,21 @@ const Aprobacion = () => {
     try {
       const detalles = await fetchDetallesPersona(persona.cedula_emprendedor);
       
-      // Usar el campo 'vereficacion' de la base de datos
-      const detallesConVerificados = detalles.map((detalle) => ({
+      // 🔥 FILTRADO CRÍTICO: Mostrar SOLO la solicitud específica del id_req seleccionado
+      const detallesFiltrados = detalles.filter(detalle => 
+        detalle.id_req === persona.id_req
+      );
+      
+      console.log('🎯 Detalles filtrados por id_req:', {
+        id_req_seleccionado: persona.id_req,
+        detalles_encontrados: detallesFiltrados.length,
+        todos_los_detalles: detalles.length
+      });
+
+      // Usar el campo 'verificacion' de la base de datos
+      const detallesConVerificados = detallesFiltrados.map((detalle) => ({
         ...detalle,
-        requerimientosVerificados: detalle.vereficacion || [],
+        requerimientosVerificados: detalle.verificacion || [],
       }));
 
       setResultado(detallesConVerificados);
@@ -374,7 +489,7 @@ const Aprobacion = () => {
     }
   };
 
-  // Función para abrir imagen en nueva pestaña - NUEVA FUNCIÓN
+  // Función para abrir imagen en nueva pestaña
   const abrirImagenEnPestaña = async (persona) => {
     try {
       const archivos = await apiArchivo.getArchivoPorCedulaEmprendedor(persona.cedula_emprendedor);
@@ -411,98 +526,126 @@ const Aprobacion = () => {
     setResultado(null);
   };
 
-  const aprobarPersona = async (cedula) => {
-    Swal.fire({
-      title: "¿Estás seguro?",
-      text: "¿Deseas aprobar a esta persona?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Sí, aprobar",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#22c55e",
-      cancelButtonColor: "#ef4444",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          // Actualizar el estado en el backend
-          await updateSolicitud(cedula, { estatus: "Aprobada" });
+// En tu componente Aprobacion, reemplaza las funciones aprobarPersona y rechazarPersona:
 
-          // Actualizar el estado local
-          setPersonasRegistradas((prev) =>
-            prev.map((p) =>
-              p.cedula_emprendedor === cedula
-                ? { ...p, estatus: "Aprobada" }
-                : p
-            )
-          );
+const aprobarPersona = async (persona) => {
+  Swal.fire({
+    title: "¿Estás seguro?",
+    text: `¿Deseas aprobar la solicitud #${persona.id_req} de ${persona.nombre_completo}?`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Sí, aprobar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#22c55e",
+    cancelButtonColor: "#ef4444",
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        console.log('🎯 Aprobando solicitud por id_req:', {
+          id_req: persona.id_req,
+          nombre: persona.nombre_completo,
+          cedula: persona.cedula_emprendedor
+        });
 
-          // Cerrar el modal después de aprobar
-          cerrarModal();
+        // 🔥 USAR LA NUEVA FUNCIÓN SOLO CON id_req
+        await updateSolicitudPorIdReq(persona.id_req, { 
+          estatus: "Aprobada"
+        });
 
-          Swal.fire(
-            "¡Aprobada!",
-            "La solicitud ha sido aprobada correctamente.",
-            "success"
-          );
-        } catch (error) {
-          console.error("Error aprobando solicitud:", error);
-          Swal.fire("¡Error!", "No se pudo aprobar la solicitud.", "error");
-        }
+        // Actualizar el estado local - SOLO la solicitud específica
+        setPersonasRegistradas((prev) =>
+          prev.map((p) =>
+            p.id_req === persona.id_req
+              ? { ...p, estatus: "Aprobada" }
+              : p
+          )
+        );
+
+        // Cerrar el modal después de aprobar
+        cerrarModal();
+
+        Swal.fire(
+          "¡Aprobada!",
+          `La solicitud #${persona.id_req} ha sido aprobada correctamente.`,
+          "success"
+        );
+      } catch (error) {
+        console.error("❌ Error aprobando solicitud:", error);
+        Swal.fire(
+          "¡Error!", 
+          `No se pudo aprobar la solicitud: ${error.response?.data?.message || error.message}`, 
+          "error"
+        );
       }
-    });
-  };
+    }
+  });
+};
 
-  const rechazarPersona = (persona) => {
-    Swal.fire({
-      title: "Rechazar solicitud",
-      input: "textarea",
-      inputLabel: "Motivo del rechazo",
-      inputPlaceholder: "Escribe el motivo del rechazo...",
-      inputAttributes: {
-        "aria-label": "Escribe el motivo del rechazo",
-      },
-      showCancelButton: true,
-      confirmButtonText: "Rechazar",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#ef4444",
-      showLoaderOnConfirm: true,
-      preConfirm: (motivo) => {
-        if (!motivo || motivo.trim() === "") {
-          Swal.showValidationMessage("Debes escribir un motivo para rechazar.");
-          return false;
-        }
-        return motivo;
-      },
-      allowOutsideClick: () => !Swal.isLoading(),
-    }).then(async (result) => {
-      if (result.isConfirmed && result.value) {
-        try {
-          // Actualizar el estado en el backend
-          await updateRequerimientoEmprendedor(persona.cedula_emprendedor, {
-            estatus: "Rechazada",
-            motivo_rechazo: result.value,
-          });
-
-          // Actualizar el estado local
-          setPersonasRegistradas((prev) =>
-            prev.map((p) =>
-              p.cedula_emprendedor === persona.cedula_emprendedor
-                ? { ...p, estatus: "Rechazada", motivo_rechazo: result.value }
-                : p
-            )
-          );
-
-          // Cerrar el modal después de rechazar
-          cerrarModal();
-
-          Swal.fire("Rechazada", "La solicitud ha sido rechazada.", "success");
-        } catch (error) {
-          console.error("Error rechazando solicitud:", error);
-          Swal.fire("¡Error!", "No se pudo rechazar la solicitud.", "error");
-        }
+const rechazarPersona = async (persona) => {
+  Swal.fire({
+    title: `Rechazar solicitud #${persona.id_req}`,
+    input: "textarea",
+    inputLabel: "Motivo del rechazo",
+    inputPlaceholder: "Escribe el motivo del rechazo...",
+    inputAttributes: {
+      "aria-label": "Escribe el motivo del rechazo",
+    },
+    showCancelButton: true,
+    confirmButtonText: "Rechazar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#ef4444",
+    showLoaderOnConfirm: true,
+    preConfirm: (motivo) => {
+      if (!motivo || motivo.trim() === "") {
+        Swal.showValidationMessage("Debes escribir un motivo para rechazar.");
+        return false;
       }
-    });
-  };
+      return motivo;
+    },
+    allowOutsideClick: () => !Swal.isLoading(),
+  }).then(async (result) => {
+    if (result.isConfirmed && result.value) {
+      try {
+        console.log('🎯 Rechazando solicitud por id_req:', {
+          id_req: persona.id_req,
+          nombre: persona.nombre_completo,
+          motivo: result.value
+        });
+
+        // 🔥 USAR LA NUEVA FUNCIÓN SOLO CON id_req
+        await updateSolicitudPorIdReq(persona.id_req, {
+          estatus: "Rechazada",
+          motivo_rechazo: result.value
+        });
+
+        // Actualizar el estado local - SOLO la solicitud específica
+        setPersonasRegistradas((prev) =>
+          prev.map((p) =>
+            p.id_req === persona.id_req
+              ? { ...p, estatus: "Rechazada", motivo_rechazo: result.value }
+              : p
+          )
+        );
+
+        // Cerrar el modal después de rechazar
+        cerrarModal();
+
+        Swal.fire(
+          "Rechazada", 
+          `La solicitud #${persona.id_req} ha sido rechazada.`, 
+          "success"
+        );
+      } catch (error) {
+        console.error("❌ Error rechazando solicitud:", error);
+        Swal.fire(
+          "¡Error!", 
+          `No se pudo rechazar la solicitud: ${error.response?.data?.message || error.message}`, 
+          "error"
+        );
+      }
+    }
+  });
+};
 
   // Función para enviar requerimientos verificados - CORREGIDA
   const handleEnviarRequerimientosVerificados = async () => {
@@ -515,14 +658,15 @@ const Aprobacion = () => {
       // Actualizar cada requerimiento del resultado
       for (const req of resultado) {
         await updateRequerimientoEmprendedor(req.id_req, {
-          vereficacion: req.requerimientosVerificados || [],
+          verificacion: req.requerimientosVerificados || [],
         });
       }
 
       // Actualizar el estado local
       setPersonasRegistradas((prev) =>
         prev.map((p) =>
-          p.cedula_emprendedor === personaSeleccionada.cedula_emprendedor
+          p.cedula_emprendedor === personaSeleccionada.cedula_emprendedor && 
+          p.id_req === personaSeleccionada.id_req
             ? {
                 ...p,
                 requerimientosVerificados: resultado.flatMap(
@@ -678,7 +822,7 @@ const Aprobacion = () => {
 
           {/* Estadísticas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Estadísticas */}
+            {/* Total solicitudes */}
             <div className="bg-white rounded-xl p-4 shadow-sm border-l-4 border-blue-500">
               <div className="flex items-center">
                 <div className="bg-blue-100 p-3 rounded-lg mr-4">
@@ -781,7 +925,7 @@ const Aprobacion = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredPersonas.map((persona) => (
                       <tr
-                        key={persona.cedula_emprendedor}
+                        key={`${persona.cedula_emprendedor}-${persona.id_req}`}
                         className="hover:bg-gray-50 transition-colors"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -795,6 +939,9 @@ const Aprobacion = () => {
                               </div>
                               <div className="text-sm text-gray-500">
                                 {persona.nombre_emprendimiento}
+                              </div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                ID: {persona.id_req}
                               </div>
                             </div>
                           </div>
@@ -878,7 +1025,7 @@ const Aprobacion = () => {
                     Detalles de {personaSeleccionada.nombre_completo}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Información completa de la solicitud
+                    Información completa de la solicitud #{personaSeleccionada.id_req}
                   </p>
                 </div>
                 <button
@@ -904,7 +1051,7 @@ const Aprobacion = () => {
                     <>
                       {resultado.map((req, index) => (
                         <div
-                          key={index}
+                          key={req.id_req}
                           className="mb-8 last:mb-0 bg-white rounded-xl p-8 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300"
                         >
                           {/* Información básica */}
@@ -1130,9 +1277,7 @@ const Aprobacion = () => {
                   <div className="flex space-x-4">
                     <button
                       className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2"
-                      onClick={() =>
-                        aprobarPersona(personaSeleccionada.cedula_emprendedor)
-                      }
+                      onClick={() => aprobarPersona(personaSeleccionada)}
                     >
                       <TbCheck size={20} />
                       Aprobar

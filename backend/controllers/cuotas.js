@@ -46,21 +46,44 @@ async function initializeLastId() {
 function calcularFechaVencimiento(fechaInicio, frecuencia, numeroCuota) {
   const fecha = new Date(fechaInicio);
   
-  switch (frecuencia) {
-    case 'mensual':
-      fecha.setMonth(fecha.getMonth() + numeroCuota);
+  switch (frecuencia.toLowerCase()) {
+    case 'diario':
+      fecha.setDate(fecha.getDate() + numeroCuota);
+      break;
+    case 'semanal':
+      fecha.setDate(fecha.getDate() + (numeroCuota * 7));
       break;
     case 'quincenal':
       fecha.setDate(fecha.getDate() + (numeroCuota * 15));
       break;
-    case 'semanal':
-      fecha.setDate(fecha.getDate() + (numeroCuota * 7));
+    case 'mensual':
+      fecha.setMonth(fecha.getMonth() + numeroCuota);
       break;
     default:
       fecha.setMonth(fecha.getMonth() + numeroCuota);
   }
   
   return fecha.toISOString().split('T')[0];
+}
+
+// FUNCIÓN PARA GENERAR NOMBRE DE CUOTA SEGÚN FRECUENCIA
+function generarNombreCuota(numeroCuota, frecuencia) {
+  if (!frecuencia) return `Cuota ${numeroCuota}`;
+  
+  const freq = frecuencia.toLowerCase();
+  
+  switch (freq) {
+    case 'diario':
+      return `Día ${numeroCuota}`;
+    case 'semanal':
+      return `Semana ${numeroCuota}`;
+    case 'quincenal':
+      return `Quincena ${numeroCuota}`;
+    case 'mensual':
+      return `Mes ${numeroCuota}`;
+    default:
+      return `Cuota ${numeroCuota}`;
+  }
 }
 
 // Obtener configuración activa
@@ -81,10 +104,16 @@ async function obtenerConfiguracionActiva() {
       };
     }
     
-    return resultado.rows[0];
+    const config = resultado.rows[0];
+    
+    // Asegurar que cuotasGracia exista
+    if (config.cuotasgracia === undefined && config.cuotasGracia === undefined) {
+      config.cuotasGracia = '0';
+    }
+    
+    return config;
   } catch (error) {
     console.error('Error al obtener configuración:', error);
-    // Retornar configuración por defecto en caso de error
     return {
       frecuencia_pago: 'mensual',
       numero_cuotas: '6',
@@ -313,9 +342,6 @@ router.get("/contrato/:id_contrato/cuotas", async (req, res) => {
 });
 
 // Registrar pago manual (administrador)
-// Ruta para registrar pago manual con comprobante
-// Ruta para registrar pago manual con comprobante (sin metodo_pago)
-// Ruta para registrar pago manual con comprobante (sin metodo_pago ni referencia_pago)
 router.post("/:id_cuota/pago-manual", upload.single("comprobante"), async (req, res) => {
   try {
     const { id_cuota } = req.params;
@@ -354,7 +380,7 @@ router.post("/:id_cuota/pago-manual", upload.single("comprobante"), async (req, 
       }
     }
 
-    // Actualizar la cuota con el pago (sin metodo_pago ni referencia_pago)
+    // Actualizar la cuota con el pago
     const resultado = await query(
       `UPDATE cuota 
        SET estado_cuota = 'Pagado', 
@@ -392,15 +418,16 @@ router.post("/:id_cuota/pago-manual", upload.single("comprobante"), async (req, 
   }
 });
 
-// Recalcular cuotas pendientes BASADO EN CONFIGURACIÓN
+// Recalcular cuotas pendientes - TODAS LAS CUOTAS CON MONTO FRACCIONADO
 router.post("/recalcular/:id_contrato", async (req, res) => {
   try {
     const { id_contrato } = req.params;
     
-    // Obtener configuración activa en lugar de pedir parámetros
+    // Obtener configuración activa
     const configuracion = await obtenerConfiguracionActiva();
     const nueva_frecuencia = configuracion.frecuencia_pago;
-    const nuevo_total_cuotas = configuracion.numero_cuotas;
+    const nuevo_total_cuotas = parseInt(configuracion.numero_cuotas); // 20
+    const cuotas_gracia = parseInt(configuracion.cuotasgracias) || 0; // 2
 
     // 1. Obtener información del contrato
     const contratoResult = await query(
@@ -414,13 +441,14 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
 
     const contrato = contratoResult.rows[0];
 
-    // 2. Obtener cuotas pagadas
-    const cuotasPagadasResult = await query(
-      'SELECT * FROM cuota WHERE id_cuota_c = $1 AND estado_cuota = $2',
-      [id_contrato, 'Pagado']
-    );
+    // 2. Obtener cuotas pagadas y pendientes
+    const [cuotasPagadasResult, cuotasPendientesResult] = await Promise.all([
+      query('SELECT * FROM cuota WHERE id_cuota_c = $1 AND estado_cuota = $2', [id_contrato, 'Pagado']),
+      query('SELECT * FROM cuota WHERE id_cuota_c = $1 AND estado_cuota = $2', [id_contrato, 'Pendiente'])
+    ]);
 
     const cuotasPagadas = cuotasPagadasResult.rows;
+    const cuotasPendientes = cuotasPendientesResult.rows;
     
     // Calcular monto pagado
     const montoPagado = cuotasPagadas.reduce((sum, cuota) => {
@@ -432,7 +460,7 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
     const saldoPendiente = montoTotal - montoPagado;
 
     // 3. Validaciones de negocio
-    if (parseInt(nuevo_total_cuotas) <= cuotasPagadas.length) {
+    if (nuevo_total_cuotas <= cuotasPagadas.length) {
       return res.status(400).json({
         error: `El total de cuotas configurado (${nuevo_total_cuotas}) debe ser mayor a ${cuotasPagadas.length} (cuotas ya pagadas)`
       });
@@ -445,46 +473,89 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
     }
 
     // 4. Eliminar cuotas pendientes existentes
-    await query(
-      'DELETE FROM cuota WHERE id_cuota_c = $1 AND estado_cuota = $2',
-      [id_contrato, 'Pendiente']
-    );
+    if (cuotasPendientes.length > 0) {
+      await query(
+        'DELETE FROM cuota WHERE id_cuota_c = $1 AND estado_cuota = $2',
+        [id_contrato, 'Pendiente']
+      );
+    }
 
-    // 5. Calcular nuevo monto por cuota
-    const numeroNuevasCuotas = parseInt(nuevo_total_cuotas) - cuotasPagadas.length;
-    const nuevoMontoCuota = saldoPendiente / numeroNuevasCuotas;
+    // 5. LÓGICA CORREGIDA - TODAS LAS CUOTAS CON MONTO FRACCIONADO
+    const numeroNuevasCuotas = nuevo_total_cuotas - cuotasPagadas.length;
+    
+    // Calcular cuántas cuotas obligatorias y de gracia quedan
+    const cuotasObligatoriasTotal = nuevo_total_cuotas - cuotas_gracia; // 18
+    const cuotasGraciaTotal = cuotas_gracia; // 2
+    
+    // Determinar cuántas cuotas obligatorias y de gracia ya fueron pagadas
+    const cuotasObligatoriasPagadas = cuotasPagadas.filter(cuota => {
+      const numeroCuota = extraerNumeroCuota(cuota.semana);
+      return numeroCuota <= cuotasObligatoriasTotal;
+    }).length;
+    
+    const cuotasGraciaPagadas = cuotasPagadas.filter(cuota => {
+      const numeroCuota = extraerNumeroCuota(cuota.semana);
+      return numeroCuota > cuotasObligatoriasTotal;
+    }).length;
+    
+    // Cuotas pendientes por generar
+    const cuotasObligatoriasPendientes = cuotasObligatoriasTotal - cuotasObligatoriasPagadas;
+    const cuotasGraciaPendientes = cuotasGraciaTotal - cuotasGraciaPagadas;
+    
+    // CALCULAR MONTO PARA TODAS LAS CUOTAS PENDIENTES
+    // El saldo pendiente se divide entre TODAS las cuotas pendientes (obligatorias + gracia)
+    const totalCuotasPendientes = cuotasObligatoriasPendientes + cuotasGraciaPendientes;
+    let montoPorCuota = 0;
+    
+    if (totalCuotasPendientes > 0) {
+      montoPorCuota = saldoPendiente / totalCuotasPendientes;
+    }
 
-    // 6. Generar nuevas cuotas pendientes
+    // 6. Generar nuevas cuotas pendientes - TODAS CON MONTO FRACCIONADO
     const nuevasCuotas = [];
     const ultimoNumero = cuotasPagadas.length;
 
+    // Fecha base para cálculo
+    const fechaBase = contrato.fecha_desde ? new Date(contrato.fecha_desde) : new Date();
+
     for (let i = 1; i <= numeroNuevasCuotas; i++) {
       const numeroCuota = ultimoNumero + i;
-      const fechaVencimiento = calcularFechaVencimiento(
-        contrato.fecha_desde || new Date(),
-        nueva_frecuencia,
-        numeroCuota
-      );
+      
+      // Calcular fechas para esta cuota
+      const fechaDesde = calcularFechaVencimiento(fechaBase, nueva_frecuencia, numeroCuota - 1);
+      const fechaHasta = calcularFechaVencimiento(fechaBase, nueva_frecuencia, numeroCuota);
+
+      // Determinar si esta cuota es de gracia (cuotas 19-20)
+      const esCuotaGracia = numeroCuota > cuotasObligatoriasTotal;
+      
+      // TODAS LAS CUOTAS TIENEN EL MISMO MONTO FRACCIONADO
+      const montoCuota = montoPorCuota;
+
+      // Generar nombre de cuota según frecuencia
+      const nombreCuota = generarNombreCuota(numeroCuota, nueva_frecuencia);
 
       lastId += 1;
       
       const nuevaCuota = await query(
         `INSERT INTO cuota (
           id_cuota, id_cuota_c, cedula_emprendedor, semana, monto, monto_ves,
-          fecha_pagada, estado_cuota, dias_mora_cuota, interes_acumulado, confirmacionIFEMI
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+          fecha_desde, fecha_hasta, estado_cuota, dias_mora_cuota, 
+          interes_acumulado, confirmacionIFEMI, cuota_gracia
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
         [
           lastId, 
           id_contrato, 
           contrato.cedula_emprendedor,
-          `Semana ${numeroCuota}`, 
-          nuevoMontoCuota.toFixed(2), 
-          nuevoMontoCuota.toFixed(2),
-          '', // fecha_pagada ($7)
-          'Pendiente', // estado_cuota ($8)
-          0, // dias_mora_cuota ($9)
-          '0', // interes_acumulado ($10)
-          'En Espera' // confirmacionIFEMI ($11)
+          nombreCuota, 
+          montoCuota.toFixed(2), 
+          montoCuota.toFixed(2),
+          fechaDesde,
+          fechaHasta,
+          'Pendiente',
+          0,
+          '0',
+          'En Espera',
+          esCuotaGracia
         ]
       );
 
@@ -492,18 +563,31 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
     }
 
     res.json({
-      message: "Cuotas recalculadas exitosamente usando configuración del sistema",
+      message: "Cuotas recalculadas exitosamente - Saldo fraccionado entre todas las cuotas",
       configuracion_usada: {
         frecuencia: nueva_frecuencia,
-        total_cuotas: nuevo_total_cuotas,
-        cuotas_gracia: configuracion.cuotasGracia
+        total_cuotas: nuevo_total_cuotas, // 20
+        cuotas_obligatorias: cuotasObligatoriasTotal, // 18
+        cuotas_gracia: cuotasGraciaTotal, // 2
+        rango_obligatorias: `1-${cuotasObligatoriasTotal}`,
+        rango_gracia: `${cuotasObligatoriasTotal + 1}-${nuevo_total_cuotas}`
+      },
+      estado_actual: {
+        cuotas_obligatorias_pagadas: cuotasObligatoriasPagadas,
+        cuotas_gracia_pagadas: cuotasGraciaPagadas,
+        cuotas_obligatorias_pendientes: cuotasObligatoriasPendientes,
+        cuotas_gracia_pendientes: cuotasGraciaPendientes,
+        total_cuotas_pendientes: totalCuotasPendientes
       },
       resumen: {
         cuotas_pagadas_mantenidas: cuotasPagadas.length,
+        cuotas_pendientes_eliminadas: cuotasPendientes.length,
         nuevas_cuotas_pendientes: nuevasCuotas.length,
-        total_cuotas: nuevo_total_cuotas,
-        nuevo_monto_cuota: parseFloat(nuevoMontoCuota.toFixed(2)),
-        saldo_pendiente: saldoPendiente
+        cuotas_obligatorias: cuotasObligatoriasPendientes,
+        cuotas_gracia: cuotasGraciaPendientes,
+        monto_por_cuota: parseFloat(montoPorCuota.toFixed(2)),
+        saldo_pendiente: parseFloat(saldoPendiente.toFixed(2)),
+        distribucion: `Todas las ${totalCuotasPendientes} cuotas pendientes: $${montoPorCuota.toFixed(2)}/cuota`
       },
       nuevas_cuotas: nuevasCuotas
     });
@@ -513,6 +597,13 @@ router.post("/recalcular/:id_contrato", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Función auxiliar para extraer número de cuota del texto
+function extraerNumeroCuota(textoCuota) {
+  if (!textoCuota) return 1;
+  const match = textoCuota.match(/(\d+)/);
+  return match ? parseInt(match[1]) : 1;
+}
 
 // ========== RUTAS DE ESTADÍSTICAS ==========
 

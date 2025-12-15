@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 // Importación de páginas
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import LoginAdmin from "./pages/Login-admin";
 import Dashboard from "./pages/Dashboard";
 import FormatoContrato from "./pages/FormatoContrato"
 //Emprededor
@@ -47,6 +48,7 @@ function App() {
         {/* Rutas públicas */}
         <Route path="/" element={<Index />} />
         <Route path="/Login" element={<Login />} />
+        <Route path="/Login-admin" element={<LoginAdmin />} />
         <Route path="/RegistroEmprendedor" element={<RegistroEmprendedor />} />
         <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/Requeri_solicit" element={<Requeri_solicit />} />

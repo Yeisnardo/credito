@@ -1,8 +1,40 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // ajusta si es necesario
+  baseURL: 'http://localhost:5000',
 });
+
+// 🔥 NUEVA FUNCIÓN: Actualizar solicitud SOLO por id_req
+export const updateSolicitudPorIdReq = async (id_req, datos) => {
+  try {
+    console.log('🎯 Enviando actualización por id_req:', {
+      id_req,
+      datos
+    });
+
+    const response = await api.put(
+      `/api/solicitudes/requerimiento/${id_req}`, 
+      datos
+    );
+    
+    console.log('✅ Respuesta del servidor:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error en updateSolicitudPorIdReq:', error);
+    throw error;
+  }
+};
+
+// 🔥 FUNCIÓN PARA OBTENER SOLICITUD POR id_req
+export const getSolicitudPorIdReq = async (id_req) => {
+  try {
+    const response = await api.get(`/api/solicitudes/requerimiento/${id_req}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo solicitud por id_req:', error);
+    throw error;
+  }
+};
 
 // Funciones API para Solicitud
 export const getSolicitudes = async () => {
@@ -48,6 +80,8 @@ export default {
   getSolicitudesPorEstatus,
   createSolicitud,
   updateSolicitud,
+  updateSolicitudPorIdReq, // 🔥 NUEVA
+  getSolicitudPorIdReq,    // 🔥 NUEVA
   deleteSolicitud,
   updateSolicitudMotivo,
 };

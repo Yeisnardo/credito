@@ -12,7 +12,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configuración multer MEJORADA
+// Configuración multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadsDir);
@@ -23,7 +23,6 @@ const storage = multer.diskStorage({
   }
 });
 
-// Filtro para solo imágenes
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
@@ -36,16 +35,19 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB límite
+    fileSize: 10 * 1024 * 1024
   }
 });
 
 // Obtener todos los archivos
 router.get('/', async (req, res) => {
   try {
-    const resultado = await query('SELECT * FROM requerimiento_archivo');
+    const resultado = await query(`
+      SELECT ra.*, re.opt_requerimiento, re.verificacion 
+      FROM requerimiento_archivo ra
+      LEFT JOIN requerimiento_emprendedor re ON ra.id_req = re.id_req
+    `);
     
-    // Construir URLs completas para las imágenes
     const archivosConUrl = resultado.rows.map(archivo => ({
       ...archivo,
       url: `http://localhost:5000/uploads/${path.basename(archivo.archivo)}`
@@ -65,7 +67,10 @@ router.get('/byReq/:id_req', async (req, res) => {
     console.log('🔍 Buscando archivos para id_req:', id_req);
     
     const resultado = await query(
-      'SELECT * FROM requerimiento_archivo WHERE id_req = $1 ORDER BY id_archivo DESC',
+      `SELECT ra.*, re.opt_requerimiento, re.verificacion 
+       FROM requerimiento_archivo ra
+       LEFT JOIN requerimiento_emprendedor re ON ra.id_req = re.id_req
+       WHERE ra.id_req = $1 ORDER BY ra.id_archivo DESC`,
       [id_req]
     );
     
@@ -75,7 +80,6 @@ router.get('/byReq/:id_req', async (req, res) => {
       return res.status(404).json({ message: 'No se encontraron archivos para ese requerimiento' });
     }
 
-    // Construir URLs completas para las imágenes
     const archivosConUrl = resultado.rows.map(archivo => ({
       ...archivo,
       url: `http://localhost:5000/uploads/${path.basename(archivo.archivo)}`
@@ -88,14 +92,17 @@ router.get('/byReq/:id_req', async (req, res) => {
   }
 });
 
-// Obtener archivos por cédula del emprendedor - NUEVA RUTA
+// Obtener archivos por cédula del emprendedor
 router.get('/emprendedor/:cedula_emprendedor', async (req, res) => {
   try {
     const { cedula_emprendedor } = req.params;
     console.log('🔍 Buscando archivos para cédula:', cedula_emprendedor);
     
     const resultado = await query(
-      'SELECT * FROM requerimiento_archivo WHERE cedula_emprendedor = $1 ORDER BY id_archivo DESC',
+      `SELECT ra.*, re.opt_requerimiento, re.verificacion 
+       FROM requerimiento_archivo ra
+       LEFT JOIN requerimiento_emprendedor re ON ra.id_req = re.id_req
+       WHERE ra.cedula_emprendedor = $1 ORDER BY ra.id_archivo DESC`,
       [cedula_emprendedor]
     );
     
@@ -105,7 +112,6 @@ router.get('/emprendedor/:cedula_emprendedor', async (req, res) => {
       return res.status(404).json({ message: 'No se encontraron archivos para este emprendedor' });
     }
 
-    // Construir URLs completas para las imágenes
     const archivosConUrl = resultado.rows.map(archivo => ({
       ...archivo,
       url: `http://localhost:5000/uploads/${path.basename(archivo.archivo)}`
@@ -123,7 +129,10 @@ router.get('/:id_archivo', async (req, res) => {
   try {
     const { id_archivo } = req.params;
     const resultado = await query(
-      'SELECT * FROM requerimiento_archivo WHERE id_archivo = $1',
+      `SELECT ra.*, re.opt_requerimiento, re.verificacion 
+       FROM requerimiento_archivo ra
+       LEFT JOIN requerimiento_emprendedor re ON ra.id_req = re.id_req
+       WHERE ra.id_archivo = $1`,
       [id_archivo]
     );
     
@@ -132,7 +141,6 @@ router.get('/:id_archivo', async (req, res) => {
     }
 
     const archivo = resultado.rows[0];
-    // Agregar URL completa
     archivo.url = `http://localhost:5000/uploads/${path.basename(archivo.archivo)}`;
 
     res.json(archivo);
@@ -142,24 +150,32 @@ router.get('/:id_archivo', async (req, res) => {
   }
 });
 
-// Crear un nuevo archivo (con multer) - MEJORADO
+// Crear un nuevo archivo
 router.post('/', upload.single('archivo'), async (req, res) => {
   try {
-    // Extraer los campos del cuerpo de la solicitud
     const { cedula_emprendedor, fecha_llevar, id_req } = req.body;
 
-    // Validar que se haya subido un archivo
     if (!req.file) {
       return res.status(400).json({ message: 'Archivo es requerido' });
     }
 
-    // Nombre del archivo guardado
     const nombreArchivo = req.file.filename;
 
-    // Validar que los campos necesarios estén presentes
-    if (!cedula_emprendedor || !fecha_llevar || !id_req) {
+    // Validar que exista el requerimiento_emprendedor
+    if (id_req) {
+      const requerimientoExists = await query(
+        'SELECT id_req FROM requerimiento_emprendedor WHERE id_req = $1',
+        [id_req]
+      );
+      
+      if (requerimientoExists.rows.length === 0) {
+        return res.status(404).json({ message: 'El requerimiento especificado no existe' });
+      }
+    }
+
+    if (!cedula_emprendedor || !fecha_llevar) {
       return res.status(400).json({ 
-        message: 'Campos obligatorios incompletos: cedula_emprendedor, fecha_llevar, id_req son requeridos' 
+        message: 'Campos obligatorios incompletos: cedula_emprendedor, fecha_llevar son requeridos' 
       });
     }
 
@@ -170,20 +186,17 @@ router.post('/', upload.single('archivo'), async (req, res) => {
       archivo: nombreArchivo
     });
 
-    // Insertar en la base de datos
     const resultado = await query(
       `INSERT INTO requerimiento_archivo (cedula_emprendedor, archivo, fecha_llevar, id_req)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [cedula_emprendedor, nombreArchivo, fecha_llevar, id_req]
+      [cedula_emprendedor, nombreArchivo, fecha_llevar, id_req || null]
     );
 
     const archivoCreado = resultado.rows[0];
-    // Agregar URL completa a la respuesta
     archivoCreado.url = `http://localhost:5000/uploads/${nombreArchivo}`;
 
     console.log('✅ Archivo creado exitosamente:', archivoCreado);
 
-    // Responder con los datos insertados
     res.status(201).json(archivoCreado);
   } catch (err) {
     console.error('❌ Error en crearArchivo:', err);
@@ -203,19 +216,29 @@ router.use((error, req, res, next) => {
   next();
 });
 
-// Actualizar un archivo existente con opción de subir nuevo archivo
+// Actualizar un archivo existente
 router.put('/:id_archivo', upload.single('archivo'), async (req, res) => {
   try {
     const { id_archivo } = req.params;
     const { cedula_emprendedor, fecha_llevar, id_req } = req.body;
 
-    // Si se subió un nuevo archivo, actualizar la ruta
+    // Validar que exista el requerimiento_emprendedor si se proporciona id_req
+    if (id_req) {
+      const requerimientoExists = await query(
+        'SELECT id_req FROM requerimiento_emprendedor WHERE id_req = $1',
+        [id_req]
+      );
+      
+      if (requerimientoExists.rows.length === 0) {
+        return res.status(404).json({ message: 'El requerimiento especificado no existe' });
+      }
+    }
+
     let nombreArchivo;
     if (req.file) {
       nombreArchivo = req.file.filename;
     }
 
-    // Construir query dinámico
     const fields = [];
     const values = [];
     let idx = 1;
@@ -230,9 +253,9 @@ router.put('/:id_archivo', upload.single('archivo'), async (req, res) => {
       values.push(fecha_llevar);
       idx++;
     }
-    if (id_req) {
+    if (id_req !== undefined) {
       fields.push(`id_req = $${idx}`);
-      values.push(id_req);
+      values.push(id_req || null);
       idx++;
     }
     if (req.file) {
@@ -245,7 +268,7 @@ router.put('/:id_archivo', upload.single('archivo'), async (req, res) => {
       return res.status(400).json({ message: 'No hay datos para actualizar' });
     }
 
-    values.push(id_archivo); // valor para WHERE
+    values.push(id_archivo);
 
     const queryText = `
       UPDATE requerimiento_archivo
@@ -260,7 +283,6 @@ router.put('/:id_archivo', upload.single('archivo'), async (req, res) => {
     }
 
     const archivoActualizado = resultado.rows[0];
-    // Agregar URL completa
     archivoActualizado.url = `http://localhost:5000/uploads/${path.basename(archivoActualizado.archivo)}`;
 
     res.json(archivoActualizado);
@@ -275,7 +297,6 @@ router.delete('/:id_archivo', async (req, res) => {
   try {
     const { id_archivo } = req.params;
     
-    // Primero obtener información del archivo para eliminar el archivo físico
     const archivoInfo = await query(
       'SELECT archivo FROM requerimiento_archivo WHERE id_archivo = $1',
       [id_archivo]
@@ -285,13 +306,11 @@ router.delete('/:id_archivo', async (req, res) => {
       return res.status(404).json({ message: 'Archivo no encontrado' });
     }
 
-    // Eliminar archivo físico
     const rutaArchivo = path.join(uploadsDir, archivoInfo.rows[0].archivo);
     if (fs.existsSync(rutaArchivo)) {
       fs.unlinkSync(rutaArchivo);
     }
 
-    // Eliminar de la base de datos
     const resultado = await query(
       'DELETE FROM requerimiento_archivo WHERE id_archivo = $1 RETURNING *',
       [id_archivo]

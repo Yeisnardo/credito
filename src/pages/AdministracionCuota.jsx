@@ -548,6 +548,7 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Comprobante</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Días Mora</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Interés Mora</th>
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tipo</th>
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Acciones</th>
               </tr>
             </thead>
@@ -674,6 +675,18 @@ const CuotasTable = ({ cuotasContrato, loading, onConfirmarPago, onRechazarPago,
                           </div>
                         )}
                       </td>
+
+                      <td className="py-3 px-4">
+  {cuota.cuota_gracia ? (
+    <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+      Gracia
+    </span>
+  ) : (
+    <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+      Normal
+    </span>
+  )}
+</td>
                       
                       <td className="py-3 px-4">
                         {cuota.estado_cuota === 'Pagado' && cuota.confirmacionifemi === 'A Recibido' && (
@@ -998,53 +1011,52 @@ const AdminDashboard = ({ setUser }) => {
   };
 
   const recalcularCuotas = async () => {
-    if (!contratoSeleccionado) return;
+  if (!contratoSeleccionado) return;
 
-    try {
-      setLoading(true);
-      
-      if (!contratoSeleccionado.frecuencia_pago_contrato || !contratoSeleccionado.cuotas) {
-        alert('El contrato no tiene la configuración necesaria para recalcular cuotas');
-        setLoading(false);
-        return;
-      }
-      
-      const confirmar = window.confirm(
-        `¿Está seguro de recalcular las cuotas pendientes?\n\n` +
-        `Configuración del contrato:\n` +
-        `• Frecuencia: ${contratoSeleccionado.frecuencia_pago_contrato}\n` +
-        `• Total de cuotas: ${contratoSeleccionado.cuotas}\n` +
-        `• Cuotas de gracia: ${contratoSeleccionado.gracia || 0}\n` +
-        `• Tasa de mora: ${contratoSeleccionado.morosidad || 0}%\n` +
-        `• Monto por cuota: $${contratoSeleccionado.monto_cuota}\n\n` +
-        `Esta acción eliminará todas las cuotas pendientes y las recreará según la configuración del contrato.`
-      );
+  try {
+    setLoading(true);
+    
+    const confirmar = window.confirm(
+      `¿Está seguro de recalcular las cuotas pendientes?\n\n` +
+      `Configuración del contrato:\n` +
+      `• Total de cuotas: ${contratoSeleccionado.cuotas}\n` +
+      `• Cuotas de gracia: ${contratoSeleccionado.gracia || 0}\n` +
+      `• Cuotas ya pagadas: ${cuotasContrato.filter(c => c.estado_cuota === 'Pagado').length}\n` +
+      `• Cuotas de gracia usadas: ${cuotasContrato.filter(c => c.cuota_gracia && c.estado_cuota === 'Pagado').length}\n\n` +
+      `Esta acción eliminará todas las cuotas pendientes y las recreará considerando las cuotas de gracia disponibles.`
+    );
 
-      if (!confirmar) {
-        setLoading(false);
-        return;
-      }
-
-      const resultado = await apiCuotas.recalcularCuotasPendientes(
-        contratoSeleccionado.id_contrato
-      );
-
-      setContratosRecalculados(prev => {
-        const nuevoSet = new Set(prev);
-        nuevoSet.add(contratoSeleccionado.id_contrato);
-        return nuevoSet;
-      });
-      
-      alert('✅ ' + resultado.message);
-      await cargarCuotasContrato(contratoSeleccionado.id_contrato);
-      
-    } catch (error) {
-      console.error('Error recalculando cuotas:', error);
-      alert('❌ Error al recalcular: ' + error.message);
-    } finally {
+    if (!confirmar) {
       setLoading(false);
+      return;
     }
-  };
+
+    const resultado = await apiCuotas.recalcularCuotasPendientes(
+      contratoSeleccionado.id_contrato
+    );
+
+    // Mostrar resumen detallado
+    if (resultado.resumen) {
+      alert(`✅ ${resultado.message}\n\n` +
+        `Resumen del recálculo:\n` +
+        `• Cuotas con gracia aplicadas: ${resultado.resumen.cuotas_con_gracia}\n` +
+        `• Cuotas normales: ${resultado.resumen.cuotas_normales}\n` +
+        `• Monto por cuota normal: $${resultado.resumen.monto_cuota_normal}\n` +
+        `• Total nuevas cuotas: ${resultado.resumen.nuevas_cuotas_pendientes}\n` +
+        `• Saldo pendiente: $${resultado.resumen.saldo_pendiente}`);
+    } else {
+      alert('✅ ' + resultado.message);
+    }
+    
+    await cargarCuotasContrato(contratoSeleccionado.id_contrato);
+    
+  } catch (error) {
+    console.error('Error recalculando cuotas:', error);
+    alert('❌ Error al recalcular: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fueRecalculado = (idContrato) => {
     return contratosRecalculados.has(idContrato);
@@ -1177,7 +1189,6 @@ const AdminDashboard = ({ setUser }) => {
                   Exportar
                 </button>
                 
-                {!fueRecalculado(contratoSeleccionado.id_contrato) && (
                   <button 
                     className="bg-amber-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-amber-600 transition-colors"
                     onClick={recalcularCuotas}
@@ -1186,7 +1197,6 @@ const AdminDashboard = ({ setUser }) => {
                     <TbRefresh className="mr-2" size={16} />
                     {loading ? 'Procesando...' : 'Generar cuotas'}
                   </button>
-                )}
               </div>
             </HeaderSection>
 

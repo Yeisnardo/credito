@@ -1,0 +1,10 @@
+{!fueRecalculado(contratoSeleccionado.id_contrato) && (
+                  <button 
+                    className="bg-amber-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-amber-600 transition-colors"
+                    onClick={recalcularCuotas}
+                    disabled={loading}
+                  >
+                    <TbRefresh className="mr-2" size={16} />
+                    {loading ? 'Procesando...' : 'Generar cuotas'}
+                  </button>
+                )}

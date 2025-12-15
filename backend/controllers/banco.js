@@ -14,7 +14,7 @@ const validarCuenta = (cuenta) => {
 // Obtener todas las cuentas
 router.get('/', async (req, res) => {
   try {
-    const resultado = await query('SELECT * FROM cuenta');
+    const resultado = await query('SELECT DISTINCT * FROM cuenta');
     res.json(resultado.rows);
   } catch (err) {
     console.error('Error en getCuentas:', err);

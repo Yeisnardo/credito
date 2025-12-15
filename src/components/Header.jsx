@@ -2,15 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import api, { getUsuarioPorCedula } from '../services/api_usuario';
-import emprendimientoApi from '../services/api_emprendimiento'; // Ajusta la ruta según tu estructura
-import personaApi from '../services/api_persona'; // Ajusta la ruta según tu estructura
-import logo from '../assets/imagenes/logo_header.jpg';
+import emprendimientoApi from '../services/api_emprendimiento';
+import personaApi from '../services/api_persona';
+import logo from '../assets/image/logo_header.jpg';
 
 // Importar Tabler Icons
 import { 
   TbMenu2, 
   TbX, 
-  TbSearch, 
   TbBell, 
   TbUser, 
   TbChevronDown,
@@ -20,24 +19,33 @@ import {
   TbUserCircle,
   TbUserEdit,
   TbBuildingStore,
-  TbCheck,
-  TbCircle
+  TbCircle,
+  TbShield,
+  TbCreditCard,
+  TbBusinessplan
 } from 'react-icons/tb';
 
-// Hook personalizado para logout
+// Hook personalizado para logout - ACTUALIZADO
+// Hook personalizado para logout - SOLO MENSAJE PARA USUARIOS NO VÁLIDOS
 const useLogout = () => {
   const navigate = useNavigate();
 
   const logout = useCallback(async () => {
     try {
-      // Intentar cerrar sesión en el backend
+      // Obtener el tipo de usuario antes de limpiar localStorage
+      const usuario = JSON.parse(localStorage.getItem("usuario")) || null;
+      const tipoUsuario = usuario?.rol;
+      
       await api.post('/api/usuarios/logout');
     } catch (error) {
       console.warn('Error en logout del backend:', error);
-      // Continuamos aunque falle el backend
     } finally {
-      // Siempre limpiar el frontend
-      const itemsToKeep = []; // Items que quieres conservar (si los hay)
+      // Obtener el tipo de usuario antes de limpiar
+      const usuario = JSON.parse(localStorage.getItem("usuario")) || null;
+      const tipoUsuario = usuario?.rol;
+
+      // Limpiar almacenamiento
+      const itemsToKeep = [];
       const allKeys = Object.keys(localStorage);
       
       allKeys.forEach(key => {
@@ -48,7 +56,7 @@ const useLogout = () => {
 
       sessionStorage.clear();
 
-      // Limpiar cookies de autenticación
+      // Limpiar cookies
       document.cookie.split(";").forEach(cookie => {
         const eqPos = cookie.indexOf("=");
         const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
@@ -57,10 +65,26 @@ const useLogout = () => {
         }
       });
 
-      // Redirigir al login
-      navigate('/Login', { replace: true });
-      
-      // Recargar para estado limpio
+      // 🔄 REDIRECCIÓN SEGÚN TIPO DE USUARIO - SOLO MENSAJE PARA NO VÁLIDOS
+      if (tipoUsuario === 'Emprendedor') {
+        navigate('/Login', { replace: true });
+      } else if (['Administrador', 'Credito1', 'Credito2'].includes(tipoUsuario)) {
+        navigate('/Login-admin', { replace: true });
+      } else {
+        // 🚫 USUARIO NO VÁLIDO - SOLO MENSAJE, NO REDIRECCIÓN
+        Swal.fire({
+          icon: 'warning',
+          title: 'Tipo de usuario no reconocido',
+          text: 'Se ha detectado un tipo de usuario no válido. Por favor, contacte al administrador.',
+          confirmButtonColor: '#4f46e5',
+        }).then(() => {
+          // Después de mostrar el mensaje, redirigir al login general
+          navigate('/Login', { replace: true });
+        });
+        return; // Importante: salir de la función para evitar la recarga
+      }
+
+      // Recargar para estado limpio (solo para usuarios válidos)
       setTimeout(() => window.location.reload(), 100);
     }
   }, [navigate]);
@@ -103,15 +127,58 @@ const PerfilOpciones = ({
   onEditarDatos,
   onEditarEmprendimiento,
   onCerrarSesion,
-  usuarioLogueado // Recibir usuarioLogueado como prop
+  usuarioLogueado
 }) => {
   // Función para verificar permisos por rol
   const puedeVer = (rolesPermitidos) => {
     return usuarioLogueado && rolesPermitidos.includes(usuarioLogueado.rol);
   };
 
+  // Obtener ícono según el tipo de usuario
+  const getRolIcon = () => {
+    switch(usuarioLogueado?.rol?.toLowerCase()) {
+      case 'Administrador':
+        return <TbShield size={20} className="text-purple-600" />;
+      case 'Credito1':
+      case 'Credito2':
+        return <TbCreditCard size={20} className="text-blue-600" />;
+      case 'Emprendedor':
+        return <TbBusinessplan size={20} className="text-green-600" />;
+      default:
+        return <TbUser size={20} className="text-gray-600" />;
+    }
+  };
+
+  // Obtener color de fondo según el tipo de usuario
+  const getRolColor = () => {
+    switch(usuarioLogueado?.rol?.toLowerCase()) {
+      case 'administrador':
+        return 'bg-purple-100 text-purple-700';
+      case 'credito1':
+      case 'credito2':
+        return 'bg-blue-100 text-blue-700';
+      case 'emprendedor':
+        return 'bg-green-100 text-green-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   return (
     <div className="py-2">
+      {/* Información del rol */}
+      <div className="px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          {getRolIcon()}
+          <div>
+            <p className="text-sm font-medium text-gray-800">Tipo de Usuario</p>
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getRolColor()}`}>
+              {usuarioLogueado?.rol || 'No definido'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <button
         className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
         onClick={() => { onConfig(); onClose(); }}
@@ -119,6 +186,7 @@ const PerfilOpciones = ({
         <TbSettings size={20} className="mr-3" />
         <span>Configuración</span>
       </button>
+      
       <button
         className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
         onClick={() => { onVerPerfil(); onClose(); }}
@@ -126,6 +194,7 @@ const PerfilOpciones = ({
         <TbUserCircle size={20} className="mr-3" />
         <span>Ver Perfil</span>
       </button>
+      
       <button
         className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
         onClick={() => { onEditarDatos(); onClose(); }}
@@ -133,7 +202,9 @@ const PerfilOpciones = ({
         <TbUserEdit size={20} className="mr-3" />
         <span>Datos Personales</span>
       </button>
-      {puedeVer(["Emprendedor"]) && (
+      
+      {/* Solo emprendedores pueden ver esta opción */}
+      {puedeVer(["emprendedor"]) && (
         <button
           className="w-full px-4 py-3 flex items-center text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-md"
           onClick={() => { onEditarEmprendimiento(); onClose(); }}
@@ -142,7 +213,9 @@ const PerfilOpciones = ({
           <span>Mi Emprendimiento</span>
         </button>
       )}
+      
       <div className="border-t border-gray-200 my-2"></div>
+      
       <button
         className="w-full px-4 py-3 flex items-center text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors rounded-md"
         onClick={() => { onCerrarSesion(); onClose(); }}
@@ -158,13 +231,11 @@ const Header = ({ toggleMenu, menuOpen }) => {
   const navigate = useNavigate();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
   const [notifications, setNotifications] = useState([]);
-  const searchRef = useRef(null);
-  
+
   // Cargar usuario logueado desde localStorage
   const [usuarioLogueado, setUsuarioLogueado] = useState(null);
 
@@ -176,6 +247,37 @@ const Header = ({ toggleMenu, menuOpen }) => {
   // Función para verificar permisos por rol
   const puedeVer = (rolesPermitidos) => {
     return usuarioLogueado && rolesPermitidos.includes(usuarioLogueado.rol);
+  };
+
+  // Obtener color del badge según el tipo de usuario
+  const getBadgeColor = () => {
+    switch(usuarioLogueado?.rol?.toLowerCase()) {
+      case 'Administrador':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'Credito1':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Credito2':
+        return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      case 'Emprendedor':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Obtener ícono según el tipo de usuario
+  const getUserIcon = () => {
+    switch(usuarioLogueado?.rol?.toLowerCase()) {
+      case 'administrador':
+        return <TbShield size={20} className="text-purple-600" />;
+      case 'credito1':
+      case 'credito2':
+        return <TbCreditCard size={20} className="text-blue-600" />;
+      case 'emprendedor':
+        return <TbBusinessplan size={20} className="text-green-600" />;
+      default:
+        return <TbUser size={20} className="text-indigo-600" />;
+    }
   };
 
   // Usar el hook de logout
@@ -201,7 +303,6 @@ const Header = ({ toggleMenu, menuOpen }) => {
 
   // Cargar notificaciones
   useEffect(() => {
-    // Simular carga de notificaciones
     const fakeNotifications = [
       {
         id: 1,
@@ -245,245 +346,191 @@ const Header = ({ toggleMenu, menuOpen }) => {
     };
   }, []);
 
-  // Cerrar menús al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setSearchOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-// Función genérica mejorada para actualizar datos vía API
-const handleUpdate = useCallback(async (endpoint, data, successMsg) => {
-  try {
-    const response = await api.put(endpoint, data);
-    
-    // Si se actualiza el usuario actual, actualizar el estado
-    if (endpoint.includes('/api/usuarios/') && user?.cedula_usuario) {
-      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
-      if (updatedUser) {
-        setUser(updatedUser);
-        localStorage.setItem('usuario', JSON.stringify(updatedUser));
-      }
-    }
-    
-    Swal.fire({
-      title: "¡Éxito!",
-      text: successMsg,
-      icon: "success",
+  // Configuración mejorada
+  const handleAbrirConfiguracion = async () => {
+    const { value: option } = await Swal.fire({
+      title: "Configuración de Cuenta",
+      text: "¿Qué deseas modificar?",
+      icon: "question",
+      input: "select",
+      inputOptions: {
+        password: "Cambiar Contraseña",
+        user: "Cambiar Nombre de Usuario"
+      },
+      inputPlaceholder: "Selecciona una opción",
+      showCancelButton: true,
       confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#6b7280",
+      inputValidator: (value) => {
+        if (!value) return "Por favor, selecciona una opción";
+      },
     });
     
-    return response.data;
-  } catch (error) {
-    console.error('Error al actualizar:', error);
-    const errorMessage = error.response?.data?.message || "No se pudo actualizar la información";
-    
-    Swal.fire({
-      title: "Error",
-      text: errorMessage,
-      icon: "error",
-      confirmButtonColor: "#ef4444",
+    if (option === "password") await handleCambiarContraseña();
+    if (option === "user") await handleCambiarUsuario();
+  };
+
+  // Cambiar Contraseña
+  const handleCambiarContraseña = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: "Cambiar Contraseña",
+      html: `
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña Actual</label>
+            <input 
+              id="currentPassword" 
+              type="password" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+              placeholder="Ingresa tu contraseña actual"
+              required
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña</label>
+            <input 
+              id="newPassword" 
+              type="password" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+              placeholder="Mínimo 6 caracteres"
+              minlength="6"
+              required
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nueva Contraseña</label>
+            <input 
+              id="confirmPassword" 
+              type="password" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+              placeholder="Repite tu nueva contraseña"
+              required
+            />
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#6b7280",
+      preConfirm: () => {
+        const currentPass = document.getElementById("currentPassword").value;
+        const newPass = document.getElementById("newPassword").value;
+        const confirmPass = document.getElementById("confirmPassword").value;
+        
+        if (!currentPass || !newPass || !confirmPass) {
+          Swal.showValidationMessage("Por favor, completa todos los campos");
+          return false;
+        }
+        
+        if (newPass.length < 6) {
+          Swal.showValidationMessage("La nueva contraseña debe tener al menos 6 caracteres");
+          return false;
+        }
+        
+        if (newPass !== confirmPass) {
+          Swal.showValidationMessage("Las nuevas contraseñas no coinciden");
+          return false;
+        }
+        
+        return { 
+          currentPassword: currentPass,
+          newPassword: newPass 
+        };
+      },
     });
-    throw error;
-  }
-}, [user]);
-
-// Configuración mejorada
-const handleAbrirConfiguracion = async () => {
-  const { value: option } = await Swal.fire({
-    title: "Configuración de Cuenta",
-    text: "¿Qué deseas modificar?",
-    icon: "question",
-    input: "select",
-    inputOptions: {
-      password: "Cambiar Contraseña",
-      user: "Cambiar Nombre de Usuario"
-    },
-    inputPlaceholder: "Selecciona una opción",
-    showCancelButton: true,
-    confirmButtonColor: "#4f46e5",
-    cancelButtonColor: "#6b7280",
-    inputValidator: (value) => {
-      if (!value) return "Por favor, selecciona una opción";
-    },
-  });
-  
-  if (option === "password") await handleCambiarContraseña();
-  if (option === "user") await handleCambiarUsuario();
-};
-
-// Cambiar Contraseña - VERSIÓN SIMPLIFICADA Y FUNCIONAL
-const handleCambiarContraseña = async () => {
-  const { value: formValues } = await Swal.fire({
-    title: "Cambiar Contraseña",
-    html: `
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña Actual</label>
-          <input 
-            id="currentPassword" 
-            type="password" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-            placeholder="Ingresa tu contraseña actual"
-            required
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña</label>
-          <input 
-            id="newPassword" 
-            type="password" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-            placeholder="Mínimo 6 caracteres"
-            minlength="6"
-            required
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nueva Contraseña</label>
-          <input 
-            id="confirmPassword" 
-            type="password" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
-            placeholder="Repite tu nueva contraseña"
-            required
-          />
-        </div>
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonColor: "#4f46e5",
-    cancelButtonColor: "#6b7280",
-    preConfirm: () => {
-      const currentPass = document.getElementById("currentPassword").value;
-      const newPass = document.getElementById("newPassword").value;
-      const confirmPass = document.getElementById("confirmPassword").value;
-      
-      if (!currentPass || !newPass || !confirmPass) {
-        Swal.showValidationMessage("Por favor, completa todos los campos");
-        return false;
-      }
-      
-      if (newPass.length < 6) {
-        Swal.showValidationMessage("La nueva contraseña debe tener al menos 6 caracteres");
-        return false;
-      }
-      
-      if (newPass !== confirmPass) {
-        Swal.showValidationMessage("Las nuevas contraseñas no coinciden");
-        return false;
-      }
-      
-      return { 
-        currentPassword: currentPass,
-        newPassword: newPass 
-      };
-    },
-  });
-  
-  if (formValues) {
-    try {
-      // Verificar contraseña actual primero
-      const verifyResponse = await api.verifyPassword(user?.cedula_usuario, formValues.currentPassword);
-      
-      if (!verifyResponse.valid) {
+    
+    if (formValues) {
+      try {
+        const verifyResponse = await api.verifyPassword(user?.cedula_usuario, formValues.currentPassword);
+        
+        if (!verifyResponse.valid) {
+          Swal.fire({
+            title: "Error",
+            text: "La contraseña actual es incorrecta",
+            icon: "error",
+            confirmButtonColor: "#ef4444",
+          });
+          return;
+        }
+        
+        await api.updatePassword(user?.cedula_usuario, formValues.newPassword);
+        
+        Swal.fire({
+          title: "¡Éxito!",
+          text: "Contraseña actualizada correctamente",
+          icon: "success",
+          confirmButtonColor: "#4f46e5",
+        });
+        
+      } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
         Swal.fire({
           title: "Error",
-          text: "La contraseña actual es incorrecta",
+          text: "No se pudo cambiar la contraseña. Verifica tu contraseña actual.",
           icon: "error",
           confirmButtonColor: "#ef4444",
         });
-        return;
       }
-      
-      // Actualizar contraseña usando la nueva función
-      await api.updatePassword(user?.cedula_usuario, formValues.newPassword);
-      
-      Swal.fire({
-        title: "¡Éxito!",
-        text: "Contraseña actualizada correctamente",
-        icon: "success",
-        confirmButtonColor: "#4f46e5",
-      });
-      
-    } catch (error) {
-      console.error('Error al cambiar contraseña:', error);
-      Swal.fire({
-        title: "Error",
-        text: "No se pudo cambiar la contraseña. Verifica tu contraseña actual.",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-      });
     }
-  }
-};
+  };
 
-// Cambiar Usuario - VERSIÓN CORREGIDA
-const handleCambiarUsuario = async () => {
-  const { value: newUsername } = await Swal.fire({
-    title: "Cambiar Nombre de Usuario",
-    input: "text",
-    inputLabel: "Nuevo nombre de usuario",
-    inputValue: user?.usuario || "",
-    inputPlaceholder: "Ingresa tu nuevo nombre de usuario",
-    showCancelButton: true,
-    confirmButtonColor: "#4f46e5",
-    cancelButtonColor: "#6b7280",
-    inputValidator: (value) => {
-      if (!value) {
-        return "Por favor, ingresa un nombre de usuario";
+  // Cambiar Usuario
+  const handleCambiarUsuario = async () => {
+    const { value: newUsername } = await Swal.fire({
+      title: "Cambiar Nombre de Usuario",
+      input: "text",
+      inputLabel: "Nuevo nombre de usuario",
+      inputValue: user?.usuario || "",
+      inputPlaceholder: "Ingresa tu nuevo nombre de usuario",
+      showCancelButton: true,
+      confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#6b7280",
+      inputValidator: (value) => {
+        if (!value) {
+          return "Por favor, ingresa un nombre de usuario";
+        }
+        if (value.length < 3) {
+          return "El usuario debe tener al menos 3 caracteres";
+        }
+        if (value === user?.usuario) {
+          return "Este es tu nombre de usuario actual";
+        }
       }
-      if (value.length < 3) {
-        return "El usuario debe tener al menos 3 caracteres";
-      }
-      if (value === user?.usuario) {
-        return "Este es tu nombre de usuario actual";
+    });
+    
+    if (newUsername) {
+      try {
+        await api.updateUsuario(user?.cedula_usuario, { 
+          usuario: newUsername,
+          rol: user?.rol,
+          estatus: user?.estatus
+        });
+        
+        const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
+        if (updatedUser) {
+          setUser(updatedUser);
+          localStorage.setItem('usuario', JSON.stringify(updatedUser));
+        }
+        
+        Swal.fire({
+          title: "¡Éxito!",
+          text: "Nombre de usuario actualizado correctamente",
+          icon: "success",
+          confirmButtonColor: "#4f46e5",
+        });
+        
+      } catch (error) {
+        console.error('Error al cambiar usuario:', error);
+        Swal.fire({
+          title: "Error",
+          text: "No se pudo cambiar el nombre de usuario",
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+        });
       }
     }
-  });
-  
-  if (newUsername) {
-    try {
-      // Actualizar solo el nombre de usuario
-      await api.updateUsuario(user?.cedula_usuario, { 
-        usuario: newUsername,
-        rol: user?.rol,
-        estatus: user?.estatus
-      });
-      
-      // Actualizar el usuario en el estado local
-      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
-      if (updatedUser) {
-        setUser(updatedUser);
-        localStorage.setItem('usuario', JSON.stringify(updatedUser));
-      }
-      
-      Swal.fire({
-        title: "¡Éxito!",
-        text: "Nombre de usuario actualizado correctamente",
-        icon: "success",
-        confirmButtonColor: "#4f46e5",
-      });
-      
-    } catch (error) {
-      console.error('Error al cambiar usuario:', error);
-      Swal.fire({
-        title: "Error",
-        text: "No se pudo cambiar el nombre de usuario",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-      });
-    }
-  }
-};
+  };
 
   // Ver perfil
   const handleVerPerfil = () => {
@@ -519,7 +566,11 @@ const handleCambiarUsuario = async () => {
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div><span class="font-medium text-gray-600">Usuario:</span> ${user?.usuario || "No especificado"}</div>
-                <div><span class="font-medium text-gray-600">Rol:</span> ${user?.rol || "No especificado"}</div>
+                <div><span class="font-medium text-gray-600">Tipo Usuario:</span> 
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeColor()}">
+                    ${user?.rol || "No especificado"}
+                  </span>
+                </div>
                 <div><span class="font-medium text-gray-600">Estatus:</span> 
                   <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                     user?.estatus?.toLowerCase() === 'activo' 
@@ -532,7 +583,8 @@ const handleCambiarUsuario = async () => {
               </div>
             </div>
 
-            <!-- Información del Emprendimiento -->
+            <!-- Información del Emprendimiento (solo para emprendedores) -->
+            ${puedeVer(["emprendedor"]) ? `
             <div>
               <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                 <div class="mr-2 text-indigo-600">🏪</div>
@@ -547,6 +599,7 @@ const handleCambiarUsuario = async () => {
                 <div><span class="font-medium text-gray-600">Tipo Negocio:</span> ${user?.tipo_negocio || "No especificado"}</div>
               </div>
             </div>
+            ` : ''}
           </div>
         </div>
       `,
@@ -560,365 +613,352 @@ const handleCambiarUsuario = async () => {
   };
 
   // Editar datos personales
-  // Editar datos personales - VERSIÓN CORREGIDA CON API PERSONA
-const handleEditarDatosPersonales = async () => {
-  const { value: formValues } = await Swal.fire({
-    title: "Editar Datos Personales",
-    html: `
-      <div class="space-y-4 max-h-96 overflow-y-auto">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-            <input 
-              id="nombre" 
-              type="text" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.nombre_completo || ""}"
-              required
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Edad *</label>
-            <input 
-              id="edad" 
-              type="number" 
-              min="18" 
-              max="100"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.edad || ""}"
-              required
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-            <input 
-              id="telefono" 
-              type="tel" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.telefono || ""}"
-            >
-          </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico *</label>
-            <input 
-              id="email" 
-              type="email" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.email || ""}"
-              required
-            >
-          </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
-            <input 
-              id="direccion" 
-              type="text" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.direccion_actual || ""}"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-            <input 
-              id="estado" 
-              type="text" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.estado || ""}"
-            >
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Municipio</label>
-            <input 
-              id="municipio" 
-              type="text" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.municipio || ""}"
-            >
-          </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Persona *</label>
-            <select 
-              id="tipo_persona" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              required
-            >
-              <option value="">Selecciona un tipo</option>
-              <option value="Natural" ${user?.tipo_persona === 'Natural' ? 'selected' : ''}>Natural</option>
-              <option value="Jurídica" ${user?.tipo_persona === 'Jurídica' ? 'selected' : ''}>Jurídica</option>
-              <option value="Emprendedor" ${user?.tipo_persona === 'Emprendedor' ? 'selected' : ''}>Emprendedor</option>
-            </select>
+  const handleEditarDatosPersonales = async () => {
+    const { value: formValues } = await Swal.fire({
+      title: "Editar Datos Personales",
+      html: `
+        <div class="space-y-4 max-h-96 overflow-y-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
+              <input 
+                id="nombre" 
+                type="text" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.nombre_completo || ""}"
+                required
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Edad *</label>
+              <input 
+                id="edad" 
+                type="number" 
+                min="18" 
+                max="100"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.edad || ""}"
+                required
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+              <input 
+                id="telefono" 
+                type="tel" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.telefono || ""}"
+              >
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico *</label>
+              <input 
+                id="email" 
+                type="email" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.email || ""}"
+                required
+              >
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+              <input 
+                id="direccion" 
+                type="text" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.direccion_actual || ""}"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+              <input 
+                id="estado" 
+                type="text" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.estado || ""}"
+              >
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Municipio</label>
+              <input 
+                id="municipio" 
+                type="text" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.municipio || ""}"
+              >
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Persona *</label>
+              <select 
+                id="tipo_persona" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                required
+              >
+                <option value="">Selecciona un tipo</option>
+                <option value="Natural" ${user?.tipo_persona === 'Natural' ? 'selected' : ''}>Natural</option>
+                <option value="Jurídica" ${user?.tipo_persona === 'Jurídica' ? 'selected' : ''}>Jurídica</option>
+                <option value="Emprendedor" ${user?.tipo_persona === 'Emprendedor' ? 'selected' : ''}>Emprendedor</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonColor: "#4f46e5",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Guardar Cambios",
-    preConfirm: () => {
-      const nombre = document.getElementById("nombre").value.trim();
-      const edad = document.getElementById("edad").value.trim();
-      const telefono = document.getElementById("telefono").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const direccion = document.getElementById("direccion").value.trim();
-      const estado = document.getElementById("estado").value.trim();
-      const municipio = document.getElementById("municipio").value.trim();
-      const tipo_persona = document.getElementById("tipo_persona").value;
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Guardar Cambios",
+      preConfirm: () => {
+        const nombre = document.getElementById("nombre").value.trim();
+        const edad = document.getElementById("edad").value.trim();
+        const telefono = document.getElementById("telefono").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const direccion = document.getElementById("direccion").value.trim();
+        const estado = document.getElementById("estado").value.trim();
+        const municipio = document.getElementById("municipio").value.trim();
+        const tipo_persona = document.getElementById("tipo_persona").value;
 
-      // Validaciones
-      if (!nombre) {
-        Swal.showValidationMessage("El nombre completo es obligatorio");
-        return false;
-      }
-      if (!edad || edad < 18 || edad > 100) {
-        Swal.showValidationMessage("La edad debe estar entre 18 y 100 años");
-        return false;
-      }
-      if (!email) {
-        Swal.showValidationMessage("El correo electrónico es obligatorio");
-        return false;
-      }
-      if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-        Swal.showValidationMessage("Por favor ingresa un email válido");
-        return false;
-      }
-      if (!tipo_persona) {
-        Swal.showValidationMessage("El tipo de persona es obligatorio");
-        return false;
-      }
+        if (!nombre) {
+          Swal.showValidationMessage("El nombre completo es obligatorio");
+          return false;
+        }
+        if (!edad || edad < 18 || edad > 100) {
+          Swal.showValidationMessage("La edad debe estar entre 18 y 100 años");
+          return false;
+        }
+        if (!email) {
+          Swal.showValidationMessage("El correo electrónico es obligatorio");
+          return false;
+        }
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+          Swal.showValidationMessage("Por favor ingresa un email válido");
+          return false;
+        }
+        if (!tipo_persona) {
+          Swal.showValidationMessage("El tipo de persona es obligatorio");
+          return false;
+        }
 
-      return { 
-        nombre_completo: nombre, 
-        edad: parseInt(edad), 
-        telefono, 
-        email, 
-        direccion_actual: direccion, 
-        estado, 
-        municipio,
-        tipo_persona 
-      };
-    },
-  });
-  
-  if (formValues) {
-    try {
-      // Importar la API de persona (asegúrate de tener esta importación al inicio del archivo)
-      // import personaApi from '../services/api_persona';
-      
-      // Usar la API específica para actualizar persona
-      await personaApi.updatePersona(user?.cedula_usuario, formValues);
-      
-      // Actualizar el usuario en el estado local
-      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
-      if (updatedUser) {
-        setUser(updatedUser);
-        localStorage.setItem('usuario', JSON.stringify(updatedUser));
-      }
-      
-      Swal.fire({
-        title: "¡Éxito!",
-        text: "Datos personales actualizados correctamente",
-        icon: "success",
-        confirmButtonColor: "#4f46e5",
-      });
-      
-    } catch (error) {
-      console.error('Error al actualizar datos personales:', error);
-      Swal.fire({
-        title: "Error",
-        text: "No se pudieron actualizar los datos personales",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-      });
-    }
-  }
-};
-
-  // Editar emprendimiento
-  // Editar emprendimiento - VERSIÓN CORREGIDA CON API EMPRENDIMIENTOS
-const handleEditarEmprendimiento = async () => {
-  const { value: formValues } = await Swal.fire({
-    title: "Editar Emprendimiento",
-    html: `
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Emprendimiento *</label>
-          <input 
-            id="nombre_emprendimiento" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-            value="${user?.nombre_emprendimiento || ""}"
-            placeholder="Ingresa el nombre de tu emprendimiento"
-            required
-          />
-        </div>
+        return { 
+          nombre_completo: nombre, 
+          edad: parseInt(edad), 
+          telefono, 
+          email, 
+          direccion_actual: direccion, 
+          estado, 
+          municipio,
+          tipo_persona 
+        };
+      },
+    });
+    
+    if (formValues) {
+      try {
+        await personaApi.updatePersona(user?.cedula_usuario, formValues);
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Sector *</label>
-            <select 
-              id="tipo_sector" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              required
-            >
-              <option value="">Selecciona un sector</option>
-              <option value="Comercio" ${user?.tipo_sector === 'Comercio' ? 'selected' : ''}>Comercio</option>
-              <option value="Servicios" ${user?.tipo_sector === 'Servicios' ? 'selected' : ''}>Servicios</option>
-              <option value="Producción" ${user?.tipo_sector === 'Producción' ? 'selected' : ''}>Producción</option>
-              <option value="Agroindustria" ${user?.tipo_sector === 'Agroindustria' ? 'selected' : ''}>Agroindustria</option>
-              <option value="Tecnología" ${user?.tipo_sector === 'Tecnología' ? 'selected' : ''}>Tecnología</option>
-              <option value="Artesanía" ${user?.tipo_sector === 'Artesanía' ? 'selected' : ''}>Artesanía</option>
-              <option value="Turismo" ${user?.tipo_sector === 'Turismo' ? 'selected' : ''}>Turismo</option>
-              <option value="Otro" ${user?.tipo_sector === 'Otro' ? 'selected' : ''}>Otro</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Negocio *</label>
-            <select 
-              id="tipo_negocio" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              required
-            >
-              <option value="">Selecciona un tipo</option>
-              <option value="Microempresa" ${user?.tipo_negocio === 'Microempresa' ? 'selected' : ''}>Microempresa</option>
-              <option value="Pequeña Empresa" ${user?.tipo_negocio === 'Pequeña Empresa' ? 'selected' : ''}>Pequeña Empresa</option>
-              <option value="Emprendimiento Individual" ${user?.tipo_negocio === 'Emprendimiento Individual' ? 'selected' : ''}>Emprendimiento Individual</option>
-              <option value="Cooperativa" ${user?.tipo_negocio === 'Cooperativa' ? 'selected' : ''}>Cooperativa</option>
-              <option value="Asociación" ${user?.tipo_negocio === 'Asociación' ? 'selected' : ''}>Asociación</option>
-              <option value="Otro" ${user?.tipo_negocio === 'Otro' ? 'selected' : ''}>Otro</option>
-            </select>
-          </div>
-        </div>
+        const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
+        if (updatedUser) {
+          setUser(updatedUser);
+          localStorage.setItem('usuario', JSON.stringify(updatedUser));
+        }
+        
+        Swal.fire({
+          title: "¡Éxito!",
+          text: "Datos personales actualizados correctamente",
+          icon: "success",
+          confirmButtonColor: "#4f46e5",
+        });
+        
+      } catch (error) {
+        console.error('Error al actualizar datos personales:', error);
+        Swal.fire({
+          title: "Error",
+          text: "No se pudieron actualizar los datos personales",
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+        });
+      }
+    }
+  };
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Consejo Comunal *</label>
-            <input 
-              id="consejo_nombre" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.consejo_nombre || ""}"
-              placeholder="Nombre del consejo comunal"
-              required
-            />
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Comuna *</label>
-            <input 
-              id="comuna" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-              value="${user?.comuna || ""}"
-              placeholder="Nombre de la comuna"
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Dirección del Emprendimiento *</label>
-          <input 
-            id="direccion_emprendimiento" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
-            value="${user?.direccion_emprendimiento || ""}"
-            placeholder="Dirección completa del emprendimiento"
-            required
-          />
-        </div>
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonColor: "#4f46e5",
-    cancelButtonColor: "#6b7280",
-    confirmButtonText: "Guardar Cambios",
-    preConfirm: () => {
-      const nombre_emprendimiento = document.getElementById("nombre_emprendimiento").value.trim();
-      const tipo_sector = document.getElementById("tipo_sector").value;
-      const tipo_negocio = document.getElementById("tipo_negocio").value;
-      const consejo_nombre = document.getElementById("consejo_nombre").value.trim();
-      const comuna = document.getElementById("comuna").value.trim();
-      const direccion_emprendimiento = document.getElementById("direccion_emprendimiento").value.trim();
-
-      // Validaciones
-      if (!nombre_emprendimiento) {
-        Swal.showValidationMessage("El nombre del emprendimiento es obligatorio");
-        return false;
-      }
-      if (!tipo_sector) {
-        Swal.showValidationMessage("El tipo de sector es obligatorio");
-        return false;
-      }
-      if (!tipo_negocio) {
-        Swal.showValidationMessage("El tipo de negocio es obligatorio");
-        return false;
-      }
-      if (!consejo_nombre) {
-        Swal.showValidationMessage("El consejo comunal es obligatorio");
-        return false;
-      }
-      if (!comuna) {
-        Swal.showValidationMessage("La comuna es obligatoria");
-        return false;
-      }
-      if (!direccion_emprendimiento) {
-        Swal.showValidationMessage("La dirección del emprendimiento es obligatoria");
-        return false;
-      }
-
-      return { 
-        nombre_emprendimiento, 
-        tipo_sector, 
-        tipo_negocio, 
-        consejo_nombre, 
-        comuna, 
-        direccion_emprendimiento 
-      };
-    },
-  });
-  
-  if (formValues) {
-    try {
-      // Importar la API de emprendimientos (asegúrate de tener esta importación al inicio del archivo)
-      // import emprendimientoApi from '../services/api_emprendimientos';
-      
-      // Usar la API específica para actualizar emprendimiento
-      await emprendimientoApi.updateEmprendimiento(user?.cedula_usuario, formValues);
-      
-      // Actualizar el usuario en el estado local
-      const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
-      if (updatedUser) {
-        setUser(updatedUser);
-        localStorage.setItem('usuario', JSON.stringify(updatedUser));
-      }
-      
+  // Editar emprendimiento (solo para emprendedores)
+  const handleEditarEmprendimiento = async () => {
+    if (!puedeVer(["emprendedor"])) {
       Swal.fire({
-        title: "¡Éxito!",
-        text: "Emprendimiento actualizado correctamente",
-        icon: "success",
+        title: "Acceso restringido",
+        text: "Esta opción solo está disponible para emprendedores",
+        icon: "warning",
         confirmButtonColor: "#4f46e5",
       });
-      
-    } catch (error) {
-      console.error('Error al actualizar emprendimiento:', error);
-      const errorMessage = error.response?.data?.error || "No se pudo actualizar el emprendimiento";
-      
-      Swal.fire({
-        title: "Error",
-        text: errorMessage,
-        icon: "error",
-        confirmButtonColor: "#ef4444",
-      });
+      return;
     }
-  }
-};
 
-  // Función de búsqueda
-  const handleSearch = (query) => {
-    if (query.trim()) {
-      // Navegar a página de resultados de búsqueda
-      navigate(`/buscar?q=${encodeURIComponent(query)}`);
-      setSearchOpen(false);
+    const { value: formValues } = await Swal.fire({
+      title: "Editar Emprendimiento",
+      html: `
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Emprendimiento *</label>
+            <input 
+              id="nombre_emprendimiento" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.nombre_emprendimiento || ""}"
+              placeholder="Ingresa el nombre de tu emprendimiento"
+              required
+            />
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Sector *</label>
+              <select 
+                id="tipo_sector" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                required
+              >
+                <option value="">Selecciona un sector</option>
+                <option value="Comercio" ${user?.tipo_sector === 'Comercio' ? 'selected' : ''}>Comercio</option>
+                <option value="Servicios" ${user?.tipo_sector === 'Servicios' ? 'selected' : ''}>Servicios</option>
+                <option value="Producción" ${user?.tipo_sector === 'Producción' ? 'selected' : ''}>Producción</option>
+                <option value="Agroindustria" ${user?.tipo_sector === 'Agroindustria' ? 'selected' : ''}>Agroindustria</option>
+                <option value="Tecnología" ${user?.tipo_sector === 'Tecnología' ? 'selected' : ''}>Tecnología</option>
+                <option value="Artesanía" ${user?.tipo_sector === 'Artesanía' ? 'selected' : ''}>Artesanía</option>
+                <option value="Turismo" ${user?.tipo_sector === 'Turismo' ? 'selected' : ''}>Turismo</option>
+                <option value="Otro" ${user?.tipo_sector === 'Otro' ? 'selected' : ''}>Otro</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Negocio *</label>
+              <select 
+                id="tipo_negocio" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                required
+              >
+                <option value="">Selecciona un tipo</option>
+                <option value="Microempresa" ${user?.tipo_negocio === 'Microempresa' ? 'selected' : ''}>Microempresa</option>
+                <option value="Pequeña Empresa" ${user?.tipo_negocio === 'Pequeña Empresa' ? 'selected' : ''}>Pequeña Empresa</option>
+                <option value="Emprendimiento Individual" ${user?.tipo_negocio === 'Emprendimiento Individual' ? 'selected' : ''}>Emprendimiento Individual</option>
+                <option value="Cooperativa" ${user?.tipo_negocio === 'Cooperativa' ? 'selected' : ''}>Cooperativa</option>
+                <option value="Asociación" ${user?.tipo_negocio === 'Asociación' ? 'selected' : ''}>Asociación</option>
+                <option value="Otro" ${user?.tipo_negocio === 'Otro' ? 'selected' : ''}>Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Consejo Comunal *</label>
+              <input 
+                id="consejo_nombre" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.consejo_nombre || ""}"
+                placeholder="Nombre del consejo comunal"
+                required
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Comuna *</label>
+              <input 
+                id="comuna" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                value="${user?.comuna || ""}"
+                placeholder="Nombre de la comuna"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección del Emprendimiento *</label>
+            <input 
+              id="direccion_emprendimiento" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+              value="${user?.direccion_emprendimiento || ""}"
+              placeholder="Dirección completa del emprendimiento"
+              required
+            />
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonColor: "#4f46e5",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Guardar Cambios",
+      preConfirm: () => {
+        const nombre_emprendimiento = document.getElementById("nombre_emprendimiento").value.trim();
+        const tipo_sector = document.getElementById("tipo_sector").value;
+        const tipo_negocio = document.getElementById("tipo_negocio").value;
+        const consejo_nombre = document.getElementById("consejo_nombre").value.trim();
+        const comuna = document.getElementById("comuna").value.trim();
+        const direccion_emprendimiento = document.getElementById("direccion_emprendimiento").value.trim();
+
+        if (!nombre_emprendimiento) {
+          Swal.showValidationMessage("El nombre del emprendimiento es obligatorio");
+          return false;
+        }
+        if (!tipo_sector) {
+          Swal.showValidationMessage("El tipo de sector es obligatorio");
+          return false;
+        }
+        if (!tipo_negocio) {
+          Swal.showValidationMessage("El tipo de negocio es obligatorio");
+          return false;
+        }
+        if (!consejo_nombre) {
+          Swal.showValidationMessage("El consejo comunal es obligatorio");
+          return false;
+        }
+        if (!comuna) {
+          Swal.showValidationMessage("La comuna es obligatoria");
+          return false;
+        }
+        if (!direccion_emprendimiento) {
+          Swal.showValidationMessage("La dirección del emprendimiento es obligatoria");
+          return false;
+        }
+
+        return { 
+          nombre_emprendimiento, 
+          tipo_sector, 
+          tipo_negocio, 
+          consejo_nombre, 
+          comuna, 
+          direccion_emprendimiento 
+        };
+      },
+    });
+    
+    if (formValues) {
+      try {
+        await emprendimientoApi.updateEmprendimiento(user?.cedula_usuario, formValues);
+        
+        const updatedUser = await getUsuarioPorCedula(user.cedula_usuario);
+        if (updatedUser) {
+          setUser(updatedUser);
+          localStorage.setItem('usuario', JSON.stringify(updatedUser));
+        }
+        
+        Swal.fire({
+          title: "¡Éxito!",
+          text: "Emprendimiento actualizado correctamente",
+          icon: "success",
+          confirmButtonColor: "#4f46e5",
+        });
+        
+      } catch (error) {
+        console.error('Error al actualizar emprendimiento:', error);
+        const errorMessage = error.response?.data?.error || "No se pudo actualizar el emprendimiento";
+        
+        Swal.fire({
+          title: "Error",
+          text: errorMessage,
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+        });
+      }
     }
   };
 
@@ -1049,15 +1089,17 @@ const handleEditarEmprendimiento = async () => {
               aria-label="Perfil"
             >
               <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                <TbUser size={20} className="text-indigo-600" />
+                {getUserIcon()}
               </div>
               <div className="hidden lg:block text-left">
                 <p className="text-sm font-medium truncate max-w-xs">
                   {user?.nombre_completo || "Usuario"}
                 </p>
-                <p className="text-xs text-indigo-500 capitalize">
-                  {user?.rol || "Rol no asignado"}
-                </p>
+                <div className="flex items-center space-x-2">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeColor()}`}>
+                    {usuarioLogueado?.rol || "Rol no asignado"}
+                  </span>
+                </div>
               </div>
               <TbChevronDown size={18} className={`transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -1067,7 +1109,7 @@ const handleEditarEmprendimiento = async () => {
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                      <TbUser size={24} className="text-indigo-600" />
+                      {getUserIcon()}
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">{user?.nombre_completo || "Usuario"}</p>

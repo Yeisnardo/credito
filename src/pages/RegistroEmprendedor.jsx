@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { motion } from "framer-motion";
 import { locationData, getEstados, getMunicipiosByEstado } from "../components/Venezuela";
-import miImagen from "../assets/imagenes/logo_ifemi.jpg";
+import miImagen from "../assets/image/logo_ifemi.jpg";
 
 import personaService from "../services/api_persona";
 import emprendimientoService from "../services/api_emprendimiento";
@@ -455,7 +455,7 @@ const RegistroEmprendedor = () => {
       persona: {
         cedula: datos.cedula,
         nombre_completo: datos.nombre_completo,
-        fecha_nacimiento: datos.edad,
+        edad: datos.edad,
         telefono: datos.telefono.replace(/\D/g, ""),
         email: datos.correo,
         estado: datos.estado,
@@ -585,24 +585,8 @@ const RegistroEmprendedor = () => {
       className="space-y-4"
     >
       <h3 className="text-xl mb-4 font-semibold text-[#1A2C5B]">
-        Datos Personales
+        Datos Personales y ubicacion
       </h3>
-      
-      {/* Resumen de datos formateados */}
-      {datos.cedula && (
-        <div className="bg-gray-50 p-3 rounded-lg mb-4">
-          <h4 className="font-medium text-gray-700 mb-2">Resumen:</h4>
-          <DisplayField label="Cédula" value={datos.cedula} format="cedula" />
-          <DisplayField label="Nombre" value={datos.nombre_completo} />
-          {datos.edad && (
-            <>
-              <DisplayField label="Fecha Nac." value={datos.edad} format="fecha" />
-              <DisplayField label="Edad" value={edadCalculada} format="edad" />
-            </>
-          )}
-          <DisplayField label="Teléfono" value={datos.telefono} format="telefono" />
-        </div>
-      )}
       
       <div className="flex flex-wrap gap-4">
         {/* Cédula */}
@@ -704,7 +688,7 @@ const RegistroEmprendedor = () => {
             transition={{ duration: 0.2 }}
           />
         </div>
-
+        
         {/* Estado */}
         <div className="w-full md:w-[45%]">
           <label htmlFor="estado" className="block mb-1 text-sm font-medium text-gray-600">

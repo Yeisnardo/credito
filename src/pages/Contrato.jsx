@@ -146,7 +146,7 @@ const ContractDetails = ({ contratoSeleccionado, totalContratos, user }) => {
     { label: "Número de Contrato", value: contratoSeleccionado?.numero_contrato, icon: TbBarcode },
     { label: "Estado", value: contratoSeleccionado?.estatus, status: true },
     { label: "Monto Aprobado", value: formatearMonto(contratoSeleccionado?.monto_aprob_euro), icon: TbCoin },
-    { label: "Monto Aprobado (Bs)", value: formatearMontoBs(contratoSeleccionado?.monto_bs), icon: TbCoin },
+    { label: "Monto Aprobado (Bs)", value: formatearMontoBs(contratoSeleccionado?.monto_bs_neto), icon: TbCoin },
     { label: "Fecha de Inicio", value: formatearFecha(contratoSeleccionado?.fecha_desde), icon: TbCalendar },
     { label: "Fecha de Vencimiento", value: formatearFecha(contratoSeleccionado?.fecha_hasta), icon: TbCalendarEvent },
     { label: "Monto a devolver", value: formatearMonto(contratoSeleccionado?.monto_devolver), icon: TbTrendingUp },
